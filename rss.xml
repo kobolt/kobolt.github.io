@@ -2,92 +2,92 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
   <title>Kjetil's Information Center</title>
-  <link>http://kobolt.website/infocenter/</link>
+  <link>http://kobolt.github.io/</link>
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2022 Kjetil Erga</copyright>
   <lastBuildDate>Sat, 08 Jan 2022 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
-  <atom:link href="https://github.io/kobolt/rss.xml" rel="self" type="application/rss+xml" />
+  <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
   <item>
     <title>XT-IDE Loaded from Fake VBR</title>
     <category>Scripts and Code</category>
-    <link>https://github.io/kobolt/article-189.html</link>
-    <guid>https://github.io/kobolt/article-189.html</guid>
+    <link>https://kobolt.github.io/article-189.html</link>
+    <guid>https://kobolt.github.io/article-189.html</guid>
     <pubDate>Sat, 08 Jan 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-189.html</description>
+    <description>Go to: https://kobolt.github.io/article-189.html</description>
   </item>
   <item>
     <title>Commodore PC 20-III CGA Composite</title>
     <category>Repair</category>
-    <link>https://github.io/kobolt/article-188.html</link>
-    <guid>https://github.io/kobolt/article-188.html</guid>
+    <link>https://kobolt.github.io/article-188.html</link>
+    <guid>https://kobolt.github.io/article-188.html</guid>
     <pubDate>Sat, 11 Dec 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-188.html</description>
+    <description>Go to: https://kobolt.github.io/article-188.html</description>
   </item>
   <item>
     <title>Arduino Z80 CPU Tester</title>
     <category>Scripts and Code</category>
-    <link>https://github.io/kobolt/article-187.html</link>
-    <guid>https://github.io/kobolt/article-187.html</guid>
+    <link>https://kobolt.github.io/article-187.html</link>
+    <guid>https://kobolt.github.io/article-187.html</guid>
     <pubDate>Sat, 27 Nov 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-187.html</description>
+    <description>Go to: https://kobolt.github.io/article-187.html</description>
   </item>
   <item>
     <title>FAT16 File Extraction</title>
     <category>Scripts and Code</category>
-    <link>https://github.io/kobolt/article-186.html</link>
-    <guid>https://github.io/kobolt/article-186.html</guid>
+    <link>https://kobolt.github.io/article-186.html</link>
+    <guid>https://kobolt.github.io/article-186.html</guid>
     <pubDate>Sat, 06 Nov 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-186.html</description>
+    <description>Go to: https://kobolt.github.io/article-186.html</description>
   </item>
   <item>
     <title>XP MCE Keyboard on Raspberry Pi Zero W</title>
     <category>Configuration</category>
-    <link>https://github.io/kobolt/article-185.html</link>
-    <guid>https://github.io/kobolt/article-185.html</guid>
+    <link>https://kobolt.github.io/article-185.html</link>
+    <guid>https://kobolt.github.io/article-185.html</guid>
     <pubDate>Sat, 23 Oct 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-185.html</description>
+    <description>Go to: https://kobolt.github.io/article-185.html</description>
   </item>
   <item>
     <title>CP/M on the GR-SAKURA</title>
     <category>Open Source</category>
-    <link>https://github.io/kobolt/article-184.html</link>
-    <guid>https://github.io/kobolt/article-184.html</guid>
+    <link>https://kobolt.github.io/article-184.html</link>
+    <guid>https://kobolt.github.io/article-184.html</guid>
     <pubDate>Mon, 04 Oct 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-184.html</description>
+    <description>Go to: https://kobolt.github.io/article-184.html</description>
   </item>
   <item>
     <title>Fujitsu FKB8530 Keyboard Repair</title>
     <category>Repair</category>
-    <link>https://github.io/kobolt/article-183.html</link>
-    <guid>https://github.io/kobolt/article-183.html</guid>
+    <link>https://kobolt.github.io/article-183.html</link>
+    <guid>https://kobolt.github.io/article-183.html</guid>
     <pubDate>Wed, 22 Sep 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-183.html</description>
+    <description>Go to: https://kobolt.github.io/article-183.html</description>
   </item>
   <item>
     <title>Linux System on a Floppy</title>
     <category>Configuration</category>
-    <link>https://github.io/kobolt/article-182.html</link>
-    <guid>https://github.io/kobolt/article-182.html</guid>
+    <link>https://kobolt.github.io/article-182.html</link>
+    <guid>https://kobolt.github.io/article-182.html</guid>
     <pubDate>Sun, 05 Sep 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-182.html</description>
+    <description>Go to: https://kobolt.github.io/article-182.html</description>
   </item>
   <item>
     <title>Tandon TM9362 Data Recovery</title>
     <category>Repair</category>
-    <link>https://github.io/kobolt/article-181.html</link>
-    <guid>https://github.io/kobolt/article-181.html</guid>
+    <link>https://kobolt.github.io/article-181.html</link>
+    <guid>https://kobolt.github.io/article-181.html</guid>
     <pubDate>Sat, 07 Aug 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-181.html</description>
+    <description>Go to: https://kobolt.github.io/article-181.html</description>
   </item>
   <item>
     <title>Amiga 500 with the Framemeister</title>
     <category>Configuration</category>
-    <link>https://github.io/kobolt/article-180.html</link>
-    <guid>https://github.io/kobolt/article-180.html</guid>
+    <link>https://kobolt.github.io/article-180.html</link>
+    <guid>https://kobolt.github.io/article-180.html</guid>
     <pubDate>Sat, 24 Jul 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://github.io/kobolt/article-180.html</description>
+    <description>Go to: https://kobolt.github.io/article-180.html</description>
   </item>
 </channel>
 </rss>
