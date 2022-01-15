@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2022 Kjetil Erga</copyright>
-  <lastBuildDate>Sat, 08 Jan 2022 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Sat, 15 Jan 2022 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Dual Web Hosting</title>
+    <category>General</category>
+    <link>https://kobolt.github.io/article-190.html</link>
+    <guid>https://kobolt.github.io/article-190.html</guid>
+    <pubDate>Sat, 15 Jan 2022 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-190.html</description>
+  </item>
   <item>
     <title>XT-IDE Loaded from Fake VBR</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-181.html</guid>
     <pubDate>Sat, 07 Aug 2021 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-181.html</description>
-  </item>
-  <item>
-    <title>Amiga 500 with the Framemeister</title>
-    <category>Configuration</category>
-    <link>https://kobolt.github.io/article-180.html</link>
-    <guid>https://kobolt.github.io/article-180.html</guid>
-    <pubDate>Sat, 24 Jul 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-180.html</description>
   </item>
 </channel>
 </rss>
