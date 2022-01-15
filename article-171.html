@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>USB IR REMOCON Firmware Replacement</h1>
+      <p>
+        I bought this <a href="https://bit-trade-one.co.jp/BTOpicture/Products/005-RS/">Bit Trade One USB Infrared Remote Control Kit</a> at an electronics store in Japan, which lets you use a standard TV remote to control a PC. While the device works on Linux, since it presents itself as a standard <a href="https://en.wikipedia.org/wiki/USB_human_interface_device_class">USB HID</a> device, it can only be configured in Windows. But a bigger problem is that the original firmware contained some kind of bug where part of the TV remote mappings would get corrupted after power cycling.<br />
+        <br />
+        To get around these limitations and problems I have created a new firmware replacement for the onboard PIC18F14K50 microcontroller. For maximum flexibility I decided to make something that emulates the protocol used by the <a href="http://dangerousprototypes.com/docs/USB_Infrared_Toy">Dangerous Prototypes USB IR Toy</a>. This means the device can be used together with <a href="https://www.lirc.org/">LIRC</a> on Linux, which offers a lot of advanced functionality. This also moves the configuration aspect to software on Linux instead of needing to re-flash the PIC microcontroller EEPROM. Note that this device also has an IR sender, but I only implemented support for the IR receive part.<br />
+        <br />
+        You can get the firmware <a href="supplies/bto-irtoy.hex">here</a> or the <a href="https://www.microchip.com/en-us/development-tools-tools-and-software/mplab-x-ide">MPLAB</a> project source code <a href="supplies/bto-irtoy.tgz">here</a>. I have used Microchip&#39;s own USB stack for this project, which is licensed under the Apache license. The parts I wrote myself I consider to be released unlicensed directly into the public domain. I&#39;m including the main part of the code here for an easy reference:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &#34;system.h&#34;
+
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stddef.h&gt;
+
+#include &#34;usb.h&#34;
+
+#include &#34;app_irtoy_emu.h&#34;
+#include &#34;usb_config.h&#34;
+
+static uint8_t readBuffer[CDC_DATA_OUT_EP_SIZE];
+static uint8_t writeBuffer[CDC_DATA_IN_EP_SIZE];
+
+static bool inSamplingMode = false;
+static uint16_t pulseHighLen = 0;
+static uint16_t pulseLowLen = 0;
+static uint16_t pendingPulse = 0;
+static bool endOfTransmission = true;
+static bool waitForEOT = false;
+
+void samplingModeSetup(void)
+{
+    /* Set variables to known state. */
+    pulseHighLen = 0;
+    pulseLowLen = 0;
+    pendingPulse = 0;
+    endOfTransmission = true;
+    waitForEOT = false;
+
+    T0CON = 0b11000000; /* Enable Timer0 as 8-Bit with no scaling. */
+
+    RCONbits.IPEN = 1; /* Enable priority levels on interrupts. */
+    INTCON2bits.TMR0IP = 1; /* Make Timer0 a high priority interrupt. */
+    INTCONbits.TMR0IF = 0; /* Clear Timer0 interrupt flag. */
+    INTCONbits.TMR0IE = 1; /* Enable Timer0 interrupts. */
+    INTCONbits.GIEH = 1; /* Make sure high priority interrupts are enabled. */
+    INTCONbits.GIEL = 1; /* Make sure low priority interrupts are enabled. */
+}
+
+void samplingModeService(void)
+{
+    uint8_t numBytesRead;
+
+    numBytesRead = getsUSBUSART(readBuffer, 1);
+    if (numBytesRead == 1 &amp;&amp; readBuffer[0] == 0x00) /* Reset */
+    {
+        /* Disable Timer0 interrupts. */
+        INTCONbits.TMR0IE = 0;
+        inSamplingMode = false;
+        return;
+    }
+
+    INTCONbits.TMR0IE = 0;
+    if (pendingPulse &gt; 5)
+    {
+        writeBuffer[0] = (uint8_t)(pendingPulse / 256);
+        writeBuffer[1] = (uint8_t)(pendingPulse % 256);
+        putUSBUSART(writeBuffer, 2);
+        pendingPulse = 0;
+        endOfTransmission = false;
+        waitForEOT = true;
+    }
+
+    if ((waitForEOT == true) &amp;&amp; (endOfTransmission == true))
+    {
+        writeBuffer[0] = 0xFF;
+        writeBuffer[1] = 0xFF;
+        putUSBUSART(writeBuffer, 2);
+        waitForEOT = false;
+    }
+    INTCONbits.TMR0IE = 1;
+}
+
+void APP_IRToyEmulationInterrupt(void)
+{
+    if (INTCONbits.TMR0IF == 1)
+    {
+        /* Check if IR sensor (inverted input) is active. */
+        if (PORTCbits.RC7 == 0)
+        {
+            if (pulseLowLen &gt; 5)
+            {
+                pendingPulse = pulseLowLen;
+            }
+            pulseLowLen = 0;
+
+            pulseHighLen += 2;
+        }
+        else
+        {
+            if (pulseHighLen &gt; 5)
+            {
+                pendingPulse = pulseHighLen;
+                endOfTransmission = false;
+            }
+            pulseHighLen = 0;
+
+            if (endOfTransmission == false)
+            {
+                pulseLowLen += 2;
+                if (pulseLowLen &gt;= 0xFFFE)
+                {
+                    pulseLowLen = 0;
+                    endOfTransmission = true;
+                }
+            }
+        }
+        INTCONbits.TMR0IF = 0;
+    }
+}
+
+void APP_IRToyEmulationInitialize()
+{   
+    line_coding.bCharFormat = 0;
+    line_coding.bDataBits = 8;
+    line_coding.bParityType = 0;
+    line_coding.dwDTERate = 115200;
+
+    /* I/O settings as used in orignal Bit Trade One firmware. */
+    TRISB  = 0x00;
+    TRISC  = 0x80;
+    LATC   = 0xFF;
+    ANSEL  = 0x00;
+    ANSELH = 0x00;
+
+    /* But turn off IR sender diode output, no support implemented. */
+    PORTCbits.RC5 = 0;
+}
+
+void APP_IRToyEmulationTasks()
+{
+    /* If the USB device isn&#39;t configured yet, we can&#39;t really do anything
+     * else since we don&#39;t have a host to talk to.  So jump back to the
+     * top of the while loop. */
+    if (USBGetDeviceState() &lt; CONFIGURED_STATE)
+    {
+        return;
+    }
+
+    /* If we are currently suspended, then we need to see if we need to
+     * issue a remote wakeup.  In either case, we shouldn&#39;t process any
+     * keyboard commands since we aren&#39;t currently communicating to the host
+     * thus just continue back to the start of the while loop. */
+    if (USBIsDeviceSuspended() == true)
+    {
+        return;
+    }
+
+    if (inSamplingMode == true)
+    {
+        samplingModeService();
+    }
+    else
+    {
+        if (USBUSARTIsTxTrfReady() == true)
+        {
+            uint8_t numBytesRead;
+            numBytesRead = getsUSBUSART(readBuffer, 1);
+
+            if (numBytesRead == 1)
+            {
+                switch (readBuffer[0])
+                {
+                case &#39;S&#39;: /* IRIO Sampling Mode */
+                case &#39;s&#39;:
+                    writeBuffer[0] = &#39;S&#39;; /* Answer OK */
+                    writeBuffer[1] = &#39;0&#39;;
+                    writeBuffer[2] = &#39;1&#39;;
+                    putUSBUSART(writeBuffer, 3);
+                    samplingModeSetup();
+                    inSamplingMode = true;
+                    break;
+
+                case &#39;V&#39;: /* Acquire Version */
+                case &#39;v&#39;:
+                    writeBuffer[0] = &#39;V&#39;; /* Answer OK */
+                    writeBuffer[1] = &#39;9&#39;; /* Hardware Version */
+                    writeBuffer[2] = &#39;9&#39;; /* Firmware Version High */
+                    writeBuffer[3] = &#39;9&#39;; /* Firmware Version Low */
+                    putUSBUSART(writeBuffer, 4);
+                    break;
+
+                default: /* All the rest is unsupported! */
+                    writeBuffer[0] = &#39;?&#39;;
+                    putUSBUSART(writeBuffer, 1);
+                    break;
+                }
+            }
+        }
+    }
+
+#if defined(USB_POLLING)
+    USBDeviceTasks();
+#endif
+    CDCTxService();
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        To use it in LIRC, setup lirc_options.conf similar to the IR Toy using:<br />
+      </p>
+        <div class="box">
+          <pre>
+driver = irtoy
+device = /dev/ttyACM0
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        23/01-2021, 
+        <a href="article-171.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

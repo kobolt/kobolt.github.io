@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore PC 20-III CGA Composite</h1>
+      <p>
+        The Commodore PC 20-III is a XT-class 8088 clone PC running at 4.77 to 9.54MHz with 640KB of RAM. It also features an on-board Paradise PCV4 chip that provides CGA graphics on both D-Sub/RGBI and RCA/Composite connectors. While the RGBI worked fine, I could not get any picture with the composite connection.<br />
+        <br />
+        I measured with both an oscilloskope and a multimeter and the composite signal was around 5 volts, which is not correct at all. Fortunately, circuit diagrams for this PC can be found on <a href="http://www.zimmers.net/">Bo Zimmerman&#39;s web pages</a>, where I found something interesting:<br />
+      </p>
+      <img class="border" src="images/commodore_pc20-III_diagram.png" alt="Commodore PC 20-III Circuit Diagram Snippet" />
+      <p>
+        <br />
+        There was a high chance the 5 volts came from the main VCC voltage rail through this transistor, which could be shorted. I confirmed a short circuit between collector and emitter using a multimeter and proceeded to remove the transistor. As expected the short was now gone. I did not have any 2N3904 in my stash, but used a BC549B as a replacement, which should be equivalent. Here is the replaced transistor in the middle:<br />
+      </p>
+      <img class="border" src="images/commodore_pc20-III_circuit.jpg" alt="Commodore PC 20-III Circuit with Transistor" />
+      <p>
+        <br />
+        I powered on the PC and measured with an oscilloscope again, which now shows a proper composite video signal:<br />
+      </p>
+      <img class="border" src="images/commodore_pc20-III_signal.jpg" alt="Commodore PC 20-III Composite Video Signal" />
+      <p>
+        <br />
+        I also ran the <a href="https://www.pouet.net/prod.php?which=65371">8088 MPH demo</a> to test for more colors on CGA:<br />
+      </p>
+      <img class="border" src="images/commodore_pc20-III_8088mph.jpg" alt="Commodore PC 20-III Composite Video Signal" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        11/12-2021, 
+        <a href="article-188.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

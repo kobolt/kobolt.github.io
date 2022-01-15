@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Simple Curses Menu</h1>
+      <p>
+        Here is another one of those applications that fill a small niche. This application will simply present the user with a list, where one item is selected. The list itself is read from a file, and the selection (line number from the file) is returned as the exit code from the application itself. Based on this information, it is clear that the application is meant to be used in coordination with a shell script. The application uses the (n)curses library to present the &#34;graphics&#34;, and also features a fancy scrollbar!<br />
+        <br />
+        Here&#39;s a screenshot...:<br />
+      </p>
+      <img class="border" src="images/curses-menu.png" alt="Simple curses menu screenshot" />
+      <p>
+        <br />
+        ...and here&#39;s the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ncurses.h&gt;
+#include &lt;signal.h&gt;
+
+#define ENTRY_LIMIT 255 /* Same as limit for exit code. */
+#define TEXT_LIMIT 128
+
+static char list[ENTRY_LIMIT][TEXT_LIMIT];
+static int list_size      = 0;
+static int scroll_offset  = 0;
+static int selected_entry = 0;
+
+static void update_screen(void)
+{
+  int n, i, maxy, maxx;
+  int scrollbar_size, scrollbar_pos;
+
+  getmaxyx(stdscr, maxy, maxx);
+  erase();
+
+  /* Draw text lines. */
+  for (n = 0; n &lt; maxy; n++) {
+    if ((n + scroll_offset) &gt;= list_size)
+      break;
+
+    if (n == (selected_entry - scroll_offset)) {
+      attron(A_REVERSE);
+      mvaddstr(n, 0, list[n + scroll_offset]);
+      for (i = strlen(list[n + scroll_offset]); i &lt; maxx - 2; i++)
+        mvaddch(n, i, &#39; &#39;);
+      attroff(A_REVERSE);
+    } else {
+      mvaddstr(n, 0, list[n + scroll_offset]);
+    }
+  }
+
+  /* Draw scrollbar. */
+  if (list_size &lt;= maxy)
+    scrollbar_size = maxy;
+  else
+    scrollbar_size = maxy / (list_size / (double)maxy);
+
+  scrollbar_pos = selected_entry / (double)list_size * (maxy - scrollbar_size);
+  attron(A_REVERSE);
+  for (i = 0; i &lt;= scrollbar_size; i++)
+    mvaddch(i + scrollbar_pos, maxx - 1, &#39; &#39;);
+  attroff(A_REVERSE);
+
+  mvvline(0, maxx - 2, 0, maxy);
+
+  /* Place cursor at end of selected line. */
+  move(selected_entry - scroll_offset, maxx - 3);
+}
+
+static void exit_handler(void)
+{
+  endwin();
+}
+
+static void winch_handler(void)
+{
+  endwin(); /* To get new window limits. */
+  update_screen();
+  flushinp();
+  keypad(stdscr, TRUE);
+}
+
+static void interrupt_handler(int signo)
+{
+  exit(0); /* Exit with code 0, always. */
+}
+
+int main(int argc, char *argv[])
+{
+  int c, maxy, maxx;
+  char line[TEXT_LIMIT], *p;
+  FILE *fh;
+
+  if (argc != 2) {
+    printf(&#34;Usage: %s &lt;file with menu lines&gt;&#92;n&#34;, argv[0]);
+    return 0;
+  }
+
+  fh = fopen(argv[1], &#34;r&#34;);
+  if (fh == NULL) {
+    printf(&#34;Error: Unable to open menu file for reading.&#92;n&#34;);
+    return 0;
+  }
+
+  while (fgets(line, TEXT_LIMIT, fh) != NULL) {
+    for (p = line; *p != &#39;&#92;0&#39;; p++) {
+      if ((*p == &#39;&#92;r&#39;) || (*p == &#39;&#92;n&#39;)) {
+        *p = &#39;&#92;0&#39;;
+        break;
+      }
+    }
+    strncpy(list[list_size], line, TEXT_LIMIT);
+    list_size++;
+    if (list_size == ENTRY_LIMIT)
+      break;
+  }
+  fclose(fh);
+
+  signal(SIGINT, interrupt_handler);
+
+  initscr();
+  atexit(exit_handler);
+  noecho();
+  keypad(stdscr, TRUE);
+
+  while (1) {
+    update_screen();
+    getmaxyx(stdscr, maxy, maxx);
+    c = getch();
+
+    switch (c) {
+    case KEY_RESIZE:
+      /* Use this event instead of SIGWINCH for better portability. */
+      winch_handler();
+      break;
+
+    case KEY_UP:
+      selected_entry--;
+      if (selected_entry &lt; 0)
+        selected_entry++;
+      if (scroll_offset &gt; selected_entry) {
+        scroll_offset--;
+        if (scroll_offset &lt; 0)
+          scroll_offset = 0;
+      }
+      break;
+
+    case KEY_DOWN:
+      selected_entry++;
+      if (selected_entry &gt;= list_size)
+        selected_entry--;
+      if (selected_entry &gt; maxy - 1) {
+        scroll_offset++;
+        if (scroll_offset &gt; selected_entry - maxy + 1)
+          scroll_offset--;
+      }
+      break;
+
+    case KEY_NPAGE:
+      scroll_offset += maxy / 2;
+      while (maxy + scroll_offset &gt; list_size)
+        scroll_offset--;
+      if (scroll_offset &lt; 0)
+        scroll_offset = 0;
+      if (selected_entry &lt; scroll_offset)
+        selected_entry = scroll_offset;
+      break;
+
+    case KEY_PPAGE:
+      scroll_offset -= maxy / 2;
+      if (scroll_offset &lt; 0)
+        scroll_offset = 0;
+      if (selected_entry &gt; maxy + scroll_offset - 1)
+        selected_entry = maxy + scroll_offset - 1;
+      break;
+
+    case KEY_ENTER:
+    case &#39;&#92;n&#39;:
+    case &#39;&#92;r&#39;:
+      /* Need to start at 1 to differentiate between a valid selection
+         and other kinds of exits, that returns 0. */
+      return selected_entry + 1;
+
+    case &#39;&#92;e&#39;: /* Escape */
+    case &#39;Q&#39;:
+    case &#39;q&#39;:
+      return 0;
+    }
+
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        15/01-2011, 
+        <a href="article-49.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

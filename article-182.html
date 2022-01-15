@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Linux System on a Floppy</h1>
+      <p>
+        Referring to my previous project to build a <a href="article-165.html">Linux distribution for LOADLIN</a>. It is actually possible to also boot this directly from a 1.44M floppy disk, which can be quite useful. The output from that build should be the Linux kernel &#34;bzImage&#34; and the root filesystem &#34;rootfs.cramfs&#34;. I renamed &#34;rootfs.cramfs&#34; to simply &#34;rootfs&#34; to avoid any conflicts with the 8.3 filename format.<br />
+        <br />
+        <a href="https://en.wikipedia.org/wiki/SYSLINUX">SYSLINUX</a> will be used for booting, and it needs &#34;syslinux.cfg&#34; configuration file with the followng contents:<br />
+      </p>
+        <div class="box">
+          <pre>
+DEFAULT linux
+LABEL linux
+  KERNEL bzImage
+  APPEND initrd=rootfs
+          </pre>
+        </div>
+      <p>
+        <br />
+        These are the steps to make the floppy disk image:<br />
+      </p>
+        <div class="box">
+          <pre>
+dd if=/dev/zero of=floppy.img bs=512 count=2880
+mkdosfs floppy.img
+syslinux --install floppy.img
+mkdir /tmp/floppy
+mount -o loop floppy.img /tmp/floppy
+cp bzImage /tmp/floppy/
+cp rootfs /tmp/floppy/
+cp syslinux.cfg /tmp/floppy/
+umount /tmp/floppy
+          </pre>
+        </div>
+      <p>
+        <br />
+        The floppy disk image can be tested in QEMU with:<br />
+      </p>
+        <div class="box">
+          <pre>
+qemu-system-i386 -fda floppy.img -boot a
+          </pre>
+        </div>
+      <p>
+        <br />
+        Writing the floppy disk image to an actual floppy disk is typically done like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+dd if=floppy.img of=/dev/fd0 bs=512
+          </pre>
+        </div>
+      <p>
+        <br />
+        For convenience, download the floppy disk image <a href="supplies/linux-slip-floppy.img">here</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        05/09-2021, 
+        <a href="article-182.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

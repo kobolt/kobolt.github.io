@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>XSPF Coverage and Duplication Check</h1>
+      <p>
+        Two new <a href="http://www.xspf.org/">XSPF playlist</a> use cases has come to mind. Checking for duplicate file references across playlists and checking for coverage. By coverage, I mean checking if all files within a directory structure is actually referenced by the playlist(s).<br />
+        <br />
+        Both scripts are based on the <a href="article-96.html">XSPF integrity check</a> script I made earlier, and the same parser is used.<br />
+        <br />
+        Script for duplication check:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import xml.dom.minidom
+import re
+import os.path
+
+xspf_files = dict()
+
+def xspf_parse(playlist_filename, handler):
+    xml_data = xml.dom.minidom.parse(playlist_filename)
+    for playlist in xml_data.getElementsByTagName(&#34;playlist&#34;):
+        for tracklist in playlist.getElementsByTagName(&#34;trackList&#34;):
+            for track in tracklist.getElementsByTagName(&#34;track&#34;):
+                for location in track.getElementsByTagName(&#34;location&#34;):
+                    data = re.sub(&#34;%([0-9a-fA-F]{2})&#34;, &#92;
+                        lambda x: chr(int(x.group(1), 16)), &#92;
+                        location.firstChild.data.encode(&#34;utf-8&#34;))
+                    track_filename = data.decode(&#34;utf-8&#34;).replace(&#34;file://&#34;, &#34;&#34;)
+                    handler(playlist_filename, track_filename)
+
+def file_check(playlist_filename, track_filename):
+    if track_filename in xspf_files:
+        print track_filename, &#34;--&gt;&#34;, xspf_files[track_filename], &#34;&amp;&#34;, playlist_filename
+    else:
+        xspf_files[track_filename] = playlist_filename
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) &lt; 2:
+        print &#34;Usage: %s &lt;xspf file&gt; ... &lt;xspf file&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+
+    for filename in sys.argv[1:]:
+        xspf_parse(filename, file_check)
+
+    sys.exit(0)
+          </pre>
+        </div>
+      <p>
+        <br />
+        Script for coverage check:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import xml.dom.minidom
+import re
+import os
+
+xspf_files = set()
+fs_files = set()
+
+def xspf_parse(playlist_filename, handler):
+    xml_data = xml.dom.minidom.parse(playlist_filename)
+    for playlist in xml_data.getElementsByTagName(&#34;playlist&#34;):
+        for tracklist in playlist.getElementsByTagName(&#34;trackList&#34;):
+            for track in tracklist.getElementsByTagName(&#34;track&#34;):
+                for location in track.getElementsByTagName(&#34;location&#34;):
+                    data = re.sub(&#34;%([0-9a-fA-F]{2})&#34;, &#92;
+                        lambda x: chr(int(x.group(1), 16)), &#92;
+                        location.firstChild.data.encode(&#34;utf-8&#34;))
+                    track_filename = data.decode(&#34;utf-8&#34;).replace(&#34;file://&#34;, &#34;&#34;)
+                    handler(playlist_filename, track_filename)
+
+def add_xspf_file(playlist_filename, track_filename):
+    xspf_files.add(track_filename)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) &lt; 3:
+        print &#34;Usage: %s &lt;directory&gt; &lt;xspf file&gt; ... &lt;xspf file&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+
+    for root, dirs, files in os.walk(sys.argv[1]):
+        for filename in files:
+            fs_files.add(os.path.join(root, filename).decode(&#34;iso-8859-1&#34;))
+
+    for filename in sys.argv[2:]:
+        xspf_parse(filename, add_xspf_file)
+
+    fs_covered = float(len(fs_files.intersection(xspf_files)))
+    fs_total = float(len(fs_files))
+    print &#34;Coverage: %.2f%%&#34; % ((fs_covered / fs_total) * 100)
+    print &#34;Missing Files:&#34;
+    for filename in fs_files.difference(xspf_files):
+        print filename
+
+    sys.exit(0)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        06/03-2015, 
+        <a href="article-99.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

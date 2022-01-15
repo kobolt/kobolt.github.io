@@ -1,0 +1,974 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>GR-KURUMI Writer for Linux</h1>
+      <p>
+        On a recent trip to Japan I picked up a microcontroller reference board known as <a href="http://gadget.renesas.com/en/product/kemuri.html">GR-KURUMI</a>, which uses the Renesas RL78/G13 microcontroller.<br />
+        <br />
+        I was surprised to see that no flashing tool for Linux was available from the supplier. Well, I later discovered <a href="https://github.com/msalau/rl78flash">this GitHub project</a> which can do the job. But it was already too late and I had already made my own tool by reverse engineering the serial protocol used by the Windows flashing tool.<br />
+        <br />
+        Here are the results, the tool is made specifically for and only tested with the GR-KURUMI board:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+
+
+
+#define BLOCK_SIZE 1024 /* In bytes. */
+
+typedef enum {
+  RL78_COMMAND_RESET             = 0x00,
+  RL78_COMMAND_VERIFY            = 0x13,
+  RL78_COMMAND_BLOCK_ERASE       = 0x22,
+  RL78_COMMAND_BLOCK_BLANK_CHECK = 0x32,
+  RL78_COMMAND_PROGRAMMING       = 0x40,
+  RL78_COMMAND_BAUD_RATE_SET     = 0x9a,
+  RL78_COMMAND_SECURITY_SET      = 0xa0,
+  RL78_COMMAND_SECURITY_GET      = 0xa1,
+  RL78_COMMAND_SECURITY_RELEASE  = 0xa2,
+  RL78_COMMAND_CHECKSUM          = 0xb0,
+  RL78_COMMAND_SILICON_SIGNATURE = 0xc0,
+} RL78_COMMAND;
+
+typedef enum {
+  RL78_STATUS_COMMAND_NUMBER_ERROR = 0x04,
+  RL78_STATUS_PARAMETER_ERROR      = 0x05,
+  RL78_STATUS_NORMAL_ACK           = 0x06,
+  RL78_STATUS_CHECKSUM_ERROR       = 0x07,
+  RL78_STATUS_VERIFY_ERROR         = 0x0f,
+  RL78_STATUS_PROTECT_ERROR        = 0x10,
+  RL78_STATUS_NEGATIVE_ACK         = 0x15,
+  RL78_STATUS_ERASE_ERROR          = 0x1a,
+  RL78_STATUS_IVERIFY_BLANK_ERROR  = 0x1b,
+  RL78_STATUS_WRITE_ERROR          = 0x1c,
+} RL78_STATUS;
+
+
+
+static int print_traffic = 0;
+static int print_details = 1;
+
+
+
+static char *rl78_status_text(int status)
+{
+  switch (status) {
+  case RL78_STATUS_COMMAND_NUMBER_ERROR:
+    return &#34;Command number error&#34;;
+  case RL78_STATUS_PARAMETER_ERROR:
+    return &#34;Parameter error&#34;;
+  case RL78_STATUS_NORMAL_ACK:
+    return &#34;Normal acknowledgement&#34;;
+  case RL78_STATUS_CHECKSUM_ERROR:
+    return &#34;Checksum error&#34;;
+  case RL78_STATUS_VERIFY_ERROR:
+    return &#34;Verify error&#34;;
+  case RL78_STATUS_PROTECT_ERROR:
+    return &#34;Protect error&#34;;
+  case RL78_STATUS_NEGATIVE_ACK:
+    return &#34;Negative acknowledgement&#34;;
+  case RL78_STATUS_ERASE_ERROR:
+    return &#34;Erase error&#34;;
+  case RL78_STATUS_IVERIFY_BLANK_ERROR:
+    return &#34;Internal verify error or blank check error&#34;;
+  case RL78_STATUS_WRITE_ERROR:
+    return &#34;Write error&#34;;
+  default:
+    return &#34;Unknown error&#34;;
+  }
+}
+
+
+
+static int generate_checksum(unsigned char *data, int data_len)
+{
+  int i, checksum;
+
+  if (data_len == 0) {
+    data_len = 0x100;
+  }
+
+  checksum = (0 - data_len);
+  for (i = 0; i &lt; data_len; i++) {
+    checksum -= data[i];
+  }
+
+  return checksum &amp; 0xff;
+}
+
+
+
+static int frame_is_complete(unsigned char *frame, int frame_len)
+{
+  int internal_frame_len;
+
+  if (frame_len &lt; 5) {
+    return 0;
+  }
+
+  if (frame[1] == 0) {
+    internal_frame_len = 0x100;
+  } else {
+    internal_frame_len = frame[1];
+  }
+
+  if (internal_frame_len == (frame_len - 4)) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
+
+static int frame_send(int tty_fd, unsigned char *frame, int frame_len)
+{
+  int result, i;
+
+  if (print_traffic) {
+    printf(&#34;&gt;&gt;&gt; &#34;);
+    for (i = 0; i &lt; frame_len; i++) {
+      printf(&#34;%02x &#34;, frame[i]);
+    }
+    printf(&#34;&#92;n&#34;);
+  }
+
+  result = write(tty_fd, frame, frame_len);
+  if (result == -1) {
+    fprintf(stderr, &#34;write() failed: %s&#92;n&#34;, strerror(errno));
+    return -1;
+  }
+
+  return frame_len;
+}
+
+
+
+static int frame_recv(int tty_fd, unsigned char *frame, int frame_len_max)
+{
+  int result, frame_len, checksum;
+  unsigned char byte;
+
+  if (print_traffic)
+    printf(&#34;&lt;&lt;&lt; &#34;);
+
+  frame_len = 0;
+  while (1) {
+    result = read(tty_fd, &amp;byte, 1);
+    if (result == -1) {
+      if (errno != EAGAIN &amp;&amp; errno != EWOULDBLOCK) {
+        fprintf(stderr, &#34;read() failed: %s&#92;n&#34;, strerror(errno));
+        return -1;
+      }
+
+    } else if (result &gt; 0) {
+      if (print_traffic)
+        printf(&#34;%02x &#34;, byte);
+
+      if (frame_len == frame_len_max) {
+        fprintf(stderr, &#34;frame_recv() failed: Overflow&#92;n&#34;);
+        return -1;
+      }
+
+      frame[frame_len++] = byte;
+
+      if (frame_is_complete(frame, frame_len)) {
+        break;
+      }
+    }
+
+    usleep(10);
+  }
+
+  if (print_traffic)
+    printf(&#34;&#92;n&#34;);
+
+  checksum = generate_checksum(&amp;frame[2], frame[1]);
+  if (checksum != frame[frame_len - 2]) {
+    fprintf(stderr, &#34;frame_recv() failed: Checksum incorrect&#92;n&#34;);
+    return -1;
+  }
+
+  return frame_len;
+}
+
+
+
+static int command_baud_rate_set(int tty_fd)
+{
+  int cmd_frame_len;
+  unsigned char cmd_frame[8];
+  unsigned char status_frame[8];
+
+  cmd_frame_len = 0;
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Frame Header */
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Information Length */
+  cmd_frame[cmd_frame_len++] = RL78_COMMAND_BAUD_RATE_SET;
+  cmd_frame[cmd_frame_len++] = 0x00; /* Baud rate setting = 115200 */
+  cmd_frame[cmd_frame_len++] = 0x21; /* Voltage setting = 3.3V */
+  cmd_frame[cmd_frame_len++] = generate_checksum(&amp;cmd_frame[2], cmd_frame[1]);
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Frame Footer */
+
+  if (frame_send(tty_fd, cmd_frame, cmd_frame_len) &lt; 0) {
+    return -1;
+  }
+
+  if (frame_recv(tty_fd, status_frame, sizeof(status_frame)) &lt; 0) {
+    return -1;
+  }
+
+  if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+    fprintf(stderr, &#34;command_baud_rate_set() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+
+  if (print_details) {
+    printf(&#34;Frequency: %d MHz&#92;n&#34;, status_frame[3]);
+    printf(&#34;Programming mode: %s&#92;n&#34;, status_frame[4] ? &#34;Wide-voltage&#34; : &#34;Full-speed&#34;);
+  }
+
+  return 0;
+}
+
+
+
+static int command_reset(int tty_fd)
+{
+  int cmd_frame_len;
+  unsigned char cmd_frame[8];
+  unsigned char status_frame[8];
+
+  cmd_frame_len = 0;
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Frame Header */
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Information Length */
+  cmd_frame[cmd_frame_len++] = RL78_COMMAND_RESET;
+  cmd_frame[cmd_frame_len++] = generate_checksum(&amp;cmd_frame[2], cmd_frame[1]);
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Frame Footer */
+
+  if (frame_send(tty_fd, cmd_frame, cmd_frame_len) &lt; 0) {
+    return -1;
+  }
+
+  if (frame_recv(tty_fd, status_frame, sizeof(status_frame)) &lt; 0) {
+    return -1;
+  }
+
+  if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+    fprintf(stderr, &#34;command_reset() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+
+  return 0;
+}
+
+
+
+static int command_silicon_signature(int tty_fd)
+{
+  int cmd_frame_len, status_frame_len, data_frame_len;
+  unsigned char cmd_frame[8];
+  unsigned char status_frame[8];
+  unsigned char data_frame[32];
+
+  cmd_frame_len = 0;
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Frame Header */
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Information Length */
+  cmd_frame[cmd_frame_len++] = RL78_COMMAND_SILICON_SIGNATURE;
+  cmd_frame[cmd_frame_len++] = generate_checksum(&amp;cmd_frame[2], cmd_frame[1]);
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Frame Footer */
+
+  if (frame_send(tty_fd, cmd_frame, cmd_frame_len) &lt; 0) {
+    return -1;
+  }
+
+  if ((status_frame_len = frame_recv(tty_fd, status_frame, sizeof(status_frame))) &lt; 0) {
+    return -1;
+  }
+
+  if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+    fprintf(stderr, &#34;command_silicon_signature() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+
+  if ((data_frame_len = frame_recv(tty_fd, data_frame, sizeof(data_frame))) &lt; 0) {
+    return -1;
+  }
+
+  if (print_details) {
+    printf(&#34;Device code: 0x%02x 0x%02x 0x%02x&#92;n&#34;,
+      data_frame[2], data_frame[3], data_frame[4]);
+    printf(&#34;Device name: %c%c%c%c%c%c%c%c%c%c&#92;n&#34;,
+      data_frame[5], data_frame[6], data_frame[7], data_frame[8], data_frame[9],
+      data_frame[10], data_frame[11], data_frame[12], data_frame[13], data_frame[14]);
+    printf(&#34;Code flash ROM last address: 0x%02x%02x%02x&#92;n&#34;,
+      data_frame[17], data_frame[16], data_frame[15]);
+    printf(&#34;Data flash ROM last address: 0x%02x%02x%02x&#92;n&#34;,
+      data_frame[20], data_frame[19], data_frame[18]);
+    printf(&#34;Firmware version: %d.%d%d&#92;n&#34;,
+      data_frame[21], data_frame[22], data_frame[23]);
+  }
+
+  return 0;
+}
+
+
+
+static int command_block_erase(int tty_fd, int block_no)
+{
+  int cmd_frame_len, status_frame_len, start_address;
+  unsigned char cmd_frame[16];
+  unsigned char status_frame[8];
+
+  start_address = block_no * BLOCK_SIZE;
+
+  cmd_frame_len = 0;
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Frame Header */
+  cmd_frame[cmd_frame_len++] = 0x04; /* Command Information Length */
+  cmd_frame[cmd_frame_len++] = RL78_COMMAND_BLOCK_ERASE;
+  cmd_frame[cmd_frame_len++] = (start_address &amp; 0xff);         /* Start Address, Low */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 8) &amp; 0xff);  /* Start Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 16) &amp; 0xff); /* Start Address, High */
+  cmd_frame[cmd_frame_len++] = generate_checksum(&amp;cmd_frame[2], cmd_frame[1]);
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Frame Footer */
+
+  if (frame_send(tty_fd, cmd_frame, cmd_frame_len) &lt; 0) {
+    return -1;
+  }
+
+  if ((status_frame_len = frame_recv(tty_fd, status_frame, sizeof(status_frame))) &lt; 0) {
+    return -1;
+  }
+
+  if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+    fprintf(stderr, &#34;command_block_erase() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+
+  return 0;
+}
+
+
+
+static int command_programming(int tty_fd, int first_block_no, unsigned char *block_data, int no_of_blocks)
+{
+  int cmd_frame_len, status_frame_len, data_frame_len, start_address, end_address, offset;
+  unsigned char cmd_frame[16];
+  unsigned char status_frame[8];
+  unsigned char data_frame[264];
+
+  start_address = first_block_no * BLOCK_SIZE;
+  end_address = ((first_block_no + no_of_blocks) * BLOCK_SIZE) - 1;
+
+  cmd_frame_len = 0;
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Frame Header */
+  cmd_frame[cmd_frame_len++] = 0x07; /* Command Information Length */
+  cmd_frame[cmd_frame_len++] = RL78_COMMAND_PROGRAMMING;
+  cmd_frame[cmd_frame_len++] = (start_address &amp; 0xff);         /* Start Address, Low */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 8) &amp; 0xff);  /* Start Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 16) &amp; 0xff); /* Start Address, High */
+  cmd_frame[cmd_frame_len++] = (end_address &amp; 0xff);         /* End Address, Low */
+  cmd_frame[cmd_frame_len++] = ((end_address &gt;&gt; 8) &amp; 0xff);  /* End Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((end_address &gt;&gt; 16) &amp; 0xff); /* End Address, High */
+  cmd_frame[cmd_frame_len++] = generate_checksum(&amp;cmd_frame[2], cmd_frame[1]);
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Frame Footer */
+
+  if (frame_send(tty_fd, cmd_frame, cmd_frame_len) &lt; 0) {
+    return -1;
+  }
+
+  if (frame_recv(tty_fd, status_frame, sizeof(status_frame)) &lt; 0) {
+    return -1;
+  }
+
+  if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+    fprintf(stderr, &#34;command_programming() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+
+  for (offset = 0; offset &lt; (no_of_blocks * BLOCK_SIZE); offset += 256) {
+
+    data_frame_len = 0;
+    data_frame[data_frame_len++] = 0x02; /* Data Frame Header */
+    data_frame[data_frame_len++] = 0x00; /* Data Length, Always 0x00 = 256 Bytes */
+    memcpy(&amp;data_frame[2], &amp;block_data[offset], 256);
+    data_frame_len += 256;
+    data_frame[data_frame_len++] = generate_checksum(&amp;data_frame[2], data_frame[1]);
+
+    if ((offset + 256) &gt;= (no_of_blocks * BLOCK_SIZE)) {
+      data_frame[data_frame_len++] = 0x03; /* Data Frame Footer, End of Data */
+    } else {
+      data_frame[data_frame_len++] = 0x17; /* Data Frame Footer, More To Be Sent */
+    }
+
+    if (frame_send(tty_fd, data_frame, data_frame_len) &lt; 0) {
+      return -1;
+    }
+
+    if ((status_frame_len = frame_recv(tty_fd, status_frame, sizeof(status_frame))) &lt; 0) {
+      return -1;
+    }
+
+    if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+      fprintf(stderr, &#34;command_programming() failed: %s (0x%02x)&#92;n&#34;,
+        rl78_status_text(status_frame[2]), status_frame[2]);
+      return -1;
+    }
+  }
+
+  if ((status_frame_len = frame_recv(tty_fd, status_frame, sizeof(status_frame))) &lt; 0) {
+    return -1;
+  }
+
+  if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+    fprintf(stderr, &#34;command_programming() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+
+  return 0;
+}
+
+
+
+static int command_checksum(int tty_fd, int first_block_no, int no_of_blocks)
+{
+  int cmd_frame_len, status_frame_len, data_frame_len, start_address, end_address;
+  unsigned char cmd_frame[16];
+  unsigned char status_frame[8];
+  unsigned char data_frame[8];
+
+  start_address = first_block_no * BLOCK_SIZE;
+  end_address = ((first_block_no + no_of_blocks) * BLOCK_SIZE) - 1;
+
+  cmd_frame_len = 0;
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Frame Header */
+  cmd_frame[cmd_frame_len++] = 0x07; /* Command Information Length */
+  cmd_frame[cmd_frame_len++] = RL78_COMMAND_CHECKSUM;
+  cmd_frame[cmd_frame_len++] = (start_address &amp; 0xff);         /* Start Address, Low */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 8) &amp; 0xff);  /* Start Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 16) &amp; 0xff); /* Start Address, High */
+  cmd_frame[cmd_frame_len++] = (end_address &amp; 0xff);         /* End Address, Low */
+  cmd_frame[cmd_frame_len++] = ((end_address &gt;&gt; 8) &amp; 0xff);  /* End Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((end_address &gt;&gt; 16) &amp; 0xff); /* End Address, High */
+  cmd_frame[cmd_frame_len++] = generate_checksum(&amp;cmd_frame[2], cmd_frame[1]);
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Frame Footer */
+
+  if (frame_send(tty_fd, cmd_frame, cmd_frame_len) &lt; 0) {
+    return -1;
+  }
+
+  if ((status_frame_len = frame_recv(tty_fd, status_frame, sizeof(status_frame))) &lt; 0) {
+    return -1;
+  }
+
+  if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+    fprintf(stderr, &#34;command_checksum() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+
+  if ((data_frame_len = frame_recv(tty_fd, data_frame, sizeof(data_frame))) &lt; 0) {
+    return -1;
+  }
+
+  return data_frame[2] + (data_frame[3] * 0x100);
+}
+
+
+
+static int command_verify(int tty_fd, int first_block_no, unsigned char *block_data, int no_of_blocks)
+{
+  int cmd_frame_len, status_frame_len, data_frame_len, start_address, end_address, offset;
+  unsigned char cmd_frame[16];
+  unsigned char status_frame[8];
+  unsigned char data_frame[264];
+
+  start_address = first_block_no * BLOCK_SIZE;
+  end_address = ((first_block_no + no_of_blocks) * BLOCK_SIZE) - 1;
+
+  cmd_frame_len = 0;
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Frame Header */
+  cmd_frame[cmd_frame_len++] = 0x07; /* Command Information Length */
+  cmd_frame[cmd_frame_len++] = RL78_COMMAND_VERIFY;
+  cmd_frame[cmd_frame_len++] = (start_address &amp; 0xff);         /* Start Address, Low */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 8) &amp; 0xff);  /* Start Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 16) &amp; 0xff); /* Start Address, High */
+  cmd_frame[cmd_frame_len++] = (end_address &amp; 0xff);         /* End Address, Low */
+  cmd_frame[cmd_frame_len++] = ((end_address &gt;&gt; 8) &amp; 0xff);  /* End Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((end_address &gt;&gt; 16) &amp; 0xff); /* End Address, High */
+  cmd_frame[cmd_frame_len++] = generate_checksum(&amp;cmd_frame[2], cmd_frame[1]);
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Frame Footer */
+
+  if (frame_send(tty_fd, cmd_frame, cmd_frame_len) &lt; 0) {
+    return -1;
+  }
+
+  if (frame_recv(tty_fd, status_frame, sizeof(status_frame)) &lt; 0) {
+    return -1;
+  }
+
+  if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+    fprintf(stderr, &#34;command_verify() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+
+  for (offset = 0; offset &lt; (no_of_blocks * BLOCK_SIZE); offset += 256) {
+
+    data_frame_len = 0;
+    data_frame[data_frame_len++] = 0x02; /* Data Frame Header */
+    data_frame[data_frame_len++] = 0x00; /* Data Length, Always 0x00 = 256 Bytes */
+    memcpy(&amp;data_frame[2], &amp;block_data[offset], 256);
+    data_frame_len += 256;
+    data_frame[data_frame_len++] = generate_checksum(&amp;data_frame[2], data_frame[1]);
+
+    if ((offset + 256) &gt;= (no_of_blocks * BLOCK_SIZE)) {
+      data_frame[data_frame_len++] = 0x03; /* Data Frame Footer, End of Data */
+    } else {
+      data_frame[data_frame_len++] = 0x17; /* Data Frame Footer, More To Be Sent */
+    }
+
+    if (frame_send(tty_fd, data_frame, data_frame_len) &lt; 0) {
+      return -1;
+    }
+
+    if ((status_frame_len = frame_recv(tty_fd, status_frame, sizeof(status_frame))) &lt; 0) {
+      return -1;
+    }
+
+    if (status_frame[2] != RL78_STATUS_NORMAL_ACK) {
+      fprintf(stderr, &#34;command_verify() failed: %s (0x%02x)&#92;n&#34;,
+        rl78_status_text(status_frame[2]), status_frame[2]);
+      return -1;
+    }
+    if (status_frame[3] != RL78_STATUS_NORMAL_ACK) {
+      fprintf(stderr, &#34;command_verify() failed: %s (0x%02x)&#92;n&#34;,
+        rl78_status_text(status_frame[3]), status_frame[3]);
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
+
+
+static int command_block_blank_check(int tty_fd, int first_block_no, int no_of_blocks)
+{
+  int cmd_frame_len, start_address, end_address;
+  unsigned char cmd_frame[16];
+  unsigned char status_frame[8];
+
+  start_address = first_block_no * BLOCK_SIZE;
+  end_address = ((first_block_no + no_of_blocks) * BLOCK_SIZE) - 1;
+
+  cmd_frame_len = 0;
+  cmd_frame[cmd_frame_len++] = 0x01; /* Command Frame Header */
+  cmd_frame[cmd_frame_len++] = 0x08; /* Command Information Length */
+  cmd_frame[cmd_frame_len++] = RL78_COMMAND_BLOCK_BLANK_CHECK;
+  cmd_frame[cmd_frame_len++] = (start_address &amp; 0xff);         /* Start Address, Low */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 8) &amp; 0xff);  /* Start Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((start_address &gt;&gt; 16) &amp; 0xff); /* Start Address, High */
+  cmd_frame[cmd_frame_len++] = (end_address &amp; 0xff);         /* End Address, Low */
+  cmd_frame[cmd_frame_len++] = ((end_address &gt;&gt; 8) &amp; 0xff);  /* End Address, Middle */
+  cmd_frame[cmd_frame_len++] = ((end_address &gt;&gt; 16) &amp; 0xff); /* End Address, High */
+  cmd_frame[cmd_frame_len++] = 0x00; /* Specified Block */
+  cmd_frame[cmd_frame_len++] = generate_checksum(&amp;cmd_frame[2], cmd_frame[1]);
+  cmd_frame[cmd_frame_len++] = 0x03; /* Command Frame Footer */
+
+  if (frame_send(tty_fd, cmd_frame, cmd_frame_len) &lt; 0) {
+    return -1;
+  }
+
+  if (frame_recv(tty_fd, status_frame, sizeof(status_frame)) &lt; 0) {
+    return -1;
+  }
+
+  switch (status_frame[2]) {
+  case RL78_STATUS_NORMAL_ACK:
+    return 0; /* Blocks are free. */
+  case RL78_STATUS_IVERIFY_BLANK_ERROR:
+    return 1; /* Blocks are occupied. */
+  default:
+    fprintf(stderr, &#34;command_block_blank_check() failed: %s (0x%02x)&#92;n&#34;,
+      rl78_status_text(status_frame[2]), status_frame[2]);
+    return -1;
+  }
+}
+
+
+
+static int programmer_init(char *tty_device)
+{
+  int tty_fd, result;
+  struct termios tio;
+  unsigned int bits;
+
+  tty_fd = open(tty_device, O_RDWR | O_NOCTTY | O_NONBLOCK);
+  if (tty_fd == -1) {
+    fprintf(stderr, &#34;open(%s) failed: %s&#92;n&#34;, tty_device, strerror(errno));
+    return -1;
+  }
+ 
+  memset(&amp;tio, &#39;&#92;0&#39;, sizeof(tio));
+  tio.c_cflag = B115200 | CS8 | CSTOPB;
+  tio.c_iflag = IGNPAR;
+  tio.c_oflag = 0;
+  tio.c_lflag = 0;
+  result = tcsetattr(tty_fd, TCSANOW, &amp;tio);
+  if (result == -1) {
+    fprintf(stderr, &#34;tcsetattr() failed: %s&#92;n&#34;, strerror(errno));
+    close(tty_fd);
+    return -1;
+  }
+
+  result = ioctl(tty_fd, TIOCMGET, &amp;bits);
+  if (result == -1) {
+    fprintf(stderr, &#34;ioctl() failed: %s&#92;n&#34;, strerror(errno));
+    close(tty_fd);
+    return -1;
+  }
+
+  /* Set DTR (Reset Signal). */
+  bits |= TIOCM_DTR;
+  result = ioctl(tty_fd, TIOCMSET, &amp;bits);
+  if (result == -1) {
+    fprintf(stderr, &#34;ioctl() failed: %s&#92;n&#34;, strerror(errno));
+    close(tty_fd);
+    return -1;
+  }
+
+  /* Turn on break. */
+  result = ioctl(tty_fd, TIOCSBRK, NULL);
+  if (result == -1) {
+    fprintf(stderr, &#34;ioctl() failed: %s&#92;n&#34;, strerror(errno));
+    close(tty_fd);
+    return -1;
+  }
+
+  tcflush(tty_fd, TCIOFLUSH);
+
+  /* Clear DTR (Reset Signal). */
+  bits &amp;= (~TIOCM_DTR);
+  result = ioctl(tty_fd, TIOCMSET, &amp;bits);
+  if (result == -1) {
+    fprintf(stderr, &#34;ioctl() failed: %s&#92;n&#34;, strerror(errno));
+    close(tty_fd);
+    return -1;
+  }
+
+  usleep(1000);
+
+  /* Turn off break. */
+  result = ioctl(tty_fd, TIOCCBRK, NULL);
+  if (result == -1) {
+    fprintf(stderr, &#34;ioctl() failed: %s&#92;n&#34;, strerror(errno));
+    close(tty_fd);
+    return -1;
+  }
+
+  tcflush(tty_fd, TCIOFLUSH);
+
+  usleep(1000);
+
+  /* Setup Two-wire UART mode. */
+  result = write(tty_fd, &#34;&#92;x00&#34;, 1);
+  if (result == -1) {
+    fprintf(stderr, &#34;write() failed: %s&#92;n&#34;, strerror(errno));
+    close(tty_fd);
+    return -1;
+  } else if (result == 0) {
+    fprintf(stderr, &#34;write() failed: Nothing written&#92;n&#34;);
+    close(tty_fd);
+    return -1;
+  }
+
+  usleep(1000);
+
+  tcflush(tty_fd, TCIOFLUSH);
+
+  return tty_fd;
+}
+
+
+
+static void programmer_shutdown(int tty_fd)
+{
+  int result;
+  unsigned int bits;
+
+  result = ioctl(tty_fd, TIOCMGET, &amp;bits);
+  if (result == -1) {
+    fprintf(stderr, &#34;ioctl() failed: %s&#92;n&#34;, strerror(errno));
+  }
+
+  /* Set DTR (Reset Signal). */
+  bits |= TIOCM_DTR;
+  result = ioctl(tty_fd, TIOCMSET, &amp;bits);
+  if (result == -1) {
+    fprintf(stderr, &#34;ioctl() failed: %s&#92;n&#34;, strerror(errno));
+  }
+
+  usleep(1000);
+
+  /* Clear DTR (Reset Signal). */
+  bits &amp;= (~TIOCM_DTR);
+  result = ioctl(tty_fd, TIOCMSET, &amp;bits);
+  if (result == -1) {
+    fprintf(stderr, &#34;ioctl() failed: %s&#92;n&#34;, strerror(errno));
+  }
+
+  close(tty_fd);
+}
+
+
+
+static void display_help(char *progname)
+{
+  fprintf(stderr, &#34;Usage: %s &lt;options&gt;&#92;n&#34;, progname);
+  fprintf(stderr, &#34;Options:&#92;n&#34;
+     &#34;  -h          Display this help and exit.&#92;n&#34;
+     &#34;  -t          Print TTY/serial traffic debugging info.&#92;n&#34;
+     &#34;  -q          Quiet mode, do not print anything.&#92;n&#34;
+     &#34;  -v          Verification mode, do not erase and program.&#92;n&#34;
+     &#34;  -d DEVICE   Use TTY DEVICE.&#92;n&#34;
+     &#34;  -f FILE     Use FILE for programming or verification.&#92;n&#34;
+     &#34;  -o OFFSET   Program or verify at block OFFSET instead of 0.&#92;n&#34;
+     &#34;&#92;n&#34;);
+}
+
+
+
+int main(int argc, char *argv[])
+{
+  int c, i, tty_fd, bin_len, block_no, checksum_remote, checksum_local, result;
+  FILE *bin_fh;
+  unsigned char bin_data[BLOCK_SIZE];
+
+  char *tty_device = NULL;
+  char *bin_file   = NULL;
+  int mode_verify    = 0;
+  int block_offset   = 0;
+
+  while ((c = getopt(argc, argv, &#34;htqvd:f:o:&#34;)) != -1) {
+    switch (c) {
+    case &#39;h&#39;:
+      display_help(argv[0]);
+      return EXIT_SUCCESS;
+
+    case &#39;t&#39;:
+      print_traffic = 1;
+      break;
+
+    case &#39;q&#39;:
+      print_traffic = 0;
+      print_details = 0;
+      break;
+
+    case &#39;v&#39;:
+      mode_verify = 1;
+      break;
+
+    case &#39;d&#39;:
+      tty_device = optarg;
+      break;
+
+    case &#39;f&#39;:
+      bin_file = optarg;
+      break;
+
+    case &#39;o&#39;:
+      block_offset = atoi(optarg);
+      break;
+
+    case &#39;?&#39;:
+    default:
+      display_help(argv[0]);
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (tty_device == NULL) {
+    fprintf(stderr, &#34;Please specify a TTY!&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  if (bin_file == NULL) {
+    fprintf(stderr, &#34;Please specify a file!&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+ 
+  tty_fd = programmer_init(tty_device);
+  if (tty_fd == -1) {
+    return EXIT_FAILURE;
+  }
+
+  if (command_baud_rate_set(tty_fd) != 0) {
+    programmer_shutdown(tty_fd);
+    return EXIT_FAILURE;
+  }
+
+  if (command_reset(tty_fd) != 0) {
+    programmer_shutdown(tty_fd);
+    return EXIT_FAILURE;
+  }
+
+  if (command_silicon_signature(tty_fd) != 0) {
+    programmer_shutdown(tty_fd);
+    return EXIT_FAILURE;
+  }
+
+  bin_fh = fopen(bin_file, &#34;rb&#34;);
+  if (bin_fh == NULL) {
+    fprintf(stderr, &#34;fopen(%s) failed: %s&#92;n&#34;, bin_file, strerror(errno));
+    programmer_shutdown(tty_fd);
+    return EXIT_FAILURE;
+  }
+
+  checksum_local = 0;
+  block_no = block_offset;
+  while ((bin_len = fread(bin_data, sizeof(unsigned char), BLOCK_SIZE, bin_fh)) &gt; 0) {
+    if (print_details) {
+      if (mode_verify == 0) {
+        printf(&#34;Programming Block #%d (0x%06x -&gt; 0x%06x)&#92;n&#34;,
+          block_no, (block_no * BLOCK_SIZE), (((block_no + 1) * BLOCK_SIZE) - 1));
+      } else {
+        printf(&#34;Verifying Block #%d (0x%06x -&gt; 0x%06x)&#92;n&#34;,
+          block_no, (block_no * BLOCK_SIZE), (((block_no + 1) * BLOCK_SIZE) - 1));
+      }
+    }
+
+    /* Pad remaining data with 0xff */
+    while (bin_len &lt; BLOCK_SIZE) {
+      bin_data[bin_len++] = 0xff;
+    }
+
+    for (i = 0; i &lt; BLOCK_SIZE; i++) {
+      checksum_local -= bin_data[i];
+    }
+
+    if (mode_verify == 0) {
+      result = command_block_blank_check(tty_fd, block_no, 1);
+      if (result == -1) {
+        fclose(bin_fh);
+        programmer_shutdown(tty_fd);
+        return EXIT_FAILURE;
+
+      } else if (result == 1) {
+        if (command_block_erase(tty_fd, block_no) != 0) {
+          fclose(bin_fh);
+          programmer_shutdown(tty_fd);
+          return EXIT_FAILURE;
+        }
+      }
+
+      if (command_programming(tty_fd, block_no, bin_data, 1) != 0) {
+        fclose(bin_fh);
+        programmer_shutdown(tty_fd);
+        return EXIT_FAILURE;
+      }
+    }
+    
+    if (command_verify(tty_fd, block_no, bin_data, 1) != 0) {
+      fclose(bin_fh);
+      programmer_shutdown(tty_fd);
+      return EXIT_FAILURE;
+    }
+
+    block_no += 1;
+  }
+  fclose(bin_fh);
+
+  checksum_local = checksum_local &amp; 0xffff;
+  checksum_remote = command_checksum(tty_fd, block_offset, (block_no - block_offset));
+
+  if (print_details) {
+    printf(&#34;Checksum Local : 0x%04x&#92;n&#34;, checksum_local);
+    printf(&#34;Checksum Remote: 0x%04x&#92;n&#34;, checksum_remote);
+  }
+
+  programmer_shutdown(tty_fd);
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        20/08-2017, 
+        <a href="article-122.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

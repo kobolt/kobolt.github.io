@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>RPN FPU Calculator</h1>
+      <p>
+        Just for fun, I wrote a RPN (<a href="http://en.wikipedia.org/wiki/Reverse_Polish_notation">Reverse Polish Notation</a>) calculator in x86 assembler. It uses the FPU (<a href="http://en.wikipedia.org/wiki/Floating-point_unit">Floating-Point Unit</a>) for all the calculations, and some common C-library calls for input/output.<br />
+        <br />
+        It only supports the basic arithmetic operations like addition, subtraction, multiplication and division, and only operates on integers. I have tried to emulate the basic behaviour of the common <a href="http://www.gnu.org/software/bc/manual/dc-1.05/dc.html">dc</a> Unix command-line RPN calculator, so it will print the result when getting a &#39;p&#39;, and quit on a &#39;q&#39;. Also be aware that it expects each operator or operand on a single line by itself.<br />
+        <br />
+        It is written using AT&amp;T syntax and will probably only assemble/link on Linux x86/i386 platforms. Check out the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+/* 
+ * Assembling and linking commands:
+ * as -o fpu-rpn.o fpu-rpn.s
+ * ld -dynamic-linker /lib/ld-linux.so.2 -lc -o fpu-rpn fpu-rpn.o
+*/
+
+
+.section .data
+output_format:
+  .asciz &#34;%d&#92;n&#34;
+error_input:
+  .asciz &#34;Error: Unknown input.&#92;n&#34;
+error_stack:
+  .asciz &#34;Error: Stack empty.&#92;n&#34;
+
+
+.section .bss
+  .lcomm input, 16
+  .lcomm buffer, 4
+  .lcomm status, 2
+
+
+.section .text
+.globl _start
+_start:
+  finit
+
+read_input:
+  pushl stdin
+  pushl $16
+  pushl $input
+  call fgets
+  addl $12, %esp
+
+  /* End if EOF is reached (fgets returns NULL). */
+  cmpl $0, %eax
+  je end
+
+  /* Extract first character of returned input string. */
+  movl (%eax), %ebx
+
+  /* Clear any errors on the FPU each round. */
+  fclex
+
+  /* Switch-case like check on the input. */
+  cmpb $0x71, %bl # &#39;q&#39;
+  je end
+  cmpb $0x70, %bl # &#39;p&#39;
+  je display_result
+  cmpb $0x2B, %bl # &#39;+&#39;
+  je addition
+  cmpb $0x2D, %bl # &#39;-&#39;
+  je subtraction
+  cmpb $0x2A, %bl # &#39;*&#39;
+  je multiplication
+  cmpb $0x2F, %bl # &#39;/&#39;
+  je division
+
+  /* Check if between 0-9 to determine if it&#39;s a number. */
+  cmpb $0x30, %bl # &#39;0&#39;
+  jl input_error
+  cmpb $0x39, %bl # &#39;9&#39;
+  jg input_error
+
+  /* Convert number from string and push onto FPU&#39;s stack. */
+  pushl %eax
+  call atoi
+  addl $4, %esp
+  movl %eax, buffer
+  filds buffer
+  jmp read_input
+
+input_error:
+  push stdout
+  push $error_input
+  call fputs
+  addl $8, %esp
+  jmp read_input
+
+
+addition:
+  faddp
+  jmp check_stack
+
+subtraction:
+  fsubrp
+  jmp check_stack
+
+multiplication:
+  fmulp
+  jmp check_stack
+
+division:
+  fdivrp
+  jmp check_stack
+
+check_stack:
+  fstsw status
+  testw $0b1000000, status /* Test for &#34;Stack Fault&#34; flag. */
+  jz read_input
+
+  fdecstp /* Decrement stack to avoid displaying the fake result. */
+  push stdout
+  push $error_stack
+  call fputs
+  addl $8, %esp
+  jmp read_input
+
+
+display_result:
+  /* Display the value at the top of the FPU&#39;s stack. */
+  fistpl buffer
+  fstsw status
+  testw $0b1000000, status
+  jnz read_input /* Just do the check again to receive error messsage. */
+
+  pushl buffer
+  pushl $output_format
+  call printf
+  addl $8, %esp
+  jmp read_input
+
+
+end:
+  /* Tell the Linux kernel to end this process. */
+  movl $1, %eax # exit()
+  movl $0, %ebx
+  int $0x80
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        13/02-2009, 
+        <a href="article-30.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>GR-KURUMI Makefiles for Linux</h1>
+      <p>
+        Here&#39;s some follow-up information on the <a href="http://gadget.renesas.com/en/product/kemuri.html">GR-KURUMI</a> microcontroller reference board mentioned in the <a href="article-122.html">previous article</a>.<br />
+        <br />
+        On the official Gadget Renesas pages you can find an online editor and compiler refered to as the &#34;Web Compiler&#34;, but in case you want to build the sources on your own Linux box then some more work is required.<br />
+        <br />
+        First of all, download and build the RL78 GCC toolchain. Follow <a href="https://gcc-renesas.com/wiki/index.php?title=Building_the_RL78_Toolchain_under_Ubuntu_14.04">this advice</a>.<br />
+        <br />
+        Second, you will need the linker script, crt0 and header files which are specific for the RL78. I got this from the <a href="http://gadget.renesas.com/en/index.html">Gadget Renesas Web Compiler</a> by downloading an example project.<br />
+        <br />
+        Finally, here is an example of a simplified Makefile, based around compiling the source file &#34;led.c&#34; into the binary file &#34;led.bin&#34;, which can be flashed:<br />
+      </p>
+        <div class="box">
+          <pre>
+TOOL_PATH:=/path/to/RL78-Toolchain/prefix/bin
+
+CFLAGS = -c -Os -ffunction-sections -fdata-sections -I. -Icommon
+LDFLAGS = -Wl,--gc-sections -nostartfiles
+
+led.bin: led.elf
+	$(TOOL_PATH)/rl78-elf-objcopy -O binary $^ $@
+
+led.elf: led.o crt0.o
+	$(TOOL_PATH)/rl78-elf-gcc $(LDFLAGS) -T common/rl78_R5F100GJAFB.ld $^ -o $@
+
+crt0.o: common/crt0.S
+	$(TOOL_PATH)/rl78-elf-gcc $(CFLAGS) $^ -o $@
+
+led.o: led.c
+	$(TOOL_PATH)/rl78-elf-gcc $(CFLAGS) $^ -o $@
+
+.PHONY: clean
+clean:
+	rm -f *.o *.elf *.bin
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is the led.c example, which I have mostly just <a href="https://github.com/msalau/rl78-samples-R5F100SLAFB/blob/master/01-it/main.c">copied from the Internet</a> and not written myself:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;iodefine.h&gt;
+#include &lt;iodefine_ext.h&gt;
+
+#define LED_CYAN_PIN    PM1.BIT.bit7
+#define LED_MAGENTA_PIN PM5.BIT.bit1
+#define LED_YELLOW_PIN  PM5.BIT.bit0
+#define LED_CYAN        P1.BIT.bit7
+#define LED_MAGENTA     P5.BIT.bit1
+#define LED_YELLOW      P5.BIT.bit0
+
+__attribute__((interrupt))
+void wdti_handler(void)
+{
+}
+
+__attribute__((interrupt))
+void it_handler(void)
+{   
+    LED_CYAN    ^= 1;
+    LED_MAGENTA = 0;
+    LED_YELLOW  ^= 1;
+}
+
+void main(void)
+{
+  asm(&#34;di&#34;);
+
+  LED_CYAN_PIN    = 0;
+  LED_MAGENTA_PIN = 0;
+  LED_YELLOW_PIN  = 0;
+
+  LED_CYAN    = 0;
+  LED_MAGENTA = 0;
+  LED_YELLOW  = 0;
+
+  /* Setup clocks */                                      
+  CMC.cmc = 0x11U; /* Enable XT1, disable X1 */
+  CSC.csc = 0x80U; /* Start XT1 */
+  CKC.ckc = 0x00U;
+
+  /* Interval timer */
+  OSMC.osmc = 0x80U;  /* Supply fsub to Interval Timer */
+  RTCEN = 1;
+  ITMK  = 1; /* Disable interrupt... */
+  ITPR0 = 0; /* High pri... */
+  ITPR1 = 0;
+  ITMC.itmc = 0x8FFFU; /* 270ms... */
+  ITIF = 0; /* interrupt request flag... */
+  ITMK = 0; /* Enable interrupt... */
+
+  asm(&#34;ei&#34;); /* Enable interrupts */
+
+  for(;;)
+  {
+    asm(&#34;stop&#34;); /* STOP mode. */
+  }
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        23/09-2017, 
+        <a href="article-123.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

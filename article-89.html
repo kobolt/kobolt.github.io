@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Cue Sheet Splitter</h1>
+      <p>
+        Here is a Perl script that reads a <a href="http://en.wikipedia.org/wiki/Cue_sheet_%28computing%29">cue sheet file</a> and attempts to use that to split an associated WAV file.<br />
+        It relies on both the &#34;sox&#34; (Sound eXchange, the Swiss Army knife of audio manipulation) and &#34;flac&#34; (Free Lossless Audio Codec) external tools.<br />
+        <br />
+        I have used it successfully on several sets, take a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/perl -w
+use strict;
+# FLAC to WAV: flac -d *.flac
+
+my $src = shift @ARGV or die &#34;Usage: $0 &lt;big wav file&gt;&#92;n&#34;;
+
+undef $/;
+
+my $last_track = 0;
+my $last_title = 0;
+my $last_artist = 0;
+my $last_ts_min = 0;
+my $last_ts_sec = 0;
+my $last_ts_msec = 0;
+
+while (&lt;&gt;) {
+  while (m/TRACK (&#92;d+) AUDIO.*?TITLE &#34;([^&#34;]*)&#34;.*?PERFORMER &#34;([^&#34;]*)&#34;.*?INDEX &#92;d+ (&#92;d+):(&#92;d+):(&#92;d+)/gs) {
+    my $track = $1;
+    my $title = $2;
+    my $artist = $3;
+    my $ts_min = $4;
+    my $ts_sec = $5;
+    my $ts_msec = $6;
+
+    my $last_msec = ($last_ts_min * 60 * 100) + ($last_ts_sec * 100) + $last_ts_msec;
+    my $msec = ($ts_min * 60 * 100) + ($ts_sec * 100) + $ts_msec;
+    my $diff_total = $msec - $last_msec;
+    my $duration = $diff_total / 100;
+
+    if ($last_track &gt; 0) {
+      system(&#34;sox $src $last_track.wav trim $last_ts_min:$last_ts_sec.$last_ts_msec $duration&#34;);
+      system(&#34;flac --best $last_track.wav&#34;);
+      system(&#34;mv $last_track.flac &#92;&#34;$last_track - $last_artist - $last_title.flac&#92;&#34;&#34;);
+    }
+
+    $last_track = $track;
+    $last_title = $title;
+    $last_artist = $artist;
+    $last_ts_min = $ts_min;
+    $last_ts_sec = $ts_sec;
+    $last_ts_msec = $ts_msec;
+  }
+}
+
+system(&#34;sox $src $last_track.wav trim $last_ts_min:$last_ts_sec.$last_ts_msec&#34;);
+system(&#34;flac --best $last_track.wav&#34;);
+system(&#34;mv $last_track.flac &#92;&#34;$last_track - $last_artist - $last_title.flac&#92;&#34;&#34;);
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/03-2014, 
+        <a href="article-89.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

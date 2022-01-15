@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>LUKS Hidden by FAT32</h1>
+      <p>
+        Here is a trick to hide the existence of an encrypted <a href="https://en.wikipedia.org/wiki/Linux_Unified_Key_Setup">LUKS</a> partition on a disk, by offsetting it into the &#34;data region&#34; of a <a href="https://en.wikipedia.org/wiki/File_Allocation_Table#FAT32">FAT32</a> partition. When the disk is inserted on Windows, it will simply show up as an regular empty drive. Putting data on it when mounted as a FAT32 (e.g. on Windows) will most likely destroy the encrypted information.<br />
+        <br />
+        To find the data region of a FAT32 partition, I have developed this tool based on earlier work on <a href="article-63.html">VBRs</a>:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+
+#pragma pack(1)
+typedef struct vbr_s {
+  uint8_t jump_code[3];
+  char oem_id[8];
+  uint16_t bytes_per_sector;
+  uint8_t sectors_per_cluster;
+  uint16_t reserved_sectors;
+  uint8_t no_of_fats;
+  uint16_t root_entries;
+  uint16_t small_sectors;
+  uint8_t media_descriptor;
+  uint16_t sectors_per_fat;
+  uint16_t sectors_per_track;
+  uint16_t heads;
+  uint32_t hidden_sectors;
+  uint32_t large_sectors;
+  uint8_t physical_drive_number;
+  uint8_t current_head;
+  uint8_t signature;
+  uint32_t id;
+  char volume_label[11];
+  char system_id[8];
+  uint8_t boot_code[448];
+  uint16_t boot_record_signature;
+} vbr_t;
+#pragma pack()
+
+int main(int argc, char *argv[])
+{
+  FILE *fh;
+  int bytes;
+  uint8_t sector[512];
+  vbr_t *vbr;
+
+  int root_dir_sectors;
+  int fat_part;
+  int fat_size;
+  int first_data_sector;
+
+  if (argc != 2) {
+    fprintf(stderr, &#34;Usage: %s &lt;device&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  fh = fopen(argv[1], &#34;rb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;Error: Unable to open device for reading.&#92;n&#34;);
+    return 1;
+  }
+
+  bytes = fread(&amp;sector, sizeof(uint8_t), 512, fh);
+  fclose(fh);
+
+  if (bytes &lt; 512) {
+    fprintf(stderr, &#34;Error: File is less than 512 bytes.&#92;n&#34;);
+    return 1;
+  }
+
+  vbr = (vbr_t *)&amp;sector[0];
+
+  if (vbr-&gt;bytes_per_sector == 0 ||
+      vbr-&gt;sectors_per_cluster == 0 ||
+      vbr-&gt;no_of_fats == 0) {
+    fprintf(stderr, &#34;Error: Invalid boot record.&#92;n&#34;);
+    return 1;
+  }
+
+  root_dir_sectors = ((vbr-&gt;root_entries * 32) + 
+    (vbr-&gt;bytes_per_sector - 1)) /
+     vbr-&gt;bytes_per_sector;
+
+  fat_part = ((256 * vbr-&gt;sectors_per_cluster) + vbr-&gt;no_of_fats) / 2;
+
+  fat_size = ((vbr-&gt;large_sectors -
+              (vbr-&gt;reserved_sectors +
+               root_dir_sectors)) + (fat_part - 1)) / fat_part;
+
+  first_data_sector = vbr-&gt;reserved_sectors +
+                     (vbr-&gt;no_of_fats * fat_size) + 
+                      root_dir_sectors;
+
+  printf(&#34;%d&#92;n&#34;, first_data_sector * vbr-&gt;bytes_per_sector);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here are step by step instructions on creating it all:<br />
+        (Assuming the tool mentioned above is compiled as &#34;fds&#34; and available.)<br />
+      </p>
+        <div class="box">
+          <pre>
+fdisk /dev/sdd # Create one single large FAT32 partition (0xb) as /dev/sdd1.
+mkfs.vfat /dev/sdd1
+losetup -o `./fds /dev/sdd1` /dev/loop0 /dev/sdd1
+cryptsetup -v luksFormat /dev/loop0
+cryptsetup luksOpen /dev/loop0 luks
+mkfs.ext2 /dev/mapper/luks
+cryptsetup luksClose luks
+losetup -d /dev/loop0
+          </pre>
+        </div>
+      <p>
+        <br />
+        Mounting the hidden LUKS partition later on:<br />
+      </p>
+        <div class="box">
+          <pre>
+losetup -o `./fds /dev/sdd1` /dev/loop0 /dev/sdd1
+cryptsetup luksOpen /dev/loop0 luks
+mount /dev/mapper/luks /mnt/luks
+          </pre>
+        </div>
+      <p>
+        <br />
+        And unmounting it:<br />
+      </p>
+        <div class="box">
+          <pre>
+umount /mnt/luks
+cryptsetup luksClose luks
+losetup -d /dev/loop0
+          </pre>
+        </div>
+      <p>
+        <br />
+        It may be possible to further hide the existence on the LUKS partition by also placing the LUKS header elsewhere, as is allegedly supported in newer versions of the &#34;cryptsetup&#34; tool.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/03-2016, 
+        <a href="article-108.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

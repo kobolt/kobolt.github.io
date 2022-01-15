@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Duplicate File Finder</h1>
+      <p>
+        This is kind of an improved version of the <a href="article-42.html">shell one-liner</a> I made some years ago, except it does not remove the files, just lists them.<br />
+        <br />
+        This new script uses Python, and it is almost too easy, since Python includes a file compare module in it&#39;s standard library. Take a look at the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import os
+import filecmp
+
+class DupFinder(object):
+    def __init__(self, dirname):
+        self.dirname = dirname
+        self.files = dict()
+
+    def run(self):
+        os.path.walk(self.dirname, self._walker, None)
+        for dupes in self.files.values():
+            if len(dupes) == 1:
+                continue
+            for path1 in dupes:
+                for path2 in dupes:
+                    if path1 == path2:
+                        continue
+                    if filecmp.cmp(path1, path2, False):
+                        print &#34;%s == %s&#34; % (path1, path2)
+
+    def _walker(self, arg, dirname, names):
+        for file in names:
+            try:
+                path = os.path.join(dirname, file)
+                size = os.path.getsize(path)
+                if size == 0:
+                    continue # Ignore empty files.
+                if size in self.files:
+                    self.files[size].append(path)
+                else:
+                    self.files[size] = [path]
+            except OSError:
+                continue
+    
+    def _compare(self, path1, path2):
+        print path1, path2
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) != 2:
+        print &#34;Usage: %s &lt;directory&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+
+    dp = DupFinder(sys.argv[1])
+    dp.run()
+
+    sys.exit(0)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        05/10-2013, 
+        <a href="article-84.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>GR-SAKURA Shell</h1>
+      <p>
+        Renesas has more microcontroller reference boards. On another trip to Japan I picked up the <a href="http://gadget.renesas.com/en/product/sakura.html">GR-SAKURA</a> board, which uses the Renesas RX63N microcontroller.<br />
+        <br />
+        Like the <a href="article-125.html">GR-KURUMI</a>, I have made a command shell interface for the GR-SAKURA as well, based on much of the same code, to control its LED and timer functions.<br />
+        <br />
+        The shell is spawned as the UART on &#34;SCI0&#34;, which has the RxD pin at P21 (aka IO0) and the TxD pin at P20 (aka IO1) on the board. The code and build environment also assumes that the pre-flashed USB mass-storage based bootloader is in use, so the binary may be transferred using that USB interface.<br />
+        <br />
+        Get the source code <a href="supplies/sakura-shell-0.1.tar.gz">here</a> and follow <a href="https://gcc-renesas.com/wiki/index.php?title=How_to_build_the_RX_Toolchain_under_Ubuntu_14.04">this advice</a> on how to setup the toolchain for compiling Renesas RX binaries. I have created custom C-runtime stubs and a linker script to work specifically with the pre-flashed bootloader. These are included in the source code tarball as well.<br />
+        <br />
+        Here is a similar Python script that can be used to load script files remotely:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import serial
+
+class Sakura(object):
+    def __init__(self, port):
+        self.s = serial.Serial()
+        self.s.port = port
+        self.s.baudrate = 9600
+        self.s.bytesize = serial.EIGHTBITS
+        self.s.parity = serial.PARITY_NONE
+        self.s.stopbits = serial.STOPBITS_ONE
+        self.s.xonxoff = False
+        self.s.rtscts = False
+        self.s.dsrdtr = False
+
+        self.s.open()
+        self.s.flushInput()
+        self.s.flushOutput()
+    
+    def __del__(self):
+        self.s.close()
+
+    def _command(self, cmd):
+        print &#34;&gt;&#34;, cmd
+        for char in cmd:
+            self.s.write(char) # Write one character at a time...
+            self.s.read(1)     # ...and read the echo.
+        self.s.write(&#34;&#92;r&#34;) # Finish command...
+        self.s.read(10)    # ...and read the prompt.
+
+    def script(self, filename):
+        self._command(&#34;stop&#34;)
+        self._command(&#34;d1 off&#34;)
+        self._command(&#34;d2 off&#34;)
+        self._command(&#34;d3 off&#34;)
+        self._command(&#34;d4 off&#34;)
+        self._command(&#34;clear&#34;)
+        with open(filename) as fh:
+            for line_no, line in enumerate(fh):
+                self._command(&#34;%s %s&#34; % (line_no, line.strip()))
+        self._command(&#34;run&#34;)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+    s = Sakura(&#34;/dev/ttyUSB0&#34;)
+
+    if len(sys.argv) &gt; 1:
+        s.script(sys.argv[1])
+    else:
+        print &#34;Usage: %s &lt;script file&gt;&#34; % (sys.argv[0])
+          </pre>
+        </div>
+      <p>
+        <br />
+        One difference compared to the GR-KURUMI is that the LEDs on GR-SAKURA are all blue and named D1 to D4 instead. Here is a sample script:<br />
+      </p>
+        <div class="box">
+          <pre>
+d1 on
+sleep 50
+d1 off
+sleep 50
+d2 on
+d3 on
+sleep 100
+d2 off
+sleep 100
+d3 off
+sleep 500
+d4 toggle
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        04/02-2018, 
+        <a href="article-128.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

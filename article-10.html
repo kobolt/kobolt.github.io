@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>OpenTTD music files in other formats.</h1>
+      <p>
+        <a href="http://www.openttd.org">OpenTTD</a> is a multi-platform clone of the classic game <a href="http://en.wikipedia.org/wiki/Transport_Tycoon">Transport Tycoon</a>.<br />
+        <br />
+        Normally, the original midi files are used, and requires a midi player to play the music. The default midi player is &#34;timidity&#34;, which produces excellent sound, but seems to use a lot of CPU, so I want to use something else.<br />
+        <br />
+        It is actually possible to use other formats (and players) than midi, due to the way the music system is currently implemented in OpenTTD. When a music track is started; OpenTTD fork()s and starts the music player as a separate process with the music filename as an argument.<br />
+        <br />
+        I have successfully managed to use &#34;ogg123&#34; (part of the vorbis-tools package from <a href="http://xiph.org">xiph.org</a>) to play the music files, by converting all the midi files to Ogg Vorbis format and perform a single configuration change. In the configuration file &#34;openttd.cfg&#34;, there is a section named &#34;[music]&#34;, where a option named &#34;extmidi&#34; resides. Simply change the option value to &#34;ogg123&#34; or the name of the player you want to use. When converting the midi files to a different format, make sure the filenames of the new files are exactly the same as the old ones.<br />
+        <br />
+        I tested this with OpenTTD version 0.5.3 under Linux.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        31/12-2007, 
+        <a href="article-10.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

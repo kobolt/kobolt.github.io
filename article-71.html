@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>URL Decoder and Encoder</h1>
+      <p>
+        Here are some simple C-based filter programs to decode and encode URL-encoded hex characters.<br />
+        <br />
+        The &#34;decoder&#34;, detects and decodes any URL-encoded characters in the stream:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+static int from_hex(char c)
+{
+  switch (c) {
+  case &#39;0&#39;:
+  case &#39;1&#39;:
+  case &#39;2&#39;:
+  case &#39;3&#39;:
+  case &#39;4&#39;:
+  case &#39;5&#39;:
+  case &#39;6&#39;:
+  case &#39;7&#39;:
+  case &#39;8&#39;:
+  case &#39;9&#39;:
+    return c - 0x30;
+  case &#39;A&#39;:
+  case &#39;B&#39;:
+  case &#39;C&#39;:
+  case &#39;D&#39;:
+  case &#39;E&#39;:
+  case &#39;F&#39;:
+    return c - 55;
+  case &#39;a&#39;:
+  case &#39;b&#39;:
+  case &#39;c&#39;:
+  case &#39;d&#39;:
+  case &#39;e&#39;:
+  case &#39;f&#39;:
+    return c - 87;
+  }
+  return 0;
+}
+
+int main(void)
+{
+  int c, in_code, first_hex;
+
+  in_code = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+    if (in_code == 1) {
+      first_hex = from_hex(c);
+      in_code++;
+    } else if (in_code == 2) {
+      fputc(from_hex(c) + (first_hex * 16), stdout);
+      in_code = 0;
+    } else {
+      if (c == &#39;%&#39;) {
+        in_code = 1;
+      } else {
+        fputc(c, stdout);
+      }
+    }
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        The &#34;encoder&#34;, simply encodes every character into the URL-encoded counter-part:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+static char to_hex(int n)
+{
+  switch (n) {
+  case 0:
+  case 1:
+  case 2:
+  case 3:
+  case 4:
+  case 5:
+  case 6:
+  case 7:
+  case 8:
+  case 9:
+    return n + 0x30;
+  case 10:
+  case 11:
+  case 12:
+  case 13:
+  case 14:
+  case 15:
+    return n + 55;
+  }
+  return &#39;?&#39;;
+}
+
+int main(void)
+{
+  int c;
+
+  while ((c = fgetc(stdin)) != EOF) {
+    fputc(&#39;%&#39;, stdout);
+    fputc(to_hex(c / 16), stdout);
+    fputc(to_hex(c % 16), stdout);
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        27/10-2012, 
+        <a href="article-71.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

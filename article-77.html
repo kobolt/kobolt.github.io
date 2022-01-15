@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Recursive FTP Download with Python</h1>
+      <p>
+        This is a feature that I have missed many times, as it is not a built-in feature of the standard Python FTP library. I decided to hack together a solution myself, and it was easier than expected. Everything is downloaded in binary mode, since ASCII mode causes so many issues!<br />
+        <br />
+        Enjoy:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import ftplib
+import os
+
+def ftp_get_files(directory):
+	print &#34;Going Into:&#34;, directory
+	ftp.cwd(directory)
+	os.mkdir(directory)
+	os.chdir(directory)
+
+	listing = []
+	ftp.dir(listing.append)
+	for entry in listing: 
+		filename = entry.split(None, 8)[-1]
+		perm = entry.split()[0]
+
+		if filename == &#39;.&#39; or filename == &#39;..&#39;:
+			continue
+
+		if perm[0] == &#34;d&#34;: # Directory
+			ftp_get_files(filename)
+
+		elif perm[0] == &#34;-&#34;: # File
+			print &#34;Fetch:&#34;, filename
+			ftp.retrbinary(&#39;RETR %s&#39; % (filename), open(filename, &#39;wb&#39;).write)
+
+	print &#34;Going Back:&#34;, directory
+	ftp.cwd(&#34;..&#34;)
+	os.chdir(&#34;..&#34;)
+
+if __name__ == &#34;__main__&#34;:
+	import sys
+
+	if len(sys.argv) &lt; 6:
+		print &#34;Usage: %s &lt;hostname&gt; &lt;user&gt; &lt;pass&gt; &lt;initial dir&gt; &lt;download dir&gt;&#34; % (sys.argv[0])
+		sys.exit(1)
+
+	ftp = ftplib.FTP(sys.argv[1])
+	ftp.login(sys.argv[2], sys.argv[3])
+	ftp.cwd(sys.argv[4])
+	ftp_get_files(sys.argv[5])
+	ftp.close()
+
+	sys.exit(0)
+
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        09/03-2013, 
+        <a href="article-77.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

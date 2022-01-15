@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Motivational Poster Generator</h1>
+      <p>
+        Here is a short program that will take an input image, combine it with some input text and produce a <a href="http://en.wikipedia.org/wiki/Motivational_poster">motivational poster</a>. The size and aspect of the original input image will be kept, and the frames, text and everything else will be scaled according to it. Unfortunately, text is not automatically wrapped, so this must be handled by the caller if using multiple lines.<br />
+        <br />
+        The program is written in C and uses the <a href="http://www.boutell.com/gd/">GD library</a> to produce the graphics. This library is already available on most Unix platforms by default. There are some hard-coded paths to font files that may need to be adjusted on some platforms. (I tested this on Slackware 12.2.)<br />
+        <br />
+        Here&#39;s an example of an output motivational poster:<br />
+      </p>
+      <img class="border" src="images/motivational-coffee.jpg" alt="An example output image." />
+      <p>
+        <br />
+        And here is the code to make it happen:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;gd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+
+#define UPPER_LOWER_MARGIN_FACTOR 0.12
+#define LEFT_RIGHT_MARGIN_FACTOR 0.18
+#define TITLE_FONT_SIZE_DIVISOR 16
+#define MESSAGE_FONT_SIZE_DIVISOR 48
+#define TEXT_PADDING_DIVISOR 50
+#define FRAME_PADDING 3
+
+#define TITLE_FONT_PATH &#34;/usr/share/fonts/TTF/DejaVuSerif.ttf&#34;
+#define MESSAGE_FONT_PATH  &#34;/usr/share/fonts/TTF/DejaVuSans.ttf&#34;
+
+#define PNG_MAGIC &#34;&#92;x89PNG&#34;
+#define JPEG_MAGIC &#34;&#92;xff&#92;xd8&#34;
+
+int main(int argc, char *argv[])
+{
+  gdImagePtr poster, image;
+  FILE *fh;
+  char magic[4];
+  int is_jpeg, white, black;
+  int title_rect[8], message_rect[8];
+  int upper_lower_margin, left_right_margin;
+  int title_font_size, message_font_size;
+  int poster_height, poster_width;
+  int text_padding, text_height;
+  int title_pos_x, title_pos_y, message_pos_x, message_pos_y;
+
+  if (argc != 5) {
+    fprintf(stderr,
+      &#34;Usage: %s &lt;input image&gt; &lt;title&gt; &lt;message&gt; &lt;output image&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  fh = fopen(argv[1], &#34;rb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;%s: error: cannot open image file: %s&#92;n&#34;,
+      argv[0], strerror(errno));
+    return 1;
+  }
+
+  fread(magic, sizeof(char), 4, fh);
+  if (memcmp(magic, PNG_MAGIC, 4) == 0) {
+    is_jpeg = 0;
+  } else if (memcmp(magic, JPEG_MAGIC, 2) == 0) {
+    is_jpeg = 1;
+  } else {
+    fprintf(stderr, &#34;%s: error: image file must be in PNG or JPEG format&#92;n&#34;,
+      argv[0]);
+    fclose(fh);
+    return 1;
+  }
+    
+  rewind(fh);
+  if (is_jpeg) {
+    image = gdImageCreateFromJpeg(fh);
+  } else {
+    image = gdImageCreateFromPng(fh);
+  }
+  fclose(fh);
+
+  if (image == NULL) {
+    fprintf(stderr, &#34;%s: error: unable to parse image file&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  upper_lower_margin = image-&gt;sy * UPPER_LOWER_MARGIN_FACTOR;
+  left_right_margin  = image-&gt;sx * LEFT_RIGHT_MARGIN_FACTOR;
+  title_font_size    = image-&gt;sx / TITLE_FONT_SIZE_DIVISOR;
+  message_font_size  = image-&gt;sx / MESSAGE_FONT_SIZE_DIVISOR;
+
+  gdImageStringFT(NULL, title_rect, white, TITLE_FONT_PATH,
+    title_font_size, 0, 0, 0, argv[2]);
+  gdImageStringFT(NULL, message_rect, white, MESSAGE_FONT_PATH,
+    message_font_size, 0, 0, 0, argv[3]);
+
+  text_padding = image-&gt;sy / TEXT_PADDING_DIVISOR;
+  text_height = abs(title_rect[7]) + abs(message_rect[7]) + (text_padding * 3);
+  poster_width = image-&gt;sx + (left_right_margin * 2);
+  poster_height = image-&gt;sy + (upper_lower_margin * 2) + text_height;
+
+  poster = gdImageCreateTrueColor(poster_width, poster_height);
+
+  black = gdImageColorAllocate(poster, 0, 0, 0); /* First is also BG color. */
+  white = gdImageColorAllocate(poster, 255, 255, 255);
+
+  gdImageCopy(poster, image, left_right_margin, upper_lower_margin,
+              0, 0, image-&gt;sx, image-&gt;sy);
+
+  gdImageLine(poster,
+              left_right_margin - (FRAME_PADDING + 1),
+              upper_lower_margin - (FRAME_PADDING + 1),
+              left_right_margin + image-&gt;sx + FRAME_PADDING,
+              upper_lower_margin - (FRAME_PADDING + 1),
+              white);
+
+  gdImageLine(poster,
+              left_right_margin - (FRAME_PADDING + 1),
+              upper_lower_margin - (FRAME_PADDING + 1),
+              left_right_margin - (FRAME_PADDING + 1),
+              upper_lower_margin + image-&gt;sy + FRAME_PADDING,
+              white); 
+
+  gdImageLine(poster,
+              left_right_margin - (FRAME_PADDING + 1),
+              upper_lower_margin + image-&gt;sy + FRAME_PADDING,
+              left_right_margin + image-&gt;sx + FRAME_PADDING,
+              upper_lower_margin + image-&gt;sy + FRAME_PADDING,
+              white); 
+
+  gdImageLine(poster,
+              left_right_margin + image-&gt;sx + FRAME_PADDING,
+              upper_lower_margin - (FRAME_PADDING + 1),
+              left_right_margin + image-&gt;sx + FRAME_PADDING,
+              upper_lower_margin + image-&gt;sy + FRAME_PADDING,
+              white); 
+
+  title_pos_x   = (poster_width / 2) - (abs(title_rect[2]) / 2);
+  message_pos_x = (poster_width / 2) - (abs(message_rect[2]) / 2);
+  title_pos_y = upper_lower_margin + image-&gt;sy +
+    text_padding + abs(title_rect[7]);
+  message_pos_y = title_pos_y + (text_padding * 2) + abs(message_rect[7]);
+
+  gdImageStringFT(poster, NULL, white, TITLE_FONT_PATH,
+    title_font_size, 0, title_pos_x, title_pos_y, argv[2]);
+  gdImageStringFT(poster, NULL, white, MESSAGE_FONT_PATH,
+    message_font_size, 0, message_pos_x, message_pos_y, argv[3]);
+
+  fh = fopen(argv[4], &#34;wbx&#34;);
+
+  if (fh == NULL) {
+    fprintf(stderr, &#34;%s: error: cannot open output file: %s&#92;n&#34;,
+      argv[0], strerror(errno));
+    gdImageDestroy(image);
+    gdImageDestroy(poster);
+    return 1;
+  }
+
+  if (is_jpeg) {
+    gdImageJpeg(poster, fh, -1);
+  } else {
+    gdImagePng(poster, fh);
+  }
+
+  fclose(fh);
+
+  gdImageDestroy(image);
+  gdImageDestroy(poster);
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        03/04-2011, 
+        <a href="article-52.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

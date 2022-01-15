@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Perl YouTube Fetcher</h1>
+      <p>
+        I have created a small Perl script to fetch (download) videos from <a href="http://www.youtube.com/">YouTube</a>. Simply supply the video URL as an argument to the script, and the video file will be downloaded to the current directory.<br />
+        <br />
+        In order to run the script, you need to have the LWP::UserAgent module from <a href="http://www.linpro.no/lwp/">libwww-perl</a> installed. It will hopefully function as long as they do not decide to do any major changes to the YouTube website.<br />
+        <br />
+        The final video file should be viewable with media players like <a href="http://www.mplayerhq.hu/">MPlayer</a>.<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/perl -w
+use strict;
+use LWP::UserAgent;
+
+my $url = shift @ARGV
+  or die &#34;Usage: $0 &lt;youtube URL&gt;&#92;n&#34;;
+
+my $browser = LWP::UserAgent-&gt;new;
+
+my $response = $browser-&gt;get($url);
+die &#34;Failed to get URL: $url [&#34; . $response-&gt;status_line . &#34;]&#92;n&#34;
+  unless $response-&gt;is_success;
+
+(my $id = $url) =~ s/^.*?v=(.*)$/$1/; # Get the youtube ID.
+
+# Attempt to locate the flash arguments in the content.
+my $forged_url;
+if ($response-&gt;content =~ m/swfArgs&#92;s*=&#92;s*{([^}]*)}/) {
+  # Convert arguments from JSON format to a new forged URL.
+  $forged_url = $1;
+  $forged_url =~ s/&#34;//g;
+  $forged_url =~ s/&#92;s*:&#92;s*/=/g;
+  $forged_url =~ s/&#92;s*,&#92;s*/&amp;/g;
+  $forged_url = &#34;http://youtube.com/get_video?&#34; . $forged_url;
+} else {
+  die &#34;Did not find flash arguments.&#92;n&#34;;
+}
+
+# Do a HEAD request to find the total size first.
+$response = $browser-&gt;head($forged_url);
+die &#34;Failed to get headers of forged URL: $forged_url [&#34; . 
+  $response-&gt;status_line . &#34;]&#92;n&#34; unless $response-&gt;is_success;
+my $size = $response-&gt;headers-&gt;content_length;
+
+# Fetch all of the video data with a callback to display progress.
+my $video;
+$response = $browser-&gt;get($forged_url, &#34;:content_cb&#34; =&gt; &#92;&amp;content_callback);
+die &#34;Failed to get forged URL: $forged_url [&#34; . $response-&gt;status_line . &#34;]&#92;n&#34;
+  unless $response-&gt;is_success;
+
+# Write the video data to file.
+open WRITEVIDEO, &#34;&gt;$id.flv&#34;
+  or die &#34;Could not open file &#39;$id.flv&#39; for writing: $!&#92;n&#34;;
+print WRITEVIDEO $video;
+close WRITEVIDEO;
+
+print STDERR &#34;Saved video to file: $id.flv&#92;n&#34;;
+
+sub content_callback
+{
+  my($data, $response, $protocol) = @_;
+  $video .= $data;
+  printf STDERR &#34;%.1f%%&#92;r&#34;, (length($video) / $size) * 100;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        24/04-2008, 
+        <a href="article-16.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

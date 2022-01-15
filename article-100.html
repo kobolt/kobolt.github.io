@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Shift Encryption Filter</h1>
+      <p>
+        Here is a re-implementation of a couple of programs I made around 10 years ago. It&#39;s a standard in/out filter that performs simple shift encryption, of the <a href="http://en.wikipedia.org/wiki/Caesar_cipher">Caesar</a> or <a href="http://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher">Vigenere</a> variants.<br />
+        <br />
+        It supports both text and binary mode. Text mode only operates on A to Z, while binary mode operates on the whole 8-bit range of a character byte.<br />
+        <br />
+        Take a look at the code and compile it:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+typedef enum {
+  CIPHER_NONE,
+  CIPHER_CAESAR,
+  CIPHER_VIGENERE,
+} cipher_t;
+
+typedef enum {
+  MODE_NONE,
+  MODE_TEXT,
+  MODE_BINARY,
+} mode_t;
+
+typedef enum {
+  DIRECTION_NONE,
+  DIRECTION_ENCRYPT,
+  DIRECTION_DECRYPT,
+} direction_t;
+
+static inline int binary_shift(int c, int n)
+{
+  c += n;
+  if (c &gt; 255) {
+    c -= 256;
+  }
+  return c;
+}
+
+static inline int binary_unshift(int c, int n)
+{
+  c -= n;
+  if (c &lt; 0) {
+    c += 256;
+  }
+  return c;
+}
+
+static inline int text_shift(int c, int n)
+{
+  if (c &gt;= 65 &amp;&amp; c &lt;= 90) {
+    c += n;
+    if (c &gt; 90)
+      c -= 26;
+  }
+  if (c &gt;= 97 &amp;&amp; c &lt;= 122) {
+    c += n;
+    if (c &gt; 122)
+      c -= 26;
+  }
+  return c;
+}
+
+static inline int text_unshift(int c, int n)
+{
+  if (c &gt;= 65 &amp;&amp; c &lt;= 90) {
+    c -= n;
+    if (c &lt; 65) 
+      c += 26;
+  }
+  if (c &gt;= 97 &amp;&amp; c &lt;= 122) {
+    c -= n;
+    if (c &lt; 97) 
+      c += 26;
+  }
+  return c;
+}
+
+static void caesar_filter(int shift_amount, mode_t mode, direction_t direction)
+{
+  int c;
+
+  while ((c = fgetc(stdin)) != EOF) {
+    if (mode == MODE_TEXT) {
+      if (direction == DIRECTION_ENCRYPT) {
+        c = text_shift(c, shift_amount);
+        
+      } else { /* DIRECTION_DECRYPT */
+        c = text_unshift(c, shift_amount);
+      }
+
+    } else { /* MODE_BINARY */
+      if (direction == DIRECTION_ENCRYPT) {
+        c = binary_shift(c, shift_amount);
+
+      } else { /* DIRECTION_DECRYPT */
+        c = binary_unshift(c, shift_amount);
+      }
+    }
+    fputc(c, stdout);
+  }
+}
+
+static void vigenere_filter(char *key, mode_t mode, direction_t direction)
+{
+  int c;
+  char *p;
+
+  p = &amp;key[0];
+
+  while ((c = fgetc(stdin)) != EOF) {
+    if (mode == MODE_TEXT) {
+      if (direction == DIRECTION_ENCRYPT) {
+        c = text_shift(c, *p - 97);
+        
+      } else { /* DIRECTION_DECRYPT */
+        c = text_unshift(c, *p - 97);
+      }
+
+    } else { /* MODE_BINARY */
+      if (direction == DIRECTION_ENCRYPT) {
+        c = binary_shift(c, *p - 97);
+
+      } else { /* DIRECTION_DECRYPT */
+        c = binary_unshift(c, *p - 97);
+      }
+    }
+    fputc(c, stdout);
+
+    p++;
+    if (*p == &#39;&#92;0&#39;)
+      p = &amp;key[0];
+  }
+}
+
+static void display_help(char *progname)
+{
+  fprintf(stderr, &#34;Usage: %s &lt;options&gt;&#92;n&#34;, progname);
+  fprintf(stderr, &#34;Options:&#92;n&#34;
+     &#34;  -h        Display this help and exit.&#92;n&#34;
+     &#34;  -c SHIFT  Use Caesar cipher, with SHIFT.&#92;n&#34;
+     &#34;  -v KEY    Use Vigenere cipher, with KEY.&#92;n&#34;
+     &#34;  -t        Text mode. (Operate on &#39;a-z&#39; and &#39;A-Z&#39; only.)&#92;n&#34;
+     &#34;  -b        Binary mode. (Operate on 0-255 byte range.)&#92;n&#34;
+     &#34;  -e        Encrypt. (Forward shift.)&#92;n&#34;
+     &#34;  -d        Decrypt. (Reverse shift.)&#92;n&#34;
+     &#34;&#92;n&#34;);
+}
+
+int main(int argc, char *argv[])
+{
+  int c;
+  mode_t mode = MODE_NONE;
+  cipher_t cipher = CIPHER_NONE;
+  direction_t direction = DIRECTION_NONE;
+  char *vigenere_key = NULL;
+  int caesar_shift = 0;
+
+  while ((c = getopt(argc, argv, &#34;hc:v:tbed&#34;)) != -1) {
+    switch (c) {
+    case &#39;h&#39;:
+      display_help(argv[0]);
+      return EXIT_SUCCESS;
+
+    case &#39;c&#39;:
+      cipher = CIPHER_CAESAR;
+      caesar_shift = atoi(optarg);
+      break;
+
+    case &#39;v&#39;:
+      cipher = CIPHER_VIGENERE;
+      vigenere_key = optarg;
+      break;
+
+    case &#39;t&#39;:
+      mode = MODE_TEXT;
+      break;
+
+    case &#39;b&#39;:
+      mode = MODE_BINARY;
+      break;
+
+    case &#39;e&#39;:
+      direction = DIRECTION_ENCRYPT;
+      break;
+
+    case &#39;d&#39;:
+      direction = DIRECTION_DECRYPT;
+      break;
+
+    case &#39;?&#39;:
+    default:
+      display_help(argv[0]);
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (mode == MODE_NONE) {
+    fprintf(stderr, &#34;Error: Specify text or binary mode.&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  if (direction == DIRECTION_NONE) {
+    fprintf(stderr, &#34;Error: Specify encryption or decryption.&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  switch (cipher) {
+  case CIPHER_CAESAR:
+    caesar_filter(caesar_shift, mode, direction);
+    break;
+
+  case CIPHER_VIGENERE:
+    vigenere_filter(vigenere_key, mode, direction);
+    break;
+
+  default:
+    fprintf(stderr, &#34;Error: Specify a cipher to use.&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        03/05-2015, 
+        <a href="article-100.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

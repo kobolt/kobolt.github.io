@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Attoscript</h1>
+      <p>
+        Attoscript is a very small programming language and interpreter (only 15K of source) that I designed myself. It is severely limited in many ways, but is intended for one task; running other programs.<br />
+        <br />
+        Since the names microscript, nanoscript etc. are taken, I choose attoscript as the name for the language. &#34;Atto&#34; is the SI-prefix for Quintillionth/Trillionth.<br />
+        <br />
+        The reason I actually created this language, was to have an alternative to batch files.<br />
+        These are some of the improvements in the language over batch:<br />
+        * Sleep instruction, to halt execution. (Ping trick anyone?)<br />
+        * Creating random numbers.<br />
+        * Reading user input into variables. (No hacks like generating and reading other batch files needed.)<br />
+        * IF-construct that makes sense. (No strange &#34;errorlevel&#34; stuff.)<br />
+        <br />
+        Here is a sample of what the language looks like:<br />
+      </p>
+        <div class="box">
+          <pre>
+var count
+set count 10
+label loop
+echo &#34;There are $count$ bottles of prune juice on the wall.&#34;
+decr count
+if count ne 0 loop
+          </pre>
+        </div>
+      <p>
+        <br />
+        The interpreter is written in C, and the source can be downloaded <a href="supplies/attoscript-0.1.tar.gz">here</a>. (Licenced under GNU GPL version 2.)<br />
+        I have also created a windows binary that can be downloaded <a href="supplies/attoscript.exe">here</a>. (Compiled with Dev-C++.)<br />
+        <br />
+        More information about the scripting language can be found in the README file in the source tarball.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        19/08-2007, 
+        <a href="article-3.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

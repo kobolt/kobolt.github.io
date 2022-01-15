@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>FLAC Tagging Helper</h1>
+      <p>
+        Here is a small Python script that helps with tagging <a href="http://en.wikipedia.org/wiki/FLAC">FLAC</a> files. It relies on the external &#34;metaflac&#34; tool to do this.<br />
+        <br />
+        The idea with this script, is to combine it with a album template file that contains all the information that should be tagged for set of files in a specific directory. Since the &#34;--no-utf8-convert&#34; flag is used, the album file should use UTF-8 for any non-ASCII character. Each line represents a tag, and if a line is prefixed with a number and colon, the tag will only be applied for that track number. The script expects to find files that start with the track number and a dash to identify which files to tag in the directory.<br />
+        <br />
+        Here is an example of a album template file:<br />
+      </p>
+        <div class="box">
+          <pre>
+ALBUM=Foo
+DATE=2001
+GENRE=Rock
+01:TRACKNUMBER=1
+01:ARTIST=Bar
+01:TITLE=Baz
+02:TRACKNUMBER=2
+02:ARTIST=Bar
+02:TITLE=Baaaaz
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is the Python script itself:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import re
+import os
+
+class FLACTagger(object):
+    def __init__(self, flac_directory, album_file, cover_image):
+        self._flac_directory = flac_directory
+        self._album_file = album_file
+        self._cover_image = cover_image
+        self._global_tags = list()
+        self._track_tags = dict()
+
+    def read_album_file(self):
+        fh = open(self._album_file, &#34;r&#34;)
+        for line in fh:
+            match = re.match(r&#34;^(&#92;d+):(&#92;w+=.*)$&#34;, line)
+            if match:
+                if not match.group(1) in self._track_tags:
+                    self._track_tags[match.group(1)] = list()
+                self._track_tags[match.group(1)].append(match.group(2))
+
+            match = re.match(r&#34;^(&#92;w+=.*)$&#34;, line)
+            if match:
+                self._global_tags.append(match.group(1))
+
+        fh.close()
+
+    def make_flactags_files(self):
+        for track_no in self._track_tags.keys():
+            fh = open(&#34;/tmp/%s.flactags&#34; % (track_no), &#34;w&#34;)
+            for tags in self._global_tags:
+                fh.write(tags)
+                fh.write(&#34;&#92;n&#34;)
+            for tags in self._track_tags[track_no]:
+                fh.write(tags)
+                fh.write(&#34;&#92;n&#34;)
+            fh.close()
+
+    def _quote(self, filename):
+        return &#34;&#39;&#34; + filename.replace(&#34;&#39;&#34;, &#34;&#39;&#92;&#92;&#39;&#39;&#34;) + &#34;&#39;&#34;
+
+    def apply_tags(self):
+        for filename in os.listdir(self._flac_directory):
+            match = re.match(r&#34;^(&#92;d+) - &#34;, filename)
+            full_path = self._quote(self._flac_directory + &#34;/&#34; + filename)
+            if match:
+                print full_path
+                os.system(&#34;metaflac --remove-all %s&#34; % (full_path))
+                os.system(&#34;metaflac --no-utf8-convert --import-tags-from=/tmp/%s.flactags %s&#34; % (match.group(1), full_path))
+                os.system(&#34;metaflac --import-picture-from=%s %s&#34; % (self._quote(self._cover_image), full_path))
+
+
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) &lt; 4:
+        print &#34;Usage: %s &lt;FLAC directory&gt; &lt;album file&gt; &lt;cover image&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+    
+    if not os.path.isdir(sys.argv[1]):
+        print &#34;Error: Invalid file directory&#34;
+        sys.exit(1)
+
+    if not os.path.isfile(sys.argv[2]):
+        print &#34;Error: Invalid album file&#34;
+        sys.exit(1)
+
+    if not os.path.isfile(sys.argv[3]):
+        print &#34;Error: Invalid cover image&#34;
+        sys.exit(1)
+
+    ftm = FLACTagger(sys.argv[1], sys.argv[2], sys.argv[3])
+    ftm.read_album_file()
+    ftm.make_flactags_files()
+    ftm.apply_tags()
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/08-2014, 
+        <a href="article-94.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

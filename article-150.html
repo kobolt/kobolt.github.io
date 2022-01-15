@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>SSD1306 Wi-Fi Status</h1>
+      <p>
+        Here is another use of the <a href="http://www.solomon-systech.com/en/product/display-ic/oled-driver-controller/ssd1306/">SSD1306</a> miniature OLED display. Instead of loading an image like my <a href="article-146.html">previous project</a>, this code contains character data and can display text. I have combined this with some simple hacks to retrieve and display Wi-Fi status information from the host. This is also meant to be connected to a <a href="https://www.raspberrypi.org/products/raspberry-pi-3-model-b/">Raspberry Pi 3</a>.<br />
+        <br />
+        Take a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+import smbus
+import subprocess
+import re
+import time
+
+chardata = dict()
+chardata[&#39;@&#39;] = &#34;&#92;x3c&#92;x66&#92;x6e&#92;x6e&#92;x60&#92;x62&#92;x3c&#92;x00&#34;
+chardata[&#39;A&#39;] = &#34;&#92;x18&#92;x3c&#92;x66&#92;x7e&#92;x66&#92;x66&#92;x66&#92;x00&#34;
+chardata[&#39;B&#39;] = &#34;&#92;x7c&#92;x66&#92;x66&#92;x7c&#92;x66&#92;x66&#92;x7c&#92;x00&#34;
+chardata[&#39;C&#39;] = &#34;&#92;x3c&#92;x66&#92;x60&#92;x60&#92;x60&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;D&#39;] = &#34;&#92;x78&#92;x6c&#92;x66&#92;x66&#92;x66&#92;x6c&#92;x78&#92;x00&#34;
+chardata[&#39;E&#39;] = &#34;&#92;x7e&#92;x60&#92;x60&#92;x78&#92;x60&#92;x60&#92;x7e&#92;x00&#34;
+chardata[&#39;F&#39;] = &#34;&#92;x7e&#92;x60&#92;x60&#92;x78&#92;x60&#92;x60&#92;x60&#92;x00&#34;
+chardata[&#39;G&#39;] = &#34;&#92;x3c&#92;x66&#92;x60&#92;x6e&#92;x66&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;H&#39;] = &#34;&#92;x66&#92;x66&#92;x66&#92;x7e&#92;x66&#92;x66&#92;x66&#92;x00&#34;
+chardata[&#39;I&#39;] = &#34;&#92;x3c&#92;x18&#92;x18&#92;x18&#92;x18&#92;x18&#92;x3c&#92;x00&#34;
+chardata[&#39;J&#39;] = &#34;&#92;x1e&#92;x0c&#92;x0c&#92;x0c&#92;x0c&#92;x6c&#92;x38&#92;x00&#34;
+chardata[&#39;K&#39;] = &#34;&#92;x66&#92;x6c&#92;x78&#92;x70&#92;x78&#92;x6c&#92;x66&#92;x00&#34;
+chardata[&#39;L&#39;] = &#34;&#92;x60&#92;x60&#92;x60&#92;x60&#92;x60&#92;x60&#92;x7e&#92;x00&#34;
+chardata[&#39;M&#39;] = &#34;&#92;x63&#92;x77&#92;x7f&#92;x6b&#92;x63&#92;x63&#92;x63&#92;x00&#34;
+chardata[&#39;N&#39;] = &#34;&#92;x66&#92;x76&#92;x7e&#92;x7e&#92;x6e&#92;x66&#92;x66&#92;x00&#34;
+chardata[&#39;O&#39;] = &#34;&#92;x3c&#92;x66&#92;x66&#92;x66&#92;x66&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;P&#39;] = &#34;&#92;x7c&#92;x66&#92;x66&#92;x7c&#92;x60&#92;x60&#92;x60&#92;x00&#34;
+chardata[&#39;Q&#39;] = &#34;&#92;x3c&#92;x66&#92;x66&#92;x66&#92;x66&#92;x3c&#92;x0e&#92;x00&#34;
+chardata[&#39;R&#39;] = &#34;&#92;x7c&#92;x66&#92;x66&#92;x7c&#92;x78&#92;x6c&#92;x66&#92;x00&#34;
+chardata[&#39;S&#39;] = &#34;&#92;x3c&#92;x66&#92;x60&#92;x3c&#92;x06&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;T&#39;] = &#34;&#92;x7e&#92;x18&#92;x18&#92;x18&#92;x18&#92;x18&#92;x18&#92;x00&#34;
+chardata[&#39;U&#39;] = &#34;&#92;x66&#92;x66&#92;x66&#92;x66&#92;x66&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;V&#39;] = &#34;&#92;x66&#92;x66&#92;x66&#92;x66&#92;x66&#92;x3c&#92;x18&#92;x00&#34;
+chardata[&#39;W&#39;] = &#34;&#92;x63&#92;x63&#92;x63&#92;x6b&#92;x7f&#92;x77&#92;x63&#92;x00&#34;
+chardata[&#39;X&#39;] = &#34;&#92;x66&#92;x66&#92;x3c&#92;x18&#92;x3c&#92;x66&#92;x66&#92;x00&#34;
+chardata[&#39;Y&#39;] = &#34;&#92;x66&#92;x66&#92;x66&#92;x3c&#92;x18&#92;x18&#92;x18&#92;x00&#34;
+chardata[&#39;Z&#39;] = &#34;&#92;x7e&#92;x06&#92;x0c&#92;x18&#92;x30&#92;x60&#92;x7e&#92;x00&#34;
+chardata[&#39;[&#39;] = &#34;&#92;x3c&#92;x30&#92;x30&#92;x30&#92;x30&#92;x30&#92;x3c&#92;x00&#34;
+chardata[&#39;]&#39;] = &#34;&#92;x3c&#92;x0c&#92;x0c&#92;x0c&#92;x0c&#92;x0c&#92;x3c&#92;x00&#34;
+chardata[&#39; &#39;] = &#34;&#92;x00&#92;x00&#92;x00&#92;x00&#92;x00&#92;x00&#92;x00&#92;x00&#34;
+chardata[&#39;!&#39;] = &#34;&#92;x18&#92;x18&#92;x18&#92;x18&#92;x00&#92;x00&#92;x18&#92;x00&#34;
+chardata[&#39;&#34;&#39;] = &#34;&#92;x66&#92;x66&#92;x66&#92;x00&#92;x00&#92;x00&#92;x00&#92;x00&#34;
+chardata[&#39;#&#39;] = &#34;&#92;x66&#92;x66&#92;xff&#92;x66&#92;xff&#92;x66&#92;x66&#92;x00&#34;
+chardata[&#39;$&#39;] = &#34;&#92;x18&#92;x3e&#92;x60&#92;x3c&#92;x06&#92;x7c&#92;x18&#92;x00&#34;
+chardata[&#39;%&#39;] = &#34;&#92;x62&#92;x66&#92;x0c&#92;x18&#92;x30&#92;x66&#92;x46&#92;x00&#34;
+chardata[&#39;&amp;&#39;] = &#34;&#92;x3c&#92;x66&#92;x3c&#92;x38&#92;x67&#92;x66&#92;x3f&#92;x00&#34;
+chardata[&#39;&#92;&#39;&#39;] = &#34;&#92;x06&#92;x0c&#92;x18&#92;x00&#92;x00&#92;x00&#92;x00&#92;x00&#34;
+chardata[&#39;(&#39;] = &#34;&#92;x0c&#92;x18&#92;x30&#92;x30&#92;x30&#92;x18&#92;x0c&#92;x00&#34;
+chardata[&#39;)&#39;] = &#34;&#92;x30&#92;x18&#92;x0c&#92;x0c&#92;x0c&#92;x18&#92;x30&#92;x00&#34;
+chardata[&#39;*&#39;] = &#34;&#92;x00&#92;x66&#92;x3c&#92;xff&#92;x3c&#92;x66&#92;x00&#92;x00&#34;
+chardata[&#39;+&#39;] = &#34;&#92;x00&#92;x18&#92;x18&#92;x7e&#92;x18&#92;x18&#92;x00&#92;x00&#34;
+chardata[&#39;,&#39;] = &#34;&#92;x00&#92;x00&#92;x00&#92;x00&#92;x00&#92;x18&#92;x18&#92;x30&#34;
+chardata[&#39;-&#39;] = &#34;&#92;x00&#92;x00&#92;x00&#92;x7e&#92;x00&#92;x00&#92;x00&#92;x00&#34;
+chardata[&#39;.&#39;] = &#34;&#92;x00&#92;x00&#92;x00&#92;x00&#92;x00&#92;x18&#92;x18&#92;x00&#34;
+chardata[&#39;/&#39;] = &#34;&#92;x00&#92;x03&#92;x06&#92;x0c&#92;x18&#92;x30&#92;x60&#92;x00&#34;
+chardata[&#39;0&#39;] = &#34;&#92;x3c&#92;x66&#92;x6e&#92;x76&#92;x66&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;1&#39;] = &#34;&#92;x18&#92;x18&#92;x38&#92;x18&#92;x18&#92;x18&#92;x7e&#92;x00&#34;
+chardata[&#39;2&#39;] = &#34;&#92;x3c&#92;x66&#92;x06&#92;x0c&#92;x30&#92;x60&#92;x7e&#92;x00&#34;
+chardata[&#39;3&#39;] = &#34;&#92;x3c&#92;x66&#92;x06&#92;x1c&#92;x06&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;4&#39;] = &#34;&#92;x06&#92;x0e&#92;x1e&#92;x66&#92;x7f&#92;x06&#92;x06&#92;x00&#34;
+chardata[&#39;5&#39;] = &#34;&#92;x7e&#92;x60&#92;x7c&#92;x06&#92;x06&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;6&#39;] = &#34;&#92;x3c&#92;x66&#92;x60&#92;x7c&#92;x66&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;7&#39;] = &#34;&#92;x7e&#92;x66&#92;x0c&#92;x18&#92;x18&#92;x18&#92;x18&#92;x00&#34;
+chardata[&#39;8&#39;] = &#34;&#92;x3c&#92;x66&#92;x66&#92;x3c&#92;x66&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;9&#39;] = &#34;&#92;x3c&#92;x66&#92;x66&#92;x3e&#92;x06&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;:&#39;] = &#34;&#92;x00&#92;x00&#92;x18&#92;x00&#92;x00&#92;x18&#92;x00&#92;x00&#34;
+chardata[&#39;;&#39;] = &#34;&#92;x00&#92;x00&#92;x18&#92;x00&#92;x00&#92;x18&#92;x18&#92;x30&#34;
+chardata[&#39;&lt;&#39;] = &#34;&#92;x0e&#92;x18&#92;x30&#92;x60&#92;x30&#92;x18&#92;x0e&#92;x00&#34;
+chardata[&#39;=&#39;] = &#34;&#92;x00&#92;x00&#92;x7e&#92;x00&#92;x7e&#92;x00&#92;x00&#92;x00&#34;
+chardata[&#39;&gt;&#39;] = &#34;&#92;x70&#92;x18&#92;x0c&#92;x06&#92;x0c&#92;x18&#92;x70&#92;x00&#34;
+chardata[&#39;?&#39;] = &#34;&#92;x3c&#92;x66&#92;x06&#92;x0c&#92;x18&#92;x00&#92;x18&#92;x00&#34;
+chardata[&#39;a&#39;] = &#34;&#92;x00&#92;x00&#92;x3c&#92;x06&#92;x3e&#92;x66&#92;x3e&#92;x00&#34;
+chardata[&#39;b&#39;] = &#34;&#92;x00&#92;x60&#92;x60&#92;x7c&#92;x66&#92;x66&#92;x7c&#92;x00&#34;
+chardata[&#39;c&#39;] = &#34;&#92;x00&#92;x00&#92;x3c&#92;x60&#92;x60&#92;x60&#92;x3c&#92;x00&#34;
+chardata[&#39;d&#39;] = &#34;&#92;x00&#92;x06&#92;x06&#92;x3e&#92;x66&#92;x66&#92;x3e&#92;x00&#34;
+chardata[&#39;e&#39;] = &#34;&#92;x00&#92;x00&#92;x3c&#92;x66&#92;x7e&#92;x60&#92;x3c&#92;x00&#34;
+chardata[&#39;f&#39;] = &#34;&#92;x00&#92;x0e&#92;x18&#92;x3e&#92;x18&#92;x18&#92;x18&#92;x00&#34;
+chardata[&#39;g&#39;] = &#34;&#92;x00&#92;x00&#92;x3e&#92;x66&#92;x66&#92;x3e&#92;x06&#92;x7c&#34;
+chardata[&#39;h&#39;] = &#34;&#92;x00&#92;x60&#92;x60&#92;x7c&#92;x66&#92;x66&#92;x66&#92;x00&#34;
+chardata[&#39;i&#39;] = &#34;&#92;x00&#92;x18&#92;x00&#92;x38&#92;x18&#92;x18&#92;x3c&#92;x00&#34;
+chardata[&#39;j&#39;] = &#34;&#92;x00&#92;x06&#92;x00&#92;x06&#92;x06&#92;x06&#92;x06&#92;x3c&#34;
+chardata[&#39;k&#39;] = &#34;&#92;x00&#92;x60&#92;x60&#92;x6c&#92;x78&#92;x6c&#92;x66&#92;x00&#34;
+chardata[&#39;l&#39;] = &#34;&#92;x00&#92;x38&#92;x18&#92;x18&#92;x18&#92;x18&#92;x3c&#92;x00&#34;
+chardata[&#39;m&#39;] = &#34;&#92;x00&#92;x00&#92;x66&#92;x7f&#92;x7f&#92;x6b&#92;x63&#92;x00&#34;
+chardata[&#39;n&#39;] = &#34;&#92;x00&#92;x00&#92;x7c&#92;x66&#92;x66&#92;x66&#92;x66&#92;x00&#34;
+chardata[&#39;o&#39;] = &#34;&#92;x00&#92;x00&#92;x3c&#92;x66&#92;x66&#92;x66&#92;x3c&#92;x00&#34;
+chardata[&#39;p&#39;] = &#34;&#92;x00&#92;x00&#92;x7c&#92;x66&#92;x66&#92;x7c&#92;x60&#92;x60&#34;
+chardata[&#39;q&#39;] = &#34;&#92;x00&#92;x00&#92;x3e&#92;x66&#92;x66&#92;x3e&#92;x06&#92;x06&#34;
+chardata[&#39;r&#39;] = &#34;&#92;x00&#92;x00&#92;x7c&#92;x66&#92;x60&#92;x60&#92;x60&#92;x00&#34;
+chardata[&#39;s&#39;] = &#34;&#92;x00&#92;x00&#92;x3e&#92;x60&#92;x3c&#92;x06&#92;x7c&#92;x00&#34;
+chardata[&#39;t&#39;] = &#34;&#92;x00&#92;x18&#92;x7e&#92;x18&#92;x18&#92;x18&#92;x0e&#92;x00&#34;
+chardata[&#39;u&#39;] = &#34;&#92;x00&#92;x00&#92;x66&#92;x66&#92;x66&#92;x66&#92;x3e&#92;x00&#34;
+chardata[&#39;v&#39;] = &#34;&#92;x00&#92;x00&#92;x66&#92;x66&#92;x66&#92;x3c&#92;x18&#92;x00&#34;
+chardata[&#39;w&#39;] = &#34;&#92;x00&#92;x00&#92;x63&#92;x6b&#92;x7f&#92;x3e&#92;x36&#92;x00&#34;
+chardata[&#39;x&#39;] = &#34;&#92;x00&#92;x00&#92;x66&#92;x3c&#92;x18&#92;x3c&#92;x66&#92;x00&#34;
+chardata[&#39;y&#39;] = &#34;&#92;x00&#92;x00&#92;x66&#92;x66&#92;x66&#92;x3e&#92;x0c&#92;x78&#34;
+chardata[&#39;z&#39;] = &#34;&#92;x00&#92;x00&#92;x7e&#92;x0c&#92;x18&#92;x30&#92;x7e&#92;x00&#34;
+
+class SSD1306(object):
+    def __init__(self, bus=1, address=0x3c):
+        self._address = address
+        self._bus = smbus.SMBus(bus)
+
+        self._command(0xae) # Display off.
+
+        self._command(0xa8) # Multiplex ratio...
+        self._command(0x3f) # ...63
+        self._command(0xd3) # Display offset...
+        self._command(0x00) # ...0
+        self._command(0x40) # Display start line at 0.
+        self._command(0xa1) # Segment Re-map with column 127 mapped to SEG0.
+        self._command(0xc8) # Remapped mode, scan from COM[N-1] to COM0.
+        self._command(0xda) # COM pins hardware configuration...
+        self._command(0x32) # ...Alternative and Left/Right
+        self._command(0xa4) # Entire display ON.
+        self._command(0xa6) # Inverse display mode.
+        self._command(0xd5) # Display clock...
+        self._command(0x80) # ...No clock divide ratio and max frequency.
+        self._command(0x8d) # Charge pump...
+        self._command(0x14) # ...Enabled.
+        self._command(0x20) # Memory addressing mode...
+        self._command(0x20) # ...Horizontal.
+
+        self._command(0xaf) # Display on.
+    
+    def _command(self, command_byte):
+        self._bus.write_byte_data(self._address, 0x00, command_byte)
+
+    def _data(self, data_byte):
+        self._bus.write_byte_data(self._address, 0x40, data_byte)
+
+    def reset_cursor(self):
+        self._command(0x21) # Column address...
+        self._command(0x00) # ...start at 0...
+        self._command(0x7f) # ...end at 127.
+        self._command(0x22) # Page address...
+        self._command(0x00) # ...start at 0...
+        self._command(0x07) # ...end at 7.
+
+    def putc(self, char):
+        if char in chardata:
+            for column in range(0, 8):
+                byte  = ((ord(chardata[char][0]) &gt;&gt; (7 - column)) &amp; 1) &lt;&lt; 1
+                byte += ((ord(chardata[char][1]) &gt;&gt; (7 - column)) &amp; 1) &lt;&lt; 0
+                byte += ((ord(chardata[char][2]) &gt;&gt; (7 - column)) &amp; 1) &lt;&lt; 3
+                byte += ((ord(chardata[char][3]) &gt;&gt; (7 - column)) &amp; 1) &lt;&lt; 2
+                byte += ((ord(chardata[char][4]) &gt;&gt; (7 - column)) &amp; 1) &lt;&lt; 5
+                byte += ((ord(chardata[char][5]) &gt;&gt; (7 - column)) &amp; 1) &lt;&lt; 4
+                byte += ((ord(chardata[char][6]) &gt;&gt; (7 - column)) &amp; 1) &lt;&lt; 7
+                byte += ((ord(chardata[char][7]) &gt;&gt; (7 - column)) &amp; 1) &lt;&lt; 6
+                self._data(byte)
+
+    def puts(self, string):
+        for char in string:
+            self.putc(char)
+
+class WiFiStatus(object):
+    def __init__(self, interface):
+        self._interface = interface
+
+    def _get_status(self):
+        iwconfig = subprocess.check_output(&#34;iwconfig %s&#34; % (self._interface), shell=True)
+        ifconfig = subprocess.check_output(&#34;ifconfig %s&#34; % (self._interface), shell=True)
+
+        match = re.search(r&#39;inet ([^&#92; ]+?) &#39;, ifconfig, flags=re.MULTILINE)
+        if match:
+            inet_address = match.group(1)
+        else:
+            inet_address = &#34;&#34;
+
+        match = re.search(r&#39;RX packets ([^&#92; ]+?) &#39;, ifconfig, flags=re.MULTILINE)
+        if match:
+            rx_packets = match.group(1)
+        else:
+            rx_packets = &#34;&#34;
+
+        match = re.search(r&#39;TX packets ([^&#92; ]+?) &#39;, ifconfig, flags=re.MULTILINE)
+        if match:
+            tx_packets = match.group(1)
+        else:
+            tx_packets = &#34;&#34;
+
+        match = re.search(r&#39;ESSID:&#34;([^&#34;]+?)&#34;&#39;, iwconfig, flags=re.MULTILINE)
+        if match:
+            essid = match.group(1)
+        else:
+            essid = &#34;&#34;
+
+        match = re.search(r&#39;Link Quality=(&#92;d+/&#92;d+)&#39;, iwconfig, flags=re.MULTILINE)
+        if match:
+            link_quality = match.group(1)
+        else:
+            link_quality = &#34;&#34;
+
+        match = re.search(r&#39;Signal level=(-&#92;d+ dBm)&#39;, iwconfig, flags=re.MULTILINE)
+        if match:
+            signal_level = match.group(1)
+        else:
+            signal_level = &#34;&#34;
+
+        match = re.search(r&#39;Bit Rate=([&#92;.&#92;d]+ Mb/s)&#39;, iwconfig, flags=re.MULTILINE)
+        if match:
+            bit_rate = match.group(1)
+        else:
+            bit_rate = &#34;&#34;
+
+        match = re.search(r&#39;Tx-Power=(&#92;d+ dBm)&#39;, iwconfig, flags=re.MULTILINE)
+        if match:
+            tx_power = match.group(1)
+        else:
+            tx_power = &#34;&#34;
+
+        return (inet_address, rx_packets, tx_packets, essid, link_quality, signal_level, bit_rate, tx_power)
+
+    def loop(self):
+        display = SSD1306()
+
+        while True:
+            (ia, rx, tx, si, lq, sl, br, tp) = self._get_status()
+            display.reset_cursor()
+            display.puts((si + &#34;                &#34;)[:16])
+            display.puts((ia + &#34;                &#34;)[:16])
+            display.puts((&#34;Link: &#34; + lq + &#34;          &#34;)[:16])
+            display.puts((&#34;Sig: &#34; + sl + &#34;           &#34;)[:16])
+            display.puts((&#34;Rate: &#34; + br + &#34;          &#34;)[:16])
+            display.puts((&#34;Pow: &#34; + tp + &#34;           &#34;)[:16])
+            display.puts((&#34;Rx: &#34; + rx + &#34;            &#34;)[:16])
+            display.puts((&#34;Tx: &#34; + tx + &#34;            &#34;)[:16])
+            time.sleep(3)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) &lt; 2:
+        print &#34;Usage: %s &lt;interface&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+
+    ws = WiFiStatus(sys.argv[1])
+    ws.loop()
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        05/10-2019, 
+        <a href="article-150.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

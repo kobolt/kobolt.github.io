@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>XP MCE Keyboard on Raspberry Pi Zero W</h1>
+      <p>
+        I have an old <a href="https://www.amazon.com/Microsoft-Remote-Keyboard-Windows-ZV1-00004/dp/B000AOAAN8">Remote Keyboard for Windows XP Media Center Edition</a> which I have managed to &#34;connect&#34; to a <a href="https://www.raspberrypi.com/products/raspberry-pi-zero-w/">Raspberry Pi Zero W</a> through IR.<br />
+        <br />
+        To get a IR functionality on the Pi, I followed <a href="https://blog.gordonturner.com/2020/05/31/raspberry-pi-ir-receiver/">these instructions</a> and bought a <a href="https://no.rs-online.com/web/p/ir-receivers/9190017/">Vishay TSOP38238 IR Receiver</a>. This can be connected (or in my case soldered) directly to the GPIO header of the Pi.<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+|----------------|---------|---------------|
+|                | TSOP    | Raspberry Pi  | 
+| Name           | 38238   | Zero W Header |
+|----------------|---|-----|----|----------|
+| Signal Data    | 1 | OUT | 8  | GPIO14   |
+| Ground         | 2 | GND | 6  | Ground   |
+| Supply Voltage | 3 | VS  | 1  | 3V3      |
+|----------------|---|-----|----|----------|
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <img class="border" src="images/tsop38238_rpi0w.jpg" alt="IR Receiver on Raspberry Pi Zero W" />
+      <p>
+        <br />
+        To enable the GPIO pin 14 as IR the following must be set in /boot/config.txt on the Pi:<br />
+      </p>
+        <div class="box">
+          <pre>
+dtoverlay=gpio-ir,gpio_pin=14
+          </pre>
+        </div>
+      <p>
+        <br />
+        To be able to configure the IR related mappings in the Linux kernel, the &#34;ir-keytable&#34; program must be installed:<br />
+      </p>
+        <div class="box">
+          <pre>
+sudo apt-get install ir-keytable
+          </pre>
+        </div>
+      <p>
+        <br />
+        This XP MCE keyboard uses both the RC-6 protocol for multimedia buttons and a custom protocol of the regular keys, to enable both add this to /etc/rc.local on the Pi:<br />
+      </p>
+        <div class="box">
+          <pre>
+ir-keytable -p rc-6 -p mce_kbd
+          </pre>
+        </div>
+      <p>
+        <br />
+        Now, this should have been enough to get it working, but in my case it didn&#39;t. I suspect there might be a bug/mismatch in either the Linux kernel itself or with the ir-keytable program. At the time of writing, the Pi is running kernel version 5.10.17+ and ir-keytable version 1.16.3. The problem I observed is that most of the keys on the keyboard does not send a EV_KEY event when monitoring with the &#34;evtest&#34; program, which in turn causes the key to not really work at all. After some debugging and troubleshooting I discovered that the affected keys are missing from the keybit[] array in the input_dev structure for the driver.<br />
+        <br />
+        My solution to this is to patch the Linux kernel with a custom &#34;ir-mce_kbd-decoder.ko&#34; kernel module. To build this you will of course need the relevant Linux kernel sources for the Pi. Using <a href="https://github.com/RPi-Distro/rpi-source">this script and instructions</a> seems to be the easiest way. The specific kernel version downloaded in my case was commit 3a33f11c48572b9dd0fecac164b3990fc9234da8.<br />
+        <br />
+        Here is one way to build that single kernel module, assuming you have the kernel sources and the build tools installed:<br />
+      </p>
+        <div class="box">
+          <pre>
+mkdir ir-mce_kbd-decoder
+cd ir-mce_kbd-decoder/
+cp /home/pi/linux-3a33f11c48572b9dd0fecac164b3990fc9234da8/drivers/media/rc/ir-mce_kbd-decoder.c .
+cp /home/pi/linux-3a33f11c48572b9dd0fecac164b3990fc9234da8/drivers/media/rc/rc-core-priv.h .
+echo &#34;obj-m := ir-mce_kbd-decoder.o&#34; &gt; Makefile
+make -C /lib/modules/$(uname -r)/build M=$(pwd) modules
+          </pre>
+        </div>
+      <p>
+        <br />
+        The ir-mce_kbd-decoder.c file needs to be patched with the following to set those missing bits in the keybit[] array:<br />
+      </p>
+        <div class="box">
+          <pre>
+--- ir-mce_kbd-decoder.orig     2021-10-17 12:28:27.991142273 +0200
++++ ir-mce_kbd-decoder.c        2021-10-17 13:18:46.908921902 +0200
+@@ -360,11 +360,20 @@
+
+ static int ir_mce_kbd_register(struct rc_dev *dev)
+ {
++       int i;
+        struct mce_kbd_dec *mce_kbd = &amp;dev-&gt;raw-&gt;mce_kbd;
+
+        timer_setup(&amp;mce_kbd-&gt;rx_timeout, mce_kbd_rx_timeout, 0);
+        spin_lock_init(&amp;mce_kbd-&gt;keylock);
+
++       for (i = 0; i &lt; 256; i++) {
++               if (kbd_keycodes[i] != KEY_RESERVED) {
++                       __set_bit(kbd_keycodes[i], dev-&gt;input_dev-&gt;keybit);
++               }
++       }
++       __set_bit(BTN_LEFT, dev-&gt;input_dev-&gt;keybit);
++       __set_bit(BTN_RIGHT, dev-&gt;input_dev-&gt;keybit);
++
+        return 0;
+ }
+          </pre>
+        </div>
+      <p>
+        <br />
+        To load the new module temporarily for test, use the following commands:<br />
+      </p>
+        <div class="box">
+          <pre>
+sudo modprobe -r ir-mce_kbd-decoder
+sudo insmod ir-mce_kbd-decoder.ko
+sudo ir-keytable -p rc-6 -p mce_kbd
+          </pre>
+        </div>
+      <p>
+        If it works fine, the module may be copied (and overwritten) to /usr/lib/modules/5.10.17+/kernel/drivers/media/rc/ir-mce_kbd-decoder.ko<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        23/10-2021, 
+        <a href="article-185.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,1161 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>AVR Alarm Clock</h1>
+      <p>
+        Here is an implementation of an alarm clock running on an <a href="http://www.atmel.com/products/microcontrollers/avr/">Atmel AVR</a> (ATMega8) microcontroller. It uses a 8-digit LCD display for output, a 3x4 button keypad for input and a buzzer to give an alarm.<br />
+        <br />
+        Here is a circuit diagram of the whole setup:<br />
+      </p>
+      <img class="border" src="images/avrclock_schematics_small.png" alt="AVR Alarm Clock Schematics" />
+      <p>
+        Get a higher resolution schematic <a href="images/avrclock_schematics.png">here</a>.<br />
+        <br />
+        The software on the microcontroller is written entirely in AVR Assembly language. It features a menu to view/set the clock and view/set/enable the alarm and the buzzer. The clock itself is updated by a timer interrupt in the microcontroller, and is not very accurate when running on the internal clock unfortunately. Perhaps an external crystal would improve it, but I never got around to trying it due to lack of hardware.<br />
+        <br />
+        I used the <a href="http://avra.sourceforge.net/">AVRA assembler</a> and <a href="http://www.nongnu.org/avrdude/">AVRDUDE utility</a> against a Atmel STK500 board for development. Easy with this Makefile:<br />
+      </p>
+        <div class="box">
+          <pre>
+clock.hex clock.eep.hex: clock.asm
+	avra clock.asm -o clock.hex
+
+# Needs to be in the correct order, Flash first, then EEPROM second.
+.PHONY: install
+install: clock.hex clock.eep.hex
+	avrdude -c stk500v2 -p m8 -P /dev/ttyS0 -U flash:w:clock.hex:i
+	avrdude -c stk500v2 -p m8 -P /dev/ttyS0 -U eeprom:w:clock.eep.hex:i
+
+.PHONY: clean
+clean:
+	rm clock.hex clock.eep.hex clock.obj clock.cof
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is the code (clock.asm):<br />
+      </p>
+        <div class="box">
+          <pre>
+; *****************************************************************************
+;  AVR ALARM CLOCK
+; *****************************************************************************
+
+.NOLIST
+.INCLUDE &#34;m8def.inc&#34; ; ATMega8
+.LIST
+
+; =============================================================================
+;  REGISTER DEFINITIONS
+; =============================================================================
+
+.DEF second = r0 ; Clock second.
+.DEF minute = r1 ; Clock minute.
+.DEF hour   = r2 ; Clock hour.
+
+.DEF alarm_active = r3 ; Alarm active/enable flag.
+.DEF alarm_minute = r4 ; Alarm minute.
+.DEF alarm_hour   = r5 ; Alarm hour.
+
+.DEF var1   = r16 ; Local use in routines.
+.DEF var2   = r17 ; Local use in routines.
+.DEF arg1   = r18 ; Argument (or return value) between routines.
+.DEF arg2   = r19 ; Argument (or return value) between routines.
+.DEF intvar = r20 ; Used only in interrupt routines.
+
+; =============================================================================
+;  VALUE LABELS
+; =============================================================================
+
+.EQU MENU_ENTRY_CLOCK_SHOW    = 0
+.EQU MENU_ENTRY_CLOCK_SET     = 1
+.EQU MENU_ENTRY_ALARM_SET     = 2
+.EQU MENU_ENTRY_ALARM_ENABLE  = 3
+.EQU MENU_ENTRY_BUZZER_STATUS = 4
+.EQU MENU_ENTRY_END           = 5
+
+.EQU CLOCK_SET_HOUR_MSD   = 0
+.EQU CLOCK_SET_HOUR_LSD   = 1
+.EQU CLOCK_SET_MINUTE_MSD = 2
+.EQU CLOCK_SET_MINUTE_LSD = 3
+.EQU CLOCK_SET_SECOND_MSD = 4
+.EQU CLOCK_SET_SECOND_LSD = 5
+.EQU CLOCK_SET_END        = 6
+
+.EQU ALARM_SET_HOUR_MSD   = 0
+.EQU ALARM_SET_HOUR_LSD   = 1
+.EQU ALARM_SET_MINUTE_MSD = 2
+.EQU ALARM_SET_MINUTE_LSD = 3
+.EQU ALARM_SET_END        = 4
+
+; =============================================================================
+;  DATA DEFINITIONS
+; =============================================================================
+
+.DSEG
+.ORG 0x0060
+_keypad_key_previous: .BYTE 1
+
+; =============================================================================
+;  EEPROM DATA
+; =============================================================================
+
+.ESEG
+.ORG 0x0000
+
+clock_set_menu_text:
+.db &#34;ClockSet&#34;
+alarm_set_menu_text:
+.db &#34;AT:&#34;
+alarm_enable_menu_text:
+.db &#34;AE:&#34;
+buzzer_status_menu_text:
+.db &#34;Buzzer:&#34;
+
+; =============================================================================
+;  RESET AND INTERRUPT VECTORS
+; =============================================================================
+
+.CSEG
+.ORG 0x0000 ; Reset vector.
+  rjmp main_init
+
+.ORG 0x0006 ; Timer1 compare &#39;a&#39; interrupt.
+  rjmp timer1_interrupt
+
+; =============================================================================
+;  MAIN INITIALIZATION
+; =============================================================================
+
+.ORG 0x0010
+main_init:
+  ; Setup MCU control register.
+  in var1, MCUCR
+  ori var1, 0x80 ; Enable sleep in idle mode.
+  out MCUCR, var1
+
+  ; Define SRAM as stack. (In order to use subroutines.)
+  ldi var1, HIGH(RAMEND)
+  out SPH, var1
+  ldi var1, LOW(RAMEND)
+  out SPL, var1
+
+  ; Clear registers.
+  clr second
+  clr minute
+  clr hour
+  clr alarm_active
+  clr alarm_minute
+  clr alarm_hour
+
+  ; Clear data.
+  ldi var1, 0
+  sts _keypad_key_previous, var1
+
+  ; Set parts of Port-B (Connected to LCD) as output.
+  ldi var1, 0b00111111
+  out DDRB, var1
+
+  ; Set parts of Port D (Connected to Keypad and buzzer) as output.
+  ldi var1, 0b10010101
+  out DDRD, var1
+
+  ; Enable compare match &#39;a&#39; interrupt for Timer1.
+  ldi var1, 0b00010000
+  out TIMSK, var1
+
+  ; Set compare value &#39;a&#39; for Timer1.
+  ; (Tuned to one second when using internal clock.)
+  ldi var1, 0b00111100
+  out OCR1AH, var1
+  ldi var1, 0b10000000
+  out OCR1AL, var1
+
+  ; Clear Timer1 counter.
+  clr var1
+  out TCNT1H, var1
+  out TCNT1L, var1
+
+  ; Enable interrupts globally. 
+  sei
+
+  ; Start Timer1 in CTC mode and use internal clock with clk/64 prescaler.
+  clr var1
+  out TCCR1A, var1
+  ldi var1, 0b00001011
+  out TCCR1B, var1
+
+  ; Initialize LCD.
+  rcall lcd_init
+
+  ; Start main program loop.
+  rjmp menu_loop_init
+
+; =============================================================================
+;  MAIN MENU LOOP
+; =============================================================================
+
+menu_loop_init:
+  clr var1 ; Holds &#34;current entry&#34;. What to show and what action to take.
+menu_loop:
+
+  cpi var1, MENU_ENTRY_CLOCK_SHOW
+  brne _menu_loop_display_clock_set
+
+  ; Display clock.
+  rcall lcd_first_position
+  mov arg1, hour
+  rcall split_msd_lsd
+  rcall lcd_number
+  ldi arg1, &#39;:&#39;
+  rcall lcd_character
+  mov arg1, minute
+  rcall split_msd_lsd
+  rcall lcd_number
+  ldi arg1, &#39;:&#39;
+  rcall lcd_character
+  mov arg1, second
+  rcall split_msd_lsd
+  rcall lcd_number
+
+; -----------------------------------------------------------------------------
+
+_menu_loop_display_clock_set:
+  cpi var1, MENU_ENTRY_CLOCK_SET
+  brne _menu_loop_display_alarm_set
+
+  ; Display &#34;ClockSet&#34;.
+  rcall lcd_first_position
+  ldi arg1, LOW(clock_set_menu_text)
+  ldi arg2, 8
+  rcall lcd_eeprom_string
+  rjmp _menu_loop_keypad_poll
+
+; -----------------------------------------------------------------------------
+
+_menu_loop_display_alarm_set:
+  cpi var1, MENU_ENTRY_ALARM_SET
+  brne _menu_loop_display_alarm_enable
+
+  ; Display &#34;AT:&#34; and time of alarm.
+  rcall lcd_first_position
+  ldi arg1, LOW(alarm_set_menu_text)
+  ldi arg2, 3
+  rcall lcd_eeprom_string
+
+  mov arg1, alarm_hour
+  rcall split_msd_lsd
+  rcall lcd_number
+  ldi arg1, &#39;:&#39;
+  rcall lcd_character
+  mov arg1, alarm_minute
+  rcall split_msd_lsd
+  rcall lcd_number
+  rjmp _menu_loop_keypad_poll
+
+; -----------------------------------------------------------------------------
+
+_menu_loop_display_alarm_enable:
+  cpi var1, MENU_ENTRY_ALARM_ENABLE
+  brne _menu_loop_display_buzzer_status
+
+  ; Display &#34;AE:&#34; and 1 if active, or 0 if not active.
+  rcall lcd_first_position
+  ldi arg1, LOW(alarm_enable_menu_text)
+  ldi arg2, 3
+  rcall lcd_eeprom_string
+
+  tst alarm_active
+  breq _menu_loop_display_alarm_not_active
+
+  ldi arg1, &#39;1&#39;
+  rcall lcd_character
+  ldi arg1, &#39; &#39;
+  rcall lcd_character
+  rcall lcd_character
+  rcall lcd_character
+  rcall lcd_character
+  rjmp _menu_loop_keypad_poll
+
+_menu_loop_display_alarm_not_active:
+  ldi arg1, &#39;0&#39;
+  rcall lcd_character
+  ldi arg1, &#39; &#39;
+  rcall lcd_character
+  rcall lcd_character
+  rcall lcd_character
+  rcall lcd_character
+  rjmp _menu_loop_keypad_poll
+
+; -----------------------------------------------------------------------------
+
+_menu_loop_display_buzzer_status:
+  cpi var1, MENU_ENTRY_BUZZER_STATUS
+  brne _menu_loop_keypad_poll
+
+  ; Display &#34;Buzzer:&#34; and 1 if active, or 0 if not active.
+  rcall lcd_first_position
+  ldi arg1, LOW(buzzer_status_menu_text)
+  ldi arg2, 7
+  rcall lcd_eeprom_string
+
+  rcall buzzer_is_active
+  tst arg1
+  breq _menu_loop_display_buzzer_status_not_active
+
+  ldi arg1, &#39;1&#39;
+  rcall lcd_character
+  rjmp _menu_loop_keypad_poll
+
+_menu_loop_display_buzzer_status_not_active:
+  ldi arg1, &#39;0&#39;
+  rcall lcd_character
+  rjmp _menu_loop_keypad_poll
+
+; -----------------------------------------------------------------------------
+
+_menu_loop_keypad_poll:
+  rcall keypad_poll
+  cpi arg1, &#39;*&#39;
+  brne _menu_loop_keypad_poll_action
+  inc var1
+  cpi var1, MENU_ENTRY_END
+  brge _menu_loop_wrap
+  rjmp menu_loop
+_menu_loop_wrap:
+  clr var1
+  rjmp menu_loop
+
+_menu_loop_keypad_poll_action:
+  cpi arg1, &#39;#&#39;
+  breq _menu_loop_action_clock_set
+  rjmp menu_loop
+
+_menu_loop_action_clock_set:
+  cpi var1, MENU_ENTRY_CLOCK_SET
+  brne _menu_loop_action_alarm_set
+  rcall clock_set_action
+  rjmp menu_loop
+
+_menu_loop_action_alarm_set:
+  cpi var1, MENU_ENTRY_ALARM_SET
+  brne _menu_loop_action_alarm_enable
+  rcall alarm_set_action
+  rjmp menu_loop
+
+_menu_loop_action_alarm_enable:
+  cpi var1, MENU_ENTRY_ALARM_ENABLE
+  brne _menu_loop_action_buzzer_status
+  rcall alarm_enable_action
+  rjmp menu_loop
+
+_menu_loop_action_buzzer_status:
+  cpi var1, MENU_ENTRY_BUZZER_STATUS
+  brne _menu_loop_end
+  rcall buzzer_status_action
+  rjmp menu_loop
+
+_menu_loop_end:
+  rjmp menu_loop
+
+; =============================================================================
+;  CLOCK SET SUB-MENU
+; =============================================================================
+
+; clock_set_action -- Adjust time of the clock.
+; IN: N/A
+; OUT: N/A
+clock_set_action:
+  push var1
+  cli ; Freeze time while adjusting clock.
+  clr var1 ; Holds current digit to be adjusted (0 to 5).
+
+_clock_set_loop:
+  mov arg1, var1
+  rcall clock_set_display
+
+  rcall keypad_poll
+
+  ; Check if action should be aborted.
+  cpi arg1, &#39;#&#39;
+  breq _clock_set_end
+  cpi arg1, &#39;*&#39;
+  breq _clock_set_end
+
+  ; Check a key between &#39;0&#39; and &#39;9&#39; is pressed, only then perform adjust.
+  cpi arg1, 0x30
+  brlt _clock_set_loop
+  cpi arg1, 0x40
+  brge _clock_set_loop
+  mov arg2, var1
+  rcall clock_set_update_digit
+
+  inc var1
+  cpi var1, CLOCK_SET_END
+  breq _clock_set_end
+  rjmp _clock_set_loop
+
+_clock_set_end:
+  sei ; Un-freeze time.
+  pop var1
+  ret
+
+; -----------------------------------------------------------------------------
+
+; clock_set_update_digit -- Update individual digit on clock manually.
+; IN: arg1 -&gt; ASCII value of digit to update.
+;     arg2 -&gt; Digit location from 0 to 5.
+; OUT: N/A
+clock_set_update_digit:
+  subi arg1, 0x30 ; Convert from ASCII to actual integer value.
+
+  cpi arg2, CLOCK_SET_HOUR_MSD
+  brne _clock_set_update_hour_lsd
+  rcall convert_to_msd
+  mov hour, arg1
+  ret
+
+_clock_set_update_hour_lsd:
+  cpi arg2, CLOCK_SET_HOUR_LSD
+  brne _clock_set_update_minute_msd
+  add hour, arg1
+  ret
+
+_clock_set_update_minute_msd:
+  cpi arg2, CLOCK_SET_MINUTE_MSD
+  brne _clock_set_update_minute_lsd
+  rcall convert_to_msd
+  mov minute, arg1
+  ret
+
+_clock_set_update_minute_lsd:
+  cpi arg2, CLOCK_SET_MINUTE_LSD
+  brne _clock_set_update_second_msd
+  add minute, arg1
+  ret
+
+_clock_set_update_second_msd:
+  cpi arg2, CLOCK_SET_SECOND_MSD
+  brne _clock_set_update_second_lsd
+  rcall convert_to_msd
+  mov second, arg1
+  ret
+
+_clock_set_update_second_lsd:
+  cpi arg2, CLOCK_SET_SECOND_LSD
+  brne _clock_set_update_digit_end
+  add second, arg1
+  ret
+
+_clock_set_update_digit_end:
+  ret
+
+; -----------------------------------------------------------------------------
+
+; clock_set_display -- Display &#34;update in progress&#34; clock.
+; IN: arg1 -&gt; Digit location from 0 to 5. (What will be updated next.)
+; OUT: N/A
+clock_set_display:
+  push var1
+  mov var1, arg1
+
+  rcall lcd_first_position
+
+  mov arg1, hour
+  rcall split_msd_lsd
+  subi arg1, -0x30
+  subi arg2, -0x30
+
+  cpi var1, CLOCK_SET_HOUR_MSD
+  brne _clock_set_display_hour_msd
+  ldi arg1, &#39;_&#39; ; Use underscore to display &#34;current&#34; number to update.
+_clock_set_display_hour_msd:
+  rcall lcd_character
+
+  mov arg1, arg2
+  cpi var1, CLOCK_SET_HOUR_LSD
+  brne _clock_set_display_hour_lsd
+  ldi arg1, &#39;_&#39;
+
+_clock_set_display_hour_lsd:
+  rcall lcd_character
+
+  ldi arg1, &#39;:&#39;
+  rcall lcd_character
+
+  mov arg1, minute
+  rcall split_msd_lsd
+  subi arg1, -0x30
+  subi arg2, -0x30
+
+  cpi var1, CLOCK_SET_MINUTE_MSD
+  brne _clock_set_display_minute_msd
+  ldi arg1, &#39;_&#39;
+_clock_set_display_minute_msd:
+  rcall lcd_character
+
+  mov arg1, arg2
+  cpi var1, CLOCK_SET_MINUTE_LSD
+  brne _clock_set_display_minute_lsd
+  ldi arg1, &#39;_&#39;
+
+_clock_set_display_minute_lsd:
+  rcall lcd_character
+
+  ldi arg1, &#39;:&#39;
+  rcall lcd_character
+
+  mov arg1, second
+  rcall split_msd_lsd
+  subi arg1, -0x30
+  subi arg2, -0x30
+
+  cpi var1, CLOCK_SET_SECOND_MSD
+  brne _clock_set_display_second_msd
+  ldi arg1, &#39;_&#39;
+_clock_set_display_second_msd:
+  rcall lcd_character
+
+  mov arg1, arg2
+  cpi var1, CLOCK_SET_SECOND_LSD
+  brne _clock_set_display_second_lsd
+  ldi arg1, &#39;_&#39;
+
+_clock_set_display_second_lsd:
+  rcall lcd_character
+
+  pop var1
+  ret
+
+; =============================================================================
+;  ALARM SET SUB-MENU
+; =============================================================================
+
+; alarm_set_action -- Adjust the time of the alarm.
+; IN: N/A
+; OUT: N/A
+alarm_set_action:
+  push var1
+  clr var1 ; Holds current digit to be adjusted (0 to 5).
+
+_alarm_set_loop:
+  mov arg1, var1
+  rcall alarm_set_display
+
+  rcall keypad_poll
+
+  ; Check if action should be aborted.
+  cpi arg1, &#39;#&#39;
+  breq _alarm_set_end
+  cpi arg1, &#39;*&#39;
+  breq _alarm_set_end
+
+  ; Check a key between &#39;0&#39; and &#39;9&#39; is pressed, only then perform adjust.
+  cpi arg1, 0x30
+  brlt _alarm_set_loop
+  cpi arg1, 0x40
+  brge _alarm_set_loop
+  mov arg2, var1
+  rcall alarm_set_update_digit
+
+  inc var1
+  cpi var1, ALARM_SET_END
+  breq _alarm_set_end
+  rjmp _alarm_set_loop
+
+_alarm_set_end:
+  pop var1
+  ret
+
+; -----------------------------------------------------------------------------
+
+; alarm_set_update_digit -- Update individual digit on alarm.
+; IN: arg1 -&gt; ASCII value of digit to update.
+;     arg2 -&gt; Digit location from 0 to 5.
+; OUT: N/A
+alarm_set_update_digit:
+  subi arg1, 0x30 ; Convert from ASCII to actual integer value.
+
+  cpi arg2, ALARM_SET_HOUR_MSD
+  brne _alarm_set_update_hour_lsd
+  rcall convert_to_msd
+  mov alarm_hour, arg1
+  ret
+
+_alarm_set_update_hour_lsd:
+  cpi arg2, ALARM_SET_HOUR_LSD
+  brne _alarm_set_update_minute_msd
+  add alarm_hour, arg1
+  ret
+
+_alarm_set_update_minute_msd:
+  cpi arg2, ALARM_SET_MINUTE_MSD
+  brne _alarm_set_update_minute_lsd
+  rcall convert_to_msd
+  mov alarm_minute, arg1
+  ret
+
+_alarm_set_update_minute_lsd:
+  cpi arg2, ALARM_SET_MINUTE_LSD
+  brne _alarm_set_update_digit_end
+  add alarm_minute, arg1
+  ret
+
+_alarm_set_update_digit_end:
+  ret
+
+; -----------------------------------------------------------------------------
+
+; alarm_set_display -- Display &#34;update in progress&#34; for alarm.
+; IN: arg1 -&gt; Digit location from 0 to 5. (What will be updated next.)
+; OUT: N/A
+alarm_set_display:
+  push var1
+  mov var1, arg1
+
+  rcall lcd_first_position
+
+  mov arg1, alarm_hour
+  rcall split_msd_lsd
+  subi arg1, -0x30
+  subi arg2, -0x30
+
+  cpi var1, ALARM_SET_HOUR_MSD
+  brne _alarm_set_display_hour_msd
+  ldi arg1, &#39;_&#39; ; Use underscore to display &#34;current&#34; number to update.
+_alarm_set_display_hour_msd:
+  rcall lcd_character
+
+  mov arg1, arg2
+  cpi var1, ALARM_SET_HOUR_LSD
+  brne _alarm_set_display_hour_lsd
+  ldi arg1, &#39;_&#39;
+
+_alarm_set_display_hour_lsd:
+  rcall lcd_character
+
+  ldi arg1, &#39;:&#39;
+  rcall lcd_character
+
+  mov arg1, alarm_minute
+  rcall split_msd_lsd
+  subi arg1, -0x30
+  subi arg2, -0x30
+
+  cpi var1, ALARM_SET_MINUTE_MSD
+  brne _alarm_set_display_minute_msd
+  ldi arg1, &#39;_&#39;
+_alarm_set_display_minute_msd:
+  rcall lcd_character
+
+  mov arg1, arg2
+  cpi var1, ALARM_SET_MINUTE_LSD
+  brne _alarm_set_display_minute_lsd
+  ldi arg1, &#39;_&#39;
+
+_alarm_set_display_minute_lsd:
+  rcall lcd_character
+
+  ldi arg1, &#39; &#39;
+  rcall lcd_character
+  rcall lcd_character
+  rcall lcd_character
+
+  pop var1
+  ret
+
+; =============================================================================
+;  ALARM STATUS SUB-MENU
+; =============================================================================
+
+; alarm_enable_action -- Toggle &#34;alarm_active&#34; flag.
+; IN: N/A
+; OUT: N/A
+alarm_enable_action:
+  push var1
+
+  tst alarm_active
+  breq _alarm_enable_action_not_active
+  clr var1
+  mov alarm_active, var1
+
+  pop var1
+  ret
+
+_alarm_enable_action_not_active:
+  ser var1
+  mov alarm_active, var1
+
+  pop var1
+  ret
+
+; =============================================================================
+;  BUZZER STATUS SUB-MENU
+; =============================================================================
+
+; buzzer_status_action -- Toggle buzzer.
+; IN: N/A
+; OUT: N/A
+buzzer_status_action:
+  rcall buzzer_is_active
+  tst arg1
+  breq _buzzer_status_action_not_active
+  rcall buzzer_deactivate
+  ret
+_buzzer_status_action_not_active:
+  rcall buzzer_activate
+  ret
+
+; =============================================================================
+;  LCD DISPLAY INTERFACE
+; =============================================================================
+
+; lcd_init -- Initialize LCD display.
+; IN: N/A
+; OUT: N/A
+lcd_init:
+  push var1
+
+  ; Wait a little after MC startup.
+  rcall long_delay
+
+  ; Set 4-bit data mode. (Directly, since interfaces does not work yet.)
+  ldi var1, 0b00000010
+  out PORTB, var1
+  sbi PORTB, 4 ; Set enable.
+  rcall short_delay
+  cbi PORTB, 4 ; Clear enable.
+  rcall long_delay
+
+  ; Trick to keep to keep brightness correct.
+  ldi arg1, 0b10001000
+  rcall lcd_command
+  ldi arg1, &#39;!&#39;
+  rcall lcd_character
+
+  ; Set 1-line mode.
+  ldi arg1, 0b00100000
+  rcall lcd_command
+
+  ; Turn on LCD. (Without blinking cursor.)
+  ldi arg1, 0b00001100
+  rcall lcd_command
+
+  ; Clear whole display.
+  ldi arg1, 0b00000001 
+  rcall lcd_command
+  rcall long_delay
+
+  ; Set cursor to move left after write operation.
+  ldi arg1, 0b00000110
+  rcall lcd_command
+
+  pop var1
+  ret
+
+; -----------------------------------------------------------------------------
+
+; lcd_character -- Print single character (extended ASCII) to LCD display.
+; IN: arg1 -&gt; character
+; OUT: N/A
+lcd_character:
+  push var1
+
+  ; Extract high nibble from byte.
+  mov var1, arg1
+  swap var1 ; Swap nibbles.
+  andi var1, 0xf ; Clear high nibble.
+  out PORTB, var1
+  sbi PORTB, 5 ; Set RS to 1 to use character register.
+
+  ; Toggle enable to send the first 4 bits of data.
+  sbi PORTB, 4
+  rcall short_delay
+  cbi PORTB, 4
+  rcall short_delay
+  
+  ; Extract lower nibble from byte.
+  mov var1, arg1
+  andi var1, 0xf
+  out PORTB, var1
+  sbi PORTB, 5
+
+  ; Toggle enable to send the second 4 bits of data.
+  sbi PORTB, 4
+  rcall short_delay
+  cbi PORTB, 4
+  rcall short_delay
+
+  pop var1
+  ret
+
+; -----------------------------------------------------------------------------
+
+; lcd_command -- Send control command to LCD display.
+; IN: arg1 -&gt; command number
+; OUT: N/A
+lcd_command:
+  push var1
+
+  ; Extract high nibble from byte.
+  mov var1, arg1
+  swap var1 ; Swap nibbles.
+  andi var1, 0xf ; Clear high nibble.
+  out PORTB, var1
+  ; RS remains 0 to use command register.
+
+  ; Toggle enable to send the first 4 bits of data.
+  sbi PORTB, 4
+  rcall short_delay
+  cbi PORTB, 4
+  rcall short_delay
+  
+  ; Extract lower nibble from byte.
+  mov var1, arg1
+  andi var1, 0xf
+  out PORTB, var1
+
+  ; Toggle enable to send the second 4 bits of data.
+  sbi PORTB, 4
+  rcall short_delay
+  cbi PORTB, 4
+  rcall short_delay
+
+  pop var1
+  ret
+
+; -----------------------------------------------------------------------------
+
+; lcd_first_position -- Set LCD address to first position (0).
+; IN: N/A
+; OUT: N/A
+lcd_first_position:
+  ldi arg1, 0b10000000 ; Set DDRAM address to first display position.
+  rcall lcd_command
+  ret
+
+; -----------------------------------------------------------------------------
+
+; lcd_number -- Print two digit number to LCD display.
+; IN: arg1 -&gt; MSD of two digit number.
+;     arg2 -&gt; LSD of two digit number.
+; OUT: N/A
+lcd_number:
+  ; Add ASCII compensator.
+  subi arg1, -0x30
+  subi arg2, -0x30
+
+  rcall lcd_character
+  mov arg1, arg2
+  rcall lcd_character
+
+  ret
+
+; -----------------------------------------------------------------------------
+
+; lcd_eeprom_string -- Print string from EEPROM to LCD display.
+; IN: arg1 -&gt; Start of EEPROM address.
+;     arg2 -&gt; Amount of characters in string.
+; OUT: N/A
+lcd_eeprom_string:
+  push var1
+  push var2
+  mov var1, arg1
+  mov var2, arg2
+
+_lcd_eeprom_string_loop:
+  mov arg1, var1
+  rcall eeprom_read
+  rcall lcd_character
+  inc var1 ; Address incremented for every cycle.
+  dec var2 ; Will be decremented until zero.
+  tst var2
+  brne _lcd_eeprom_string_loop
+
+  pop var2
+  pop var1
+  ret
+
+; =============================================================================
+;  KEYPAD INTERFACE
+; =============================================================================
+
+; keypad_poll -- Retrive next keypress from keypad.
+; IN: N/A
+; OUT: arg1 -&gt; Pressed key in ASCII, or 0 if no new key has been pressed.
+keypad_poll:
+  push var1
+  clr arg1
+
+  ; ldi var1, 0b00000100 ; K1
+  ; out PORTD, var1
+  sbi PORTD, 2 ; K1
+  nop ; This NOP is required for correct timing.
+  sbic PIND, 1 ; R1
+  ldi arg1, &#39;1&#39;
+  sbic PIND, 6 ; R2
+  ldi arg1, &#39;4&#39;
+  sbic PIND, 5 ; R3
+  ldi arg1, &#39;7&#39;
+  sbic PIND, 3 ; R4
+  ldi arg1, &#39;*&#39;
+  cbi PORTD, 2 ; K1
+
+  ; ldi var1, 0b00000001 ; K2
+  ; out PORTD, var1
+  sbi PORTD, 0 ; K2
+  nop
+  sbic PIND, 1 ; R1
+  ldi arg1, &#39;2&#39;
+  sbic PIND, 6 ; R2
+  ldi arg1, &#39;5&#39;
+  sbic PIND, 5 ; R3
+  ldi arg1, &#39;8&#39;
+  sbic PIND, 3 ; R4
+  ldi arg1, &#39;0&#39;
+  cbi PORTD, 0 ; K2
+
+  ; ldi var1, 0b00010000 ; K3
+  ; out PORTD, var1
+  sbi PORTD, 4 ; K3
+  nop
+  sbic PIND, 1 ; R1
+  ldi arg1, &#39;3&#39;
+  sbic PIND, 6 ; R2
+  ldi arg1, &#39;6&#39;
+  sbic PIND, 5 ; R3
+  ldi arg1, &#39;9&#39;
+  sbic PIND, 3 ; R4
+  ldi arg1, &#39;#&#39;
+  cbi PORTD, 4 ; K3
+
+  lds var1, _keypad_key_previous
+  cp arg1, var1
+  brne _keypad_return_new_key
+  clr arg1
+  pop var1
+  ret ; Return 0 to indicate NO new key.
+
+_keypad_return_new_key:
+  sts _keypad_key_previous, arg1
+  pop var1
+  ret
+
+; =============================================================================
+;  BUZZER INTERFACE
+; =============================================================================
+
+; buzzer_activate -- Start buzzer.
+; IN: N/A
+; OUT: N/A
+buzzer_activate:
+  sbi PORTD, 7
+  ret
+
+; -----------------------------------------------------------------------------
+
+; buzzer_deactivate -- Stop buzzer.
+; IN: N/A
+; OUT: N/A
+buzzer_deactivate:
+  cbi PORTD, 7
+  ret
+
+; -----------------------------------------------------------------------------
+
+; buzzer_is_active -- Fetch current status of buzzer (output).
+; IN: N/A
+; OUT: arg1 -&gt; 1 if active, or 0 if deactivated.
+buzzer_is_active:
+  ldi arg1, 0
+  sbic PORTD, 7
+  ldi arg1, 1
+  ret
+
+; =============================================================================
+;  COMMON ROUTINES
+; =============================================================================
+
+; eeprom_read -- Read from EEPROM.
+; IN: arg1 -&gt; EEPROM address
+; OUT: arg1 -&gt; value
+eeprom_read:
+  sbic EECR, 1 ; Check if EEPROM is busy.
+  rjmp eeprom_read
+  out EEARL, arg1 ; Select EEPROM address register.
+  ldi arg1, 0
+  out EEARH, arg1
+  sbi EECR, EERE ; Activate &#34;Read Enable&#34;.
+  in arg1, EEDR ; Read from data register.
+  ret
+
+; -----------------------------------------------------------------------------
+
+; long_delay -- Waste CPU cycles to cause a &#34;long&#34; delay.
+; IN: N/A
+; OUT: N/A
+long_delay:
+  push var1
+  push var2
+_long_delay_loop:
+  dec var1
+  brne _long_delay_loop
+  dec var2
+  brne _long_delay_loop
+  pop var2
+  pop var1
+  ret
+
+; -----------------------------------------------------------------------------
+
+; short_delay -- Waste CPU cycles to cause a &#34;short&#34; delay.
+; IN: N/A
+; OUT: N/A
+short_delay:
+  push var1
+_short_delay_loop:
+  dec var1
+  brne _short_delay_loop
+  pop var1
+  ret
+
+; -----------------------------------------------------------------------------
+
+; split_msd_lsd -- Split two digit number into MSD and LSD.
+; IN: arg1 -&gt; Two digit number.
+; OUT: arg1 -&gt; MSD
+;      arg2 -&gt; LSD
+split_msd_lsd:
+  mov arg2, arg1
+  ldi arg1, -1
+_split_msd_lsd_positive:
+  inc arg1
+  subi arg2, 10
+  brpl _split_msd_lsd_positive
+  subi arg2, -10 ; Actually same as &#34;addi arg1, 10&#34;, which does not exist.
+  ret
+
+; -----------------------------------------------------------------------------
+
+; convert_to_lsd -- Convert LSD to MSD.
+; IN: arg1 -&gt; LSD
+; OUT: arg1 -&gt; MSD
+convert_to_msd:
+  push var1
+  mov var1, arg1
+_convert_to_msd_loop:
+  cpi var1, 0
+  breq _convert_to_msd_done
+  subi arg1, -9
+  dec var1
+  rjmp _convert_to_msd_loop
+_convert_to_msd_done:
+  pop var1
+  ret
+
+; =============================================================================
+;  INTERRUPT ROUTINES
+; =============================================================================
+
+; timer1_interrupt -- Updates clock (second/minute/hour) counters.
+; IN: N/A
+; OUT: N/A
+timer1_interrupt:
+  inc second
+  ldi intvar, 60
+  cp second, intvar
+  brlt _timer1_check_alarm
+  clr second
+  inc minute
+  cp minute, intvar
+  brlt _timer1_check_alarm
+  clr minute
+  inc hour
+  ldi intvar, 24
+  cp hour, intvar
+  brlt _timer1_check_alarm
+  clr hour
+
+_timer1_check_alarm:
+  tst alarm_active
+  breq _timer1_done
+
+  cp alarm_hour, hour
+  brne _timer1_done
+  cp alarm_minute, minute
+  brne _timer1_done
+
+  ; Clear alarm active bit, to prevent triggering again.
+  clr intvar
+  mov alarm_active, intvar
+
+  ; Set port directly, since buzzer_activate cannot be called from interrupt.
+  sbi PORTD, 7
+
+_timer1_done:
+  reti
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        07/08-2016, 
+        <a href="article-112.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

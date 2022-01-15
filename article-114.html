@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>FLAC to MP3 Conversion</h1>
+      <p>
+        Here is my custom Python script to convert FLAC files to MP3 files.<br />
+        In addition to the obligatory audio conversion, it also handles tag conversion. Because of this, the external <a href="http://eyed3.nicfit.net/">eyeD3</a> module is required.<br />
+        <br />
+        Take a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import subprocess
+import eyed3
+import os
+import os.path
+import re
+import struct
+import getopt
+
+temp_tags = r&#34;/tmp/___TAGS___.utf8&#34;
+temp_cover = r&#34;/tmp/___COVER___.jpg&#34;
+
+def apic_from_unicode_to_latin1(filename):
+    data = open(filename, &#34;rb&#34;).read()
+
+    match = re.search(&#39;APIC(......)&#92;x01image/jpeg&#92;x00&#92;x03&#92;xff&#92;xfe&#92;x00&#92;x00&#39;, data)
+    if match:
+        header = match.group(1)
+
+        # Just inject FIX as picture description to keep same frame size!
+        old = &#39;APIC&#39; + header + &#39;&#92;x01image/jpeg&#92;x00&#92;x03&#92;xff&#92;xfe&#92;x00&#92;x00&#39;
+        new = &#39;APIC&#39; + header + &#39;&#92;x00image/jpeg&#92;x00&#92;x03FIX&#92;x00&#39;
+        data = data.replace(old, new)
+
+        fh = open(filename, &#34;wb&#34;)
+        fh.write(data)
+        fh.close()
+
+class TagData(object):
+    def __init__(self):
+        self.title = None
+        self.album = None
+        self.track_num = None
+        self.artist = None
+        self.genre = None
+        self.date = None
+        self.album_artist = None
+
+    def read_flac_tags(self, filename):
+        subprocess.call([&#34;metaflac&#34;, &#34;--no-utf8-convert&#34;, &#34;--export-tags-to=&#34; + temp_tags, filename])
+        fh = open(temp_tags, &#34;rb&#34;)
+        for line in fh:
+            match = re.match(r&#39;^TITLE=(.*)&#39;, line.decode(&#39;UTF-8&#39;), re.IGNORECASE)
+            if match:
+                self.title = match.group(1)
+            match = re.match(r&#39;^ALBUM=(.*)&#39;, line.decode(&#39;UTF-8&#39;), re.IGNORECASE)
+            if match:
+                self.album = match.group(1)
+            match = re.match(r&#39;^TRACKNUMBER=(&#92;d*)&#39;, line.decode(&#39;UTF-8&#39;), re.IGNORECASE)
+            if match:
+                self.track_num = int(match.group(1))
+            match = re.match(r&#39;^ARTIST=(.*)&#39;, line.decode(&#39;UTF-8&#39;), re.IGNORECASE)
+            if match:
+                self.artist = match.group(1)
+            match = re.match(r&#39;^GENRE=(.*)&#39;, line.decode(&#39;UTF-8&#39;), re.IGNORECASE)
+            if match:
+                self.genre = match.group(1)
+            match = re.match(r&#39;^DATE=(&#92;d*)&#39;, line.decode(&#39;UTF-8&#39;), re.IGNORECASE)
+            if match:
+                self.date = int(match.group(1))
+
+        fh.close()
+
+    def write_mp3_tags(self, filename):
+        audiofile = eyed3.load(filename)
+        audiofile.tag = eyed3.id3.Tag() # Create NEW!
+        if self.title:
+            audiofile.tag.title = self.title
+        if self.album:
+            audiofile.tag.album = self.album
+        if self.track_num:
+            audiofile.tag.track_num = self.track_num
+        if self.artist:
+            audiofile.tag.artist = self.artist
+        if self.genre:
+            audiofile.tag.genre = self.genre
+        if self.date:
+            audiofile.tag.recording_date = self.date # Works if version 2.3
+        if self.album_artist:
+            audiofile.tag.album_artist = self.album_artist
+        audiofile.tag.save(filename, eyed3.id3.ID3_V2_3)
+
+def print_usage(progname):
+    print &#34;Usage: %s &#34; % (progname)
+    print &#34;-f &lt;FLAC File&gt;&#34;
+    print &#34;-a [AlbumArtist]&#34;
+    print &#34;-c [Cover Image Path]&#34;
+    print &#34;-n [Album Name Override]&#34;
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    tagdata = TagData()
+
+    # NOTE: Need to filter out empty strings from sys.argv.
+    # If not, the parser thinks parsing finishes early.
+    try:
+        opts, args = getopt.getopt(filter(None, sys.argv[1:]), &#34;hf:a:c:n:&#34;, [&#34;help&#34;, &#34;flacfile=&#34;, &#34;albumartist=&#34;, &#34;cover=&#34;, &#34;albumname=&#34;])
+    except getopt.GetoptError as err:
+        print str(err)
+        print_usage(sys.argv[0])
+        sys.exit(1)
+
+    print &#34;Opts:&#34;, opts
+    print &#34;Args:&#34;, args
+
+    filename = None
+    album_artist = None
+    cover_override = None
+    album_name_override = None
+
+    for o, a in opts:
+        if o in (&#34;-h&#34;, &#34;--help&#34;):
+            print_usage(sys.argv[0])
+            sys.exit(1)
+        elif o in (&#34;-f&#34;, &#34;--flacfile&#34;):
+            filename = a
+            print &#34;FLAC File:&#34;, filename
+        elif o in (&#34;-a&#34;, &#34;--albumartist&#34;):
+            album_artist = a
+            print &#34;AlbumArtist:&#34;, album_artist
+        elif o in (&#34;-c&#34;, &#34;--cover&#34;):
+            cover_override = a
+            print &#34;Cover Image Path:&#34;, cover_override
+        elif o in (&#34;-n&#34;, &#34;--albumname&#34;):
+            album_name_override = a
+            print &#34;Album Name Override:&#34;, album_name_override
+
+    if filename == None:
+        print_usage(sys.argv[0])
+        sys.exit(1)
+
+    # Set optional AlbumArtist.
+    if album_artist:
+        tagdata.album_artist = unicode(album_artist)
+
+    # Read old tags from FLAC.
+    tagdata.read_flac_tags(filename)
+
+    # Set optional album name override, AFTER reading default tags.
+    if album_name_override:
+        tagdata.album = unicode(album_name_override)
+
+    # Decode FLAC, encode MP3.
+    subprocess.call([&#34;flac&#34;, &#34;-d&#34;, filename, &#34;-o&#34;, filename + &#34;.wav&#34;])
+    subprocess.call([&#34;lame&#34;, &#34;-b&#34;, &#34;320&#34;, &#34;-h&#34;, filename + &#34;.wav&#34;, filename + &#34;.mp3&#34;])
+
+    # Write new tags to MP3.
+    tagdata.write_mp3_tags(filename + &#34;.mp3&#34;)
+
+    # Get cover image from argument, or...
+    if cover_override:
+        cover_file = cover_override
+    else:
+        # ...attempt to extract cover image from FLAC file...
+        subprocess.call([&#34;metaflac&#34;, &#34;--export-picture-to=&#34; + temp_cover, filename])
+        cover_file = temp_cover
+
+    # ...then apply it.
+    if os.path.isfile(cover_file):
+        imagedata = open(cover_file, &#34;rb&#34;).read()
+        if imagedata.startswith(&#34;&#92;xff&#92;xd8&#92;xff&#34;):
+            audiofile = eyed3.load(filename + &#34;.mp3&#34;)
+            audiofile.tag.images.set(3, imagedata, &#34;image/jpeg&#34;)
+            audiofile.tag.save()
+        else:
+            print &#34;Warning: Image data is not JPEG.&#34;
+
+    # iTunes APIC fix, encoding must be changed to latin1.
+    apic_from_unicode_to_latin1(filename + &#34;.mp3&#34;)
+
+    # Remove &#34;.flac&#34; part of final MP3 file.
+    if os.path.isfile(filename + &#34;.mp3&#34;):
+        os.rename(filename + &#34;.mp3&#34;, filename.replace(&#34;.flac&#34;, &#34;&#34;) + &#34;.mp3&#34;)
+
+    # Remove temporary files.
+    if os.path.isfile(filename + &#34;.wav&#34;):
+        os.remove(filename + &#34;.wav&#34;)
+    if os.path.isfile(temp_tags):
+        os.remove(temp_tags)
+    if os.path.isfile(temp_cover):
+        os.remove(temp_cover)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        03/12-2016, 
+        <a href="article-114.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

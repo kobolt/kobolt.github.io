@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CP/M on the GR-SAKURA</h1>
+      <p>
+        I have ported my <a href="article-179.html">&#34;kaytil&#34; Z80 CP/M 2.2 emulator</a> to the <a href="http://gadget.renesas.com/en/product/sakura.html">Gadget Renesas GR-SAKURA</a> reference board. This means it&#39;s possible to run all kinds of off-the shelf CP/M games and software on this board.<br />
+        <br />
+        Even though it&#39;s based on the &#34;kaytil&#34; codebase, some heavy modifications have been done. All the trace and debug functions have been removed to reduce the binary size and also to speed up emulation. The Z80 emulation core remains the same but the console and disk emulations have been adapted to the different hardware. The CPM 2.2 and CBIOS binaries are embedded directly into the code to allow for easier standalone operation.<br />
+        <br />
+        For the floppy disk emulation, the floppy disk images needs to be placed at the root directory on a FAT16 formatted MicroSD card (first partition) and be named &#34;A.IMG&#34;, &#34;B.IMG&#34;, &#34;C.IMG&#34; and &#34;D.IMG&#34; for each of the four drives. The MicroSD card on the GR-SAKURA is read through <a href="https://en.wikipedia.org/wiki/Serial_Peripheral_Interface">SPI</a> and is kind of slow, so a simple caching mechanism has been implemented where the lowest sectors are cached in memory. To get optimal performance the FAT16 partition should be placed as close as possible to the MBR, possibly on sector 3, as this should get the actual FAT table cached into memory. Note that there is only read support, any writes to floppy disk by the CP/M OS are simply ignored. The four on-board LEDs on the GR-SAKURA are used as disk activity indicators.<br />
+        <br />
+        For the console emulation I was first considering to use Renesas USB-CDC library to provide this over the USB connection, but I could not get it to work properly, as it seemed to get congested by too much traffic and just freeze. Instead, the first UART is used, marked by pins 0 (RX) and pin 1 (TX) on the GR-SAKURA, and it runs on 115200 baud for best performance. Same as the &#34;kaytil&#34; emulator on Linux; conversion between ADM-3A codes to VT100/ANSI codes are done in the emulator already. I wonder if it would have been technically possible to remove this conversion and connect a real Lear Siegler ADM-3A terminal (with a voltage level shifter) directory to the GR-SAKURA...<br />
+        <br />
+        The RX CPU on the GR-SAKURA runs at 96MHz I believe, and compiling the emulator with -O2 optimization makes the speed nearly similar to a real <a href="https://en.wikipedia.org/wiki/Kaypro">Kaypro II</a>, which is nice.<br />
+        <br />
+        You can download the first version <a href="supplies/sakura-kaytil-0.1.tar.gz">here</a> and there is also a <a href="https://github.com/kobolt/kaytil/tree/sakura">branch</a> on the &#34;kaytil&#34; git repo.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        04/10-2021, 
+        <a href="article-184.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

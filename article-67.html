@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Process Dispatcher</h1>
+      <p>
+        This is a script I hacked together in Python to be able to run several processes in parallel easily. You specify a program to run as the argument to the script itself, then the script presents a shell where you can input a &#34;real&#34; argument for the program previously specified. Once an argument has been entered on the shell, a sub process is started in the background, and the shell is immediately ready for a new argument. A practical usage of this is to download several files in parallel with &#34;<a href="http://www.gnu.org/software/wget/">wget</a>&#34;. Simply start the script with wget as the argument and enter URLs on the shell to download them. A counter in the shell prompt is used to keep track of how many sub processes are ongoing.<br />
+        <br />
+        Enjoy:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import threading
+import subprocess
+
+class Dispatcher(object):
+    def __init__(self, command):
+        self.command = command
+
+    class _Executor(threading.Thread):
+        def __init__(self, command, arg):
+            threading.Thread.__init__(self)
+            self.command = command
+            self.arg = arg
+
+        def run(self):
+            null = open(&#34;/dev/null&#34;)
+            subprocess.call([self.command, self.arg], stdout=null, stderr=null)
+            null.close()
+
+    def run(self):
+        while True:
+            arg = raw_input(str(threading.active_count() - 1) + &#34;&gt;&#34;)
+            if arg == &#39;quit&#39;:
+                break
+            if len(arg) &gt; 0:
+                thread = self._Executor(self.command, arg)
+                thread.start()
+            else:
+                for thread in threading.enumerate():
+                    if thread.name != &#34;MainThread&#34;:
+                        print thread.arg
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+    if len(sys.argv) &gt; 1:
+        d = Dispatcher(sys.argv[1])
+        d.run()
+        sys.exit(0)
+    else:
+        print &#34;Usage: %s &lt;executable command&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/07-2012, 
+        <a href="article-67.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

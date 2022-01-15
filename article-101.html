@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Katakana to ASCII Converter</h1>
+      <p>
+        The Japanese writing system of <a href="https://en.wikipedia.org/wiki/Katakana">Katakana</a> is typically used to represent text from foreign languages. This means it&#39;s possible to translate it directly, and still be able to understand some of the meaning.<br />
+        <br />
+        So, I made this C-based filter to convert <a href="https://en.wikipedia.org/wiki/UTF-8">UTF-8</a> based Katakana text to ASCII, take a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+typedef struct unicode_s {
+  int code;
+  char text[3];
+} unicode_t;
+
+#define KATAKANA_SIZE 96
+
+static unicode_t katakana[KATAKANA_SIZE] = {
+  {0x30A0, &#34;=&#34;},   {0x30A1, &#34;a&#34;},   {0x30A2, &#34;a&#34;},   {0x30A3, &#34;i&#34;},
+  {0x30A4, &#34;i&#34;},   {0x30A5, &#34;u&#34;},   {0x30A6, &#34;u&#34;},   {0x30A7, &#34;e&#34;},
+  {0x30A8, &#34;e&#34;},   {0x30A9, &#34;o&#34;},   {0x30AA, &#34;o&#34;},   {0x30AB, &#34;ka&#34;},
+  {0x30AC, &#34;ga&#34;},  {0x30AD, &#34;ki&#34;},  {0x30AE, &#34;gi&#34;},  {0x30AF, &#34;ku&#34;},
+
+  {0x30B0, &#34;gu&#34;},  {0x30B1, &#34;ke&#34;},  {0x30B2, &#34;ge&#34;},  {0x30B3, &#34;ko&#34;},
+  {0x30B4, &#34;go&#34;},  {0x30B5, &#34;sa&#34;},  {0x30B6, &#34;za&#34;},  {0x30B7, &#34;shi&#34;},
+  {0x30B8, &#34;ji&#34;},  {0x30B9, &#34;su&#34;},  {0x30BA, &#34;zu&#34;},  {0x30BB, &#34;se&#34;},
+  {0x30BC, &#34;ze&#34;},  {0x30BD, &#34;so&#34;},  {0x30BE, &#34;zo&#34;},  {0x30BF, &#34;ta&#34;},
+
+  {0x30C0, &#34;da&#34;},  {0x30C1, &#34;chi&#34;}, {0x30C2, &#34;di&#34;},  {0x30C3, &#34;tsu&#34;},
+  {0x30C4, &#34;tsu&#34;}, {0x30C5, &#34;dzu&#34;}, {0x30C6, &#34;te&#34;},  {0x30C7, &#34;de&#34;},
+  {0x30C8, &#34;to&#34;},  {0x30C9, &#34;do&#34;},  {0x30CA, &#34;na&#34;},  {0x30CB, &#34;ni&#34;},
+  {0x30CC, &#34;nu&#34;},  {0x30CD, &#34;ne&#34;},  {0x30CE, &#34;no&#34;},  {0x30CF, &#34;ha&#34;},
+   
+  {0x30D0, &#34;ba&#34;},  {0x30D1, &#34;pa&#34;},  {0x30D2, &#34;hi&#34;},  {0x30D3, &#34;bi&#34;},
+  {0x30D4, &#34;pi&#34;},  {0x30D5, &#34;fu&#34;},  {0x30D6, &#34;bu&#34;},  {0x30D7, &#34;pu&#34;},
+  {0x30D8, &#34;he&#34;},  {0x30D9, &#34;be&#34;},  {0x30DA, &#34;pe&#34;},  {0x30DB, &#34;ho&#34;},
+  {0x30DC, &#34;bo&#34;},  {0x30DD, &#34;po&#34;},  {0x30DE, &#34;ma&#34;},  {0x30DF, &#34;mi&#34;},
+   
+  {0x30E0, &#34;mu&#34;},  {0x30E1, &#34;me&#34;},  {0x30E2, &#34;mo&#34;},  {0x30E3, &#34;ya&#34;},
+  {0x30E4, &#34;ya&#34;},  {0x30E5, &#34;yu&#34;},  {0x30E6, &#34;yu&#34;},  {0x30E7, &#34;yo&#34;},
+  {0x30E8, &#34;yo&#34;},  {0x30E9, &#34;ra&#34;},  {0x30EA, &#34;ri&#34;},  {0x30EB, &#34;ru&#34;},
+  {0x30EC, &#34;re&#34;},  {0x30ED, &#34;ro&#34;},  {0x30EE, &#34;wa&#34;},  {0x30EF, &#34;wa&#34;},
+
+  {0x30F0, &#34;wi&#34;},  {0x30F1, &#34;we&#34;},  {0x30F2, &#34;wo&#34;},  {0x30F3, &#34;n&#34;},
+  {0x30F4, &#34;vu&#34;},  {0x30F5, &#34;ka&#34;},  {0x30F6, &#34;ke&#34;},  {0x30F7, &#34;va&#34;},
+  {0x30F8, &#34;vi&#34;},  {0x30F9, &#34;ve&#34;},  {0x30FA, &#34;vo&#34;},  {0x30FB, &#34;.&#34;},
+  {0x30FC, &#34;-&#34;},   {0x30FD, &#34;,&#34;},   {0x30FE, &#34;,&#34;},   {0x30FF, &#34;|&#34;},
+};
+
+static int multibyte_len(unsigned char byte)
+{
+  if (byte &amp; 0x80) {
+    if (byte &amp; 0x40) {
+      if (byte &amp; 0x20) {
+        if (byte &amp; 0x10) {
+          if (byte &amp; 0x8) {
+            if (byte &amp; 0x4) {
+              if (byte &amp; 0x2) {
+                if (byte &amp; 0x1) {
+                  return 8;
+                } else { return 7; }
+              } else { return 6; }
+            } else { return 5; }
+          } else { return 4; }
+        } else { return 3; }
+      } else { return 2; }
+    } else { return 1; }
+  } else { return 0; }
+}
+
+static int multibyte_data(unsigned char byte)
+{
+  if (byte &amp; 0x80) {
+    if (byte &amp; 0x40) {
+      if (byte &amp; 0x20) {
+        if (byte &amp; 0x10) {
+          if (byte &amp; 0x8) {
+            if (byte &amp; 0x4) {
+              if (byte &amp; 0x2) {
+                if (byte &amp; 0x1) {
+                  return -1;
+                } else { return -1; }
+              } else { return byte &amp; 0x1; }
+            } else { return byte &amp; 0x3; }
+          } else { return byte &amp; 0x7; }
+        } else { return byte &amp; 0xf; }
+      } else { return byte &amp; 0x1f; }
+    } else { return byte &amp; 0x3f; }
+  } else { return -1; }
+}
+
+static char *katakana_to_ascii(int unicode)
+{
+  int i;
+  for (i = 0; i &lt; KATAKANA_SIZE; i++) {
+    if (katakana[i].code == unicode) {
+      return katakana[i].text;
+    }
+  }
+  return &#34;?&#34;;
+}
+
+int main(void)
+{
+  int c, in_utf8, len, unicode;
+
+  in_utf8 = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+    if (c &amp; 0x80) { /* If multibyte character... */
+      if (in_utf8) {
+        unicode = unicode &lt;&lt; (7 - multibyte_len(c)); /* Shift existing... */
+        unicode = unicode | multibyte_data(c); /* ...then add new bits. */
+        len--;
+        if (len &lt;= 0) {
+          fputs(katakana_to_ascii(unicode), stdout);
+          in_utf8 = 0;
+        }
+
+      } else {
+        in_utf8 = 1;
+        len = multibyte_len(c) - 1; /* More multibytes to read. */
+        unicode = multibyte_data(c);
+      }
+
+    } else {
+      in_utf8 = 0;
+      fputc(c, stdout);
+    }
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        06/07-2015, 
+        <a href="article-101.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

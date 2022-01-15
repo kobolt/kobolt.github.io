@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>NCR System 3330 Dallas RTC Mod</h1>
+      <p>
+        The Dallas DS12887 RTC inside my NCR System 3330 PC had died a long time ago. Unfortunately, this made the machine unbootable from the hard drive, since it would forget the hard drive settings on each restart. Instead of finding a replacement, like for the <a href="article-154.html">Commodore PC 30-III</a>, I opted for the external battery modification instead. I got this working with just two regular AA 1.5V alkaline batteries, a huge success!<br />
+        <br />
+        The initial error on every startup was as follows:<br />
+      </p>
+      <img class="border" src="images/ncr_rtc_error.jpg" alt="NCR Battery Power Lost" />
+      <p>
+        <br />
+        Fortunately, the Dallas RTC is a in a socket on this machine, easily extracted:<br />
+      </p>
+      <img class="border" src="images/ncr_rtc_extracted.jpg" alt="NCR Dallas RTC Extracted" />
+      <p>
+        <br />
+        To perform the mod, two sections of the case needs to be opened, which I did with a Dremel tool:<br />
+      </p>
+      <img class="border" src="images/ncr_rtc_dremeled.jpg" alt="NCR Dallas RTC Dremeled" />
+      <p>
+        <br />
+        Afterwards, it&#39;s possible to solder on leads for a new battery:<br />
+      </p>
+      <img class="border" src="images/ncr_rtc_soldered.jpg" alt="NCR Dallas RTC with new battery leads" />
+      <p>
+        <br />
+        I installed a new 2xAA battery holder inside the case, connected to the RTC:<br />
+      </p>
+      <img class="border" src="images/ncr_rtc_external_battery.jpg" alt="NCR Dallas RTC external battery" />
+      <p>
+        <br />
+        The machine is now working again, settings can be saved to CMOS and booting from hard drive is possible:<br />
+      </p>
+      <img class="border" src="images/ncr_rtc_working.jpg" alt="NCR Powered On" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        14/03-2020, 
+        <a href="article-157.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

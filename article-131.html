@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Python Image Viewer</h1>
+      <p>
+        Here is Python script I quickly made for browsing through images, and with a button to pass on the filepath of the currently viewed image to another command. However, it&#39;s very limited and doesn&#39;t even resize images, maybe that and more will be fixed in a future revision.<br />
+        <br />
+        The code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+from Tkinter import *
+from PIL import ImageTk, Image
+import subprocess
+import os.path
+
+class ImageView(Frame):
+    def __init__(self, images, command, master=None):
+        Frame.__init__(self, master)
+        self.grid()
+        self._create_widgets()
+        self._images = images
+        self._command = command
+        self._offset = 0
+        self._browse(0) # Load first image!
+
+    def _browse(self, offset):
+        self._offset += offset
+        if self._offset &lt; 0:
+            self._offset = 0
+        elif self._offset &gt;= len(self._images):
+            self._offset = (len(self._images) - 1)
+
+        self.master.title(&#34;%s (%d/%d)&#34; % (os.path.basename(self._images[self._offset]), self._offset + 1, len(self._images)))
+
+        self._image_data = ImageTk.PhotoImage(Image.open(self._images[self._offset]))
+        self._image = Button(image=self._image_data, bd=0, relief=FLAT, command=lambda: self._browse(1))
+        self._image.grid(column=0, row=0, columnspan=7, sticky=&#34;news&#34;)
+
+    def _exec(self):
+        subprocess.call([self._command, self._images[self._offset]])
+
+    def _create_widgets(self):
+        self._prev_1   = Button(text=&#34;&lt;&#34;,   command=lambda: self._browse(-1))
+        self._prev_10  = Button(text=&#34;&lt;&lt;&#34;,  command=lambda: self._browse(-10))
+        self._prev_100 = Button(text=&#34;&lt;&lt;&lt;&#34;, command=lambda: self._browse(-100))
+        self._next_1   = Button(text=&#34;&gt;&#34;,   command=lambda: self._browse(1))
+        self._next_10  = Button(text=&#34;&gt;&gt;&#34;,  command=lambda: self._browse(10))
+        self._next_100 = Button(text=&#34;&gt;&gt;&gt;&#34;, command=lambda: self._browse(100))
+        self._exec     = Button(text=&#34;Go!&#34;, command=self._exec)
+
+        self._prev_100.grid(column=0, row=1, sticky=&#34;ew&#34;)
+        self._prev_10.grid (column=1, row=1, sticky=&#34;ew&#34;)
+        self._prev_1.grid  (column=2, row=1, sticky=&#34;ew&#34;)
+        self._exec.grid    (column=3, row=1, sticky=&#34;ew&#34;)
+        self._next_1.grid  (column=4, row=1, sticky=&#34;ew&#34;)
+        self._next_10.grid (column=5, row=1, sticky=&#34;ew&#34;)
+        self._next_100.grid(column=6, row=1, sticky=&#34;ew&#34;)
+
+def image_walker(arg, dirname, names):
+    for fname in names:
+        path = os.path.join(dirname, fname)
+        if path.endswith(&#34;.jpg&#34;):
+            arg.append(path)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) &lt; 3:
+        print &#34;Usage: %s &lt;image directory&gt; &lt;command&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+
+    images = list()
+    os.path.walk(sys.argv[1], image_walker, images)
+    if len(images) == 0:
+        print &#34;No images found :-(&#34;
+        sys.exit(1)
+
+    iw = ImageView(sorted(images), sys.argv[2])
+    iw.master.resizable(0, 0)
+    iw.mainloop()
+
+    sys.exit(0)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        21/05-2018, 
+        <a href="article-131.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

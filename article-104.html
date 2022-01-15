@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>XSPF Coverage Dump</h1>
+      <p>
+        Here is an alternative XSPF coverage check program, based on concepts from the <a href="article-99.html">previous</a> one. This script will dump all files in a directory structure, color coded by reference from one or more XSPF playlists. This makes it easy to see which files are included in any playlists, and if they are included more than once.<br />
+        <br />
+        Take a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import xml.dom.minidom
+import re
+import os
+import getopt
+
+xspf_files = dict()
+fs_files = list()
+
+def print_usage(progname):
+    print &#34;Usage: %s [options] &lt;directory&gt; &lt;xspf file&gt; ... &lt;xspf file&gt;&#34; % (progname)
+    print &#34;Options:&#34;
+    print &#34;  -c   No ANSI color coding&#34;
+    print &#34;  -n   No count prefix&#34;
+
+def xspf_parse(playlist_filename, handler):
+    xml_data = xml.dom.minidom.parse(playlist_filename)
+    for playlist in xml_data.getElementsByTagName(&#34;playlist&#34;):
+        for tracklist in playlist.getElementsByTagName(&#34;trackList&#34;):
+            for track in tracklist.getElementsByTagName(&#34;track&#34;):
+                for location in track.getElementsByTagName(&#34;location&#34;):
+                    data = re.sub(&#34;%([0-9a-fA-F]{2})&#34;, &#92;
+                        lambda x: chr(int(x.group(1), 16)), &#92;
+                        location.firstChild.data.encode(&#34;utf-8&#34;))
+                    track_filename = data.decode(&#34;utf-8&#34;).replace(&#34;file://&#34;, &#34;&#34;)
+                    handler(playlist_filename, track_filename)
+
+def add_xspf_file(playlist_filename, track_filename):
+    if not track_filename in xspf_files:
+        xspf_files[track_filename] = list()
+    xspf_files[track_filename].append(playlist_filename)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    try:
+        opts, args = getopt.getopt(filter(None, sys.argv[1:]), &#34;hcn&#34;, [&#34;help&#34;, &#34;no-color&#34;, &#34;no-count&#34;])
+    except getopt.GetoptError as err:
+        print str(err)
+        print_usage(sys.argv[0])
+        sys.exit(1)
+
+    if len(args) &lt; 2:
+        print_usage(sys.argv[0])
+        sys.exit(1)
+
+    print_color = True
+    print_count = True
+    for o, a in opts:
+        if o in (&#34;-h&#34;, &#34;--help&#34;):
+            print_usage(sys.argv[0])
+            sys.exit(1)
+        elif o in (&#34;-c&#34;, &#34;--no-color&#34;):
+            print_color = False
+        elif o in (&#34;-n&#34;, &#34;--no-count&#34;):
+            print_count = False
+
+    for filename in args[1:]:
+        xspf_parse(filename, add_xspf_file)
+
+    for root, dirs, files in os.walk(args[0]):
+        for filename in files:
+            fs_files.append(os.path.join(root, filename).decode(&#34;iso-8859-1&#34;))
+
+    for fs_file in sorted(fs_files):
+        if fs_file in xspf_files:
+            count = len(xspf_files[fs_file])
+            if count &gt; 1:
+                if print_count:
+                    sys.stdout.write(&#34;%d &#34; % (count))
+                if print_color:
+                    sys.stdout.write(&#34;&#92;x1B[32;1m&#34;)
+                sys.stdout.write(fs_file.encode(&#34;iso-8859-1&#34;))
+                if print_color:
+                    sys.stdout.write(&#34;&#92;x1B[0m&#34;)
+                sys.stdout.write(&#34;&#92;n&#34;)
+
+            else:
+                if print_count:
+                    sys.stdout.write(&#34;1 &#34;)
+                if print_color:
+                    sys.stdout.write(&#34;&#92;x1B[32m&#34;)
+                sys.stdout.write(fs_file.encode(&#34;iso-8859-1&#34;))
+                if print_color:
+                    sys.stdout.write(&#34;&#92;x1B[0m&#34;)
+                sys.stdout.write(&#34;&#92;n&#34;)
+
+        else:
+            if print_count:
+                sys.stdout.write(&#34;0 &#34;)
+            sys.stdout.write(fs_file.encode(&#34;iso-8859-1&#34;))
+            sys.stdout.write(&#34;&#92;n&#34;)
+
+    sys.exit(0)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        03/10-2015, 
+        <a href="article-104.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

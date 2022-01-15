@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>USB Relay Control Simplified</h1>
+      <p>
+        I got a USB controlled relay board a while ago, which is identified with the USB ID 16c0:05df. There are various controller programs for these on GitHub, but all of them are rather complicated, so I decided to write my own simplified version using the same principles. Like others, it has a dependency against the <a href="https://github.com/signal11/hidapi">hidapi library</a>.<br />
+        <br />
+        The result is this C program:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;hidapi/hidapi.h&gt;
+#include &lt;wchar.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define TARGET_DEVICE L&#34;USBRelay2&#34;
+
+#define RELAY_OFF 0xfd
+#define RELAY_ON  0xff
+
+int main(int argc, char *argv[])
+{
+  struct hid_device_info *hidinfo;
+  hid_device *hiddev;
+  unsigned char buf[8];
+  int result, relay_number, relay_operation;
+
+  hidinfo = hid_enumerate(0, 0);
+  while (hidinfo != NULL) {
+    if (0 == wcscmp(hidinfo-&gt;product_string, TARGET_DEVICE)) {
+      break;
+    }
+    hidinfo = hidinfo-&gt;next;
+  }
+
+  if (hidinfo == NULL) {
+    fprintf(stderr, &#34;Did not find &#39;%ls&#39; in USB devices!&#92;n&#34;, TARGET_DEVICE);
+    return 1;
+  }
+
+  hiddev = hid_open_path(hidinfo-&gt;path);
+  if (hiddev == NULL) {
+    fprintf(stderr, &#34;hid_open_path() failed on: %s&#92;n&#34;, hidinfo-&gt;path);
+    return 1;
+  }
+
+  if (argc &gt; 2) {
+    relay_number = atoi(argv[1]) &amp; 0b11; /* Limit to 2 relays. */
+    relay_operation = 0;
+    if (0 == strcasecmp(argv[2], &#34;on&#34;)) {
+      relay_operation = RELAY_ON;
+    } else if (0 == strcasecmp(argv[2], &#34;off&#34;)) {
+      relay_operation = RELAY_OFF;
+    } else {
+      fprintf(stderr, &#34;Invalid relay operation&#92;n&#34;);
+      hid_close(hiddev);
+      return 1;
+    }
+
+    memset(buf, 0x00, sizeof(buf));
+    buf[0] = 0x00;
+    buf[1] = relay_operation;
+    buf[2] = relay_number;
+    result = hid_write(hiddev, buf, sizeof(buf));
+    if (result == -1) {
+      fprintf(stderr, &#34;hid_write() failed!&#92;n&#34;);
+      hid_close(hiddev);
+      return 1;
+    }
+  }
+
+  buf[0] = 0x01;
+  result = hid_get_feature_report(hiddev, buf, sizeof(buf));
+  if (result == -1) {
+    fprintf(stderr, &#34;hid_get_feature_report() failed!&#92;n&#34;);
+    hid_close(hiddev);
+    return 1;
+  }
+
+  printf(&#34;Relay #1: %d&#92;n&#34;,  buf[7] &amp; 0b01);
+  printf(&#34;Relay #2: %d&#92;n&#34;, (buf[7] &amp; 0b10) &gt;&gt; 1);
+  printf(&#34;Usage: %s &lt;relay number&gt; &lt;on|off&gt;&#92;n&#34;, argv[0]);
+
+  hid_close(hiddev);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Compile it like so: gcc -o usbrelay2 usbrelay2.c -lhidapi-hidraw<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        02/01-2021, 
+        <a href="article-170.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

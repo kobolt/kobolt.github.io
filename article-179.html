@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Z80 CP/M 2.2 Emulator</h1>
+      <p>
+        After finishing a prototype of a <a href="article-177.html">MOS 6502 emulator</a> I almost immediately started working on another one. This time a <a href="https://en.wikipedia.org/wiki/Zilog_Z80">Zilog Z80</a> based one that runs <a href="https://en.wikipedia.org/wiki/CP/M">CP/M 2.2</a> with inspiration taken from the <a href="https://en.wikipedia.org/wiki/Kaypro">Kaypro II</a> computer, so I named the emulator &#34;Kaytil&#34;.<br />
+        <br />
+        Despite taking inspiration from the Kaypro II, it does not actually emulate any of the Kaypro II specific hardware, with the exception of the <a href="https://en.wikipedia.org/wiki/ADM-3A">Lear Siegler ADM-3A</a> compatible terminal emulation. But I think most Kaypro II software should work as long as it is not hardware specific and only expects the CP/M OS functionality. ADM-3A escape codes are converted directly to ANSI counterparts without going through (n)curses, which should be good enough.<br />
+        <br />
+        To be able to run CP/M I adapted the skeletal CBIOS from Digital Research&#39;s <a href="http://www.gaby.de/cpm/manuals/archive/cpm22htm/axb.htm">manual</a> to the emulator code, which is using IN/OUT instructions to communicate with each other. This, together with the reverse engineered CP/M 2.2 source from Clark A. Calkins is assembled using Digital Research&#39;s MAC macro assembler. Since the assembler is itself a CP/M program, I have run this in <a href="http://www.mathematik.uni-ulm.de/users/ag/yaze-ag/">YAZE</a>, which is another popular Z80 CP/M emulator.<br />
+        <br />
+        Note that the Z80 emulation is not complete, but simply good enough, so some functionality is missing. I have made sure that it passes all the ZEXDOC tests for documented instruction flags, but I have made no effort so support the undocumented flags required to pass the ZEXALL tests. I also think the emulator is quite slow compared to others, probably due to ineffective O(n) instruction lookup and passing of data through functions instead of using global variables. In order for some games to run correctly, the speed is also artificially slowed down by using an interval timer, so it kind of matches that of a real Kaypro II. Some of these things can be adjusted by compile time defines though.<br />
+        <br />
+        For storage, the emulator operates around on <a href="https://en.wikipedia.org/wiki/IBM_3740">IBM 3740</a> 8-inch floppy disk images. These can easily be managed with the <a href="http://www.moria.de/~michael/cpmtools/">Cpmtools</a> package, which can create new images (mkfs.cpm) or copy files to and from them (cpmcp) from the host system. A total of 4 floppy drives (A, B, C &amp; D) are emulated and can each contain its own image. By default the images are &#34;read only&#34; so any changes are not written back to the disk image file, but this can be overridden with the command line arguments.<br />
+        <br />
+        Here are some games I have been able to run:<br />
+        * Ladder (Yahoo Software, Kaypro II Version)<br />
+        * Aliens (Yahoo Software, Kaypro II Version)<br />
+        * CatChum (Yahoo Software, Kaypro II Version)<br />
+        * Colossal Cave Adventure (Michael Goetz, Kaypro II Version)<br />
+        * Sargon Chess (Hayden Books, CP/M Version)<br />
+        * Deadline (Infocom, CP/M Version)<br />
+        * Zork I (Infocom, CP/M Version)<br />
+        * Zork II (Infocom, CP/M Version)<br />
+        * Zork III (Infocom, CP/M Version)<br />
+        * Nemesis (SuperSoft, CP/M Version)<br />
+        <br />
+        The initial version can be gotten <a href="supplies/kaytil-0.1.tar.gz">here</a> but I have also put the source code on <a href="https://github.com/kobolt/kaytil">here</a> for possible further development.<br />
+        <br />
+        Finally, some screenshots of different games:<br />
+      </p>
+      <img class="border" src="images/kaytil_aliens.png" alt="Aliens" />
+      <p>
+      </p>
+      <img class="border" src="images/kaytil_catchum.png" alt="CatChum" />
+      <p>
+      </p>
+      <img class="border" src="images/kaytil_deadline.png" alt="Deadline" />
+      <p>
+      </p>
+      <img class="border" src="images/kaytil_ladder.png" alt="Ladder" />
+      <p>
+      </p>
+      <img class="border" src="images/kaytil_sargon.png" alt="Sargon Chess" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        04/07-2021, 
+        <a href="article-179.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

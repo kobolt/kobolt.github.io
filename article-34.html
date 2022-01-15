@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Python Menu System</h1>
+      <p>
+        To fit my specific requirements for a media center PC, I made a simple custom menu system. I also used the opportunity to learn some <a href="http://www.python.org/">Python</a> in the process. Basically, it reads a textual configuration file and sets up a graphical menu using <a href="http://en.wikipedia.org/wiki/Tk_(framework)">Tk</a>. The menu entries will execute a specific command when clicked, and can be wrapped in a file or numeric selection mechanism, if required.<br />
+        <br />
+        Sorry for not using objects in the code, and I will admit that it&#39;s ugly with global variables in Python. But I&#39;m a <a href="http://en.wikipedia.org/wiki/C_(programming_language)">C</a>-guy, and old habits die hard. :-)<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import sys
+import os
+import Tkinter
+import tkFileDialog
+
+
+
+_num_value = 1
+_num_label = None
+_num_top = None
+
+
+
+def read_config_file(path):
+  try:
+    fh = open(path, &#34;r&#34;)
+    list = []
+    for s in fh:
+      list.append(s.split(&#34;#&#34;))
+    return list
+  except IOError:
+    print &#34;Error: Unable to open config file for reading!&#34;
+    return None
+
+
+
+def menu_direct(command):
+  print &#34;Info: Direct execute: &#34; + command
+  os.system(command)
+
+
+
+def num_increment():
+  global _num_value, _num_label
+  _num_value += 1
+  _num_label.config(text=str(_num_value))
+
+def num_decrement():
+  global _num_value, _num_label
+  _num_value -= 1
+  _num_label.config(text=str(_num_value))
+
+def num_exec(command):
+  global _num_value, _num_top
+  new = command.replace(&#34;$&#34;, str(_num_value))
+  print &#34;Info: Num execute: &#34; + new
+  os.system(new)
+  _num_top.destroy()
+
+def menu_num_select(command):
+  global _num_top, _num_label, _num_value
+
+  _num_top = Tkinter.Tk()
+
+  label = Tkinter.Label(_num_top, text=&#34;Number:&#34;)
+  label.pack(fill=&#34;x&#34;, expand=True)
+
+  plus = Tkinter.Button(_num_top, text=&#34;+&#34;, command=num_increment)
+  plus.pack(fill=&#34;x&#34;, expand=True)
+
+  _num_label = Tkinter.Label(_num_top, text=str(_num_value))
+  _num_label.pack(fill=&#34;x&#34;, expand=True)
+
+  plus = Tkinter.Button(_num_top, text=&#34;-&#34;, command=num_decrement)
+  plus.pack(fill=&#34;x&#34;, expand=True)
+
+  f = lambda x = command: num_exec(x)
+  go = Tkinter.Button(_num_top, text=&#34;GO!&#34;, command=f)
+  go.pack(fill=&#34;x&#34;, expand=True)
+
+  Tkinter.mainloop()
+ 
+
+
+def menu_file_select(command):
+  file = tkFileDialog.askopenfilename()
+  if file == ():
+    return
+  new = command.replace(&#34;$&#34;, str(file))
+  print &#34;Info: File execute: &#34; + new
+  os.system(new)
+
+
+
+def main():
+  if len(sys.argv) != 2:
+    print &#34;Usage: %s &lt;config file&gt;&#34; % sys.argv[0]
+    sys.exit(1)
+
+  list = read_config_file(sys.argv[1])
+  if list == None:
+    sys.exit(1)
+
+  top = Tkinter.Tk()
+  for sublist in list:
+    if sublist[0] == &#34;Direct&#34;:
+      # NOTE: This does not work:
+      # f = lambda: menu_direct(sublist[2])
+      f = lambda x = sublist[2]: menu_direct(x)
+    elif sublist[0] == &#34;NumSelect&#34;:
+      f = lambda x = sublist[2]: menu_num_select(x)
+    elif sublist[0] == &#34;FileSelect&#34;:
+      f = lambda x = sublist[2]: menu_file_select(x)
+    else:
+      print &#34;Error: Unknown menu type!&#34;
+      sys.exit(1)
+    button = Tkinter.Button(top, text=sublist[1], command=f)
+    button.pack(fill=&#34;x&#34;, expand=True)
+
+  Tkinter.mainloop()
+
+
+
+if __name__ == &#34;__main__&#34;:
+  main()
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a typical config file (not very unlike the one I currently use):<br />
+      </p>
+        <div class="box">
+          <pre>
+FileSelect#Play File#/usr/bin/xine -pfq &#34;$&#34;
+NumSelect#Play DVD#/usr/local/bin/mplayer -fs -zoom dvd://$
+Direct#Power Off#/sbin/poweroff
+          </pre>
+        </div>
+      <p>
+        <br />
+        I used to use tabulators instead of &#39;#&#39; characters to separate the columns, but this really messes up any copy/paste/transfer, etc, so I just had to pick a character that is unlikely to be used in a command. Please just change the code if you don&#39;t like it. The &#39;$&#39; characters, are interpolated with the value from the file or numeric selection mechanism.<br />
+        <br />
+        The final graphical representation of the menu will actually depend heavily on what version of Tk is installed, what window manager is used and font is used as default. Here is how it looks on one of my systems:<br />
+      </p>
+      <img class="border" src="images/python-menu.png" alt="Python menu in fluxbox." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        03/05-2009, 
+        <a href="article-34.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

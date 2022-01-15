@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>VPN Through SSH Tunnel</h1>
+      <p>
+        Not just VPN through an SSH tunnel, but also a Wi-Fi hotspot that directs all traffic through it! I needed this to be able to reach the Google Play store on my Android phone in China. I used two WLAN interfaces for this, but it should be possible with one WLAN and one wired connection as well.<br />
+        <br />
+      </p>
+      <img class="border" src="images/vpn-ssh-tunnel.png" alt="VPN through SSH tunnel principle diagram." />
+      <p>
+        <br />
+        Here are the complete steps, with the contents of the files listed after. Many of the commands are started through screen sessions, since they are daemons that will keep running.<br />
+        <br />
+        First of all, make sure the interface that will be used to connect to the remote SSH server is up and running, then connect to the server and create the SSH tunnel for port 1194, which is used for VPN:<br />
+      </p>
+        <div class="box">
+          <pre>
+ssh user@your-ssh-server.com -L 127.0.0.1:1194:127.0.0.1:1194
+          </pre>
+        </div>
+      <p>
+        <br />
+        One the remote server, enter the following commands:<br />
+      </p>
+        <div class="box">
+          <pre>
+# Start OpenVPN server:
+screen -S openvpn -d -m sudo openvpn server.cfg
+
+# Forward all the traffic from the OpenVPN tunnel interface:
+sudo iptables -A INPUT -i tun0 -j ACCEPT
+sudo iptables -A FORWARD -i tun0 -j ACCEPT
+sudo iptables -A FORWARD -i eth0 -d 10.8.0.0/255.255.255.0 -j ACCEPT
+
+# Enable IP forwarding on server:
+sudo sh -c &#34;echo 1 &gt; /proc/sys/net/ipv4/ip_forward&#34;
+          </pre>
+        </div>
+      <p>
+        <br />
+        Back on the local machine, enter the following commands:<br />
+      </p>
+        <div class="box">
+          <pre>
+# IP address for Wi-Fi hotspot:
+sudo ifconfig wlan0 192.168.8.1 netmask 255.255.255.0
+
+# Start DHCP server for Wi-Fi hotspot:
+screen -S dnsmasq -d -m sudo dnsmasq --conf-file=dnsmasq.conf --no-daemon
+
+# Start Host-AP deamon:
+screen -S hostapd -d -m sudo hostapd hostapd.conf
+
+# Start OpenVPN client:
+screen -S openvpn -d -m sudo openvpn client.cfg
+
+# Let the SSH connection bypass the VPN default route:
+SSH_IF=&#39;wlan1&#39;
+SSH_IP=`host your-ssh-server.com | sed -e &#39;s/.*address //&#39;`
+GW_IP=`route -n | grep &#34;^0.0.0.0&#34; | grep $SSH_IF | sed -e &#39;s/0.0.0.0 *//&#39; | sed -e &#39;s/ .*//&#39;`
+sudo route add $SSH_IP gw $GW_IP $SSH_IF
+
+# Override the DNS resolver:
+sudo cp resolv.conf /etc/resolv.conf
+
+# Enable IP forwarding on local machine:
+sudo sh -c &#34;echo 1 &gt; /proc/sys/net/ipv4/ip_forward&#34;
+
+# Enable NATing through the tunnel interface from the Wi-Fi hotspot:
+sudo iptables -t nat -A POSTROUTING -o tun0 -j MASQUERADE
+sudo iptables -A FORWARD -i tun0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i wlan0 -o tun0 -j ACCEPT
+          </pre>
+        </div>
+      <p>
+        <br />
+        That should be it, now the phone can connect to the local Wi-Fi hotspot and reach the Internet through the remote SSH server.<br />
+        <br />
+        Some useful commands for troubleshooting:<br />
+      </p>
+        <div class="box">
+          <pre>
+sudo iptables -L -v -n
+sudo tcpdump -i tun0
+          </pre>
+        </div>
+      <p>
+        <br />
+        OpenVPN client configuration. (client.cfg):<br />
+      </p>
+        <div class="box">
+          <pre>
+remote 127.0.0.1
+proto tcp-client
+dev tun
+ifconfig 10.8.0.2 10.8.0.1
+secret static.key
+redirect-gateway local def1
+route 192.168.0.0 255.255.255.0
+          </pre>
+        </div>
+      <p>
+        <br />
+        OpenVPN server configuration. (server.cfg):<br />
+      </p>
+        <div class="box">
+          <pre>
+dev tun
+local 127.0.0.1
+proto tcp-server
+ifconfig 10.8.0.1 10.8.0.2
+secret static.key
+          </pre>
+        </div>
+      <p>
+        <br />
+        New DNS resolver configuration, using the Google DNS. This is important because it could have been set by a local DHCP client to a Chinese DNS resolver. (resolv.conf):<br />
+      </p>
+        <div class="box">
+          <pre>
+nameserver 8.8.8.8
+          </pre>
+        </div>
+      <p>
+        <br />
+        DHCP server configuration. (dnsmasq.conf):<br />
+      </p>
+        <div class="box">
+          <pre>
+interface=lo,wlan0
+no-dhcp-interface=lo
+dhcp-range=192.168.8.20,192.168.8.254,255.255.255.0,12h
+          </pre>
+        </div>
+      <p>
+        <br />
+        Host-AP Wi-Fi hotspot configuration. These are the more important options, I have excluded lots of others. (hostapd.conf):<br />
+      </p>
+        <div class="box">
+          <pre>
+interface=wlan0
+driver=nl80211
+ssid=YourSSID
+hw_mode=g
+wpa=2
+wpa_passphrase=YourPassphrase
+wpa_key_mgmt=WPA-PSK WPA-EAP
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        10/06-2018, 
+        <a href="article-132.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Plaintext Steganography</h1>
+      <p>
+        The most common form of <a href="http://en.wikipedia.org/wiki/Steganography">Steganography</a> is to hide messages inside images, but what about hiding messages inside (plaintext) messages? This is the question I asked myself before creating this set of programs to do exactly that.<br />
+        <br />
+        There are several ways to do this, but the approach I used was to utilize the whitespace (spaces and newlines) to hide the message. Basically, the amount of words (odd or even) on a line will indicate if the hidden bit is a one or zero. This works on all kind of text, but unfortunately requires a lot of it to hide even the smallest amounts of data. The only practical usage I can think of right now, is to hide passwords.<br />
+        <br />
+        Here is the encoder:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+#define WRAP 80
+
+static int getbit(FILE *fh)
+{
+  static int x = 7;
+  static int c = &#39;&#92;0&#39;;
+
+  if (x == -1)
+    x = 7;
+  if (x == 7) {
+    c = fgetc(fh);
+    if (c == EOF)
+      return -1;
+  }
+
+  return (c &gt;&gt; x--) &amp; 0x1;
+}
+
+int main(int argc, char *argv[])
+{
+  int c, n, spaces, bit, index, had_space, new_index;
+  unsigned char buffer[WRAP];
+  FILE *fh;
+
+  if (argc != 2) {
+    fprintf(stderr, &#34;Usage: %s &lt;text file&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  fh = fopen(argv[1], &#34;r&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;Error: Unable to open text file for reading.&#92;n&#34;);
+    return 1;
+  }
+
+  n = spaces = index = had_space = 0;
+  while (1) {
+    bit = getbit(stdin);
+
+    while ((c = fgetc(fh)) != EOF) {
+      if (c == &#39;&#92;n&#39; || c == &#39;&#92;r&#39; || c == &#39;&#92;t&#39;)
+        c = &#39; &#39;; /* Convert. */
+
+      if (c == &#39; &#39;) {
+        if (had_space)
+          continue;
+        had_space = 1;
+        spaces++;
+        if (bit == -1) {
+          if ((spaces % 2) == 0) /* Pad output with zeros. */
+            index = n;
+        } else {
+          if ((spaces % 2) == bit)
+            index = n;
+        }
+      } else {
+        had_space = 0;
+      }
+
+      buffer[n] = c;
+      n++;
+
+      if (n &gt;= WRAP) {
+        if (index == 0) {
+          fprintf(stderr, &#34;Error: Words in text are too large.&#92;n&#34;);
+          fclose(fh);
+          return 1;
+        }
+
+        for (n = 0; n &lt; index; n++) {
+          fputc(buffer[n], stdout);
+        }
+        fputc(&#39;&#92;n&#39;, stdout);
+
+        spaces = new_index = had_space = 0;
+        index++;
+        for (n = index; n &lt; WRAP; n++) {
+          buffer[n - index] = buffer[n];
+          if (buffer[n] == &#39; &#39;) {
+            spaces++;
+            new_index = n;
+          }
+        }
+        n = WRAP - index;
+        index = new_index;
+
+        break;
+      }
+    }
+
+    if (feof(fh)) {
+      fclose(fh);
+      if (bit == -1) {
+        return 0;
+      } else {
+        fprintf(stderr, &#34;Error: Not enough text to cover data.&#92;n&#34;);
+        return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        And here is the decoder:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+static int power_of_two(int n)
+{
+  if (n == 0)
+    return 1;
+  else
+    return 2 * power_of_two(n - 1);
+}
+
+int main(int argc, char *argv[])
+{
+  int n, c, spaces, value;
+
+  n = 7;
+  spaces = value = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+    if (c == &#39;&#92;n&#39;) {
+      if ((spaces % 2) == 0)
+        value += power_of_two(n);
+      n--;
+
+      if (n &lt; 0) {
+        fputc(value, stdout);
+        value = 0;
+        n = 7;
+      }
+
+      spaces = 0;
+    } else if (c == &#39; &#39;) {
+      spaces++;
+    }
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        17/07-2011, 
+        <a href="article-55.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

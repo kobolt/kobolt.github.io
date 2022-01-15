@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Permutations by Swapping</h1>
+      <p>
+        A while back, I discovered an algorithm to get all possible permutations (unordered) of a data set, by swapping the elements in a particular way.<br />
+        <br />
+        I do not know if this is a widely known method, please comment if you have seen this way of finding permutations before.<br />
+        <br />
+        The swapping sequence is a follows (1-n = swap first element with n-element.):<br />
+        1-2, 1-3, 1-2, 1-3, 1-2, 1-4, 1-2, 1-3, 1-2, 1-3, 1-2, 1-4, 1-2, ...<br />
+        <br />
+        To find the element that should be swapped with the first element, the sequence counter/state is divided by the highest possible <a href="http://www.research.att.com/~njas/sequences/A000142">factorial</a> that will not produce a remainder. Then the basis for the factorial is incremented by one to find the element to swap with.<br />
+        <br />
+        Example: If the sequence counter is 12, and 12 divided by 3! (3 factorial = 6), there is no remainder. Then the first element needs to be swapped with element 4 (3 + 1) in this iteration of the sequence. If the sequence counter is 13, this is only divisible by 1! and then needs to be swapped with element 2 (1 + 1).<br />
+        <br />
+        Here is some proof of concept code in C (Note that this algorithm is not recursive, unlike most other permutation algorithms.):<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+#define SIZE 5
+static int numbers[SIZE] = {1, 2, 3, 4, 5};
+
+static int factorial(int n)
+{
+  if (n == 0)
+    return 1;
+  else
+    return n * factorial(n - 1);
+}
+
+int main(void)
+{
+  int i, j, k, temp;
+  int permute_state;
+
+  /* Print for visualization. (Initial values.) */
+  for (j = 0; j &lt; SIZE; j++)
+    printf(&#34;%d&#34;, numbers[j]);
+  printf(&#34;&#92;n&#34;);
+
+  permute_state = 1;
+  for (i = 0; i &lt; factorial(SIZE) - 1; i++) {
+    for (j = SIZE; j &gt; 0; j--) {
+      if (permute_state % factorial(j) == 0) {
+        for (k = 0; k &lt; (j / 2) + 1; k++) {
+          temp = numbers[k];
+          numbers[k] = numbers[j-k];
+          numbers[j-k] = temp;
+        }
+        break;
+      }
+    }
+    permute_state++;
+
+    /* Print for visualization. */
+    for (j = 0; j &lt; SIZE; j++)
+      printf(&#34;%d&#34;, numbers[j]);
+    printf(&#34;&#92;n&#34;);
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        26/10-2008, 
+        <a href="article-25.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

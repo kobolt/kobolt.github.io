@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>DOS Serial File Transfer</h1>
+      <p>
+        I was doing research on how to &#34;bootstrap&#34; an old DOS based computer with more functional software, like a proper terminal emulator. Because the floppy drive was broken, I had to get this transferred over the existing RS-232 serial port.<br />
+        <br />
+        The initial results were a couple of programs: A &#34;decode&#34; program meant to be run on DOS, written in x86 assembly, to receive the data. An &#34;encode&#34; program meant to be run on Linux, written in C, to send the data. Very simple encoding is used; each byte is split into two nibbles and added with 0x30 to produce a valid ASCII character.<br />
+        <br />
+        Unfortunately I was not able to run the programs with larger amounts of data without loosing bits and pieces. Even at very low baud rates like 1200 data still got lost and enabling/disabling flow control made no difference. However, I found that other people have been suffering from these kinds of issues in the past as well. So I found some other alternatives, and the best one so far is <a href="http://www.columbia.edu/kermit/mskermit.html">Kermit</a>. The MS-DOS Kermit package also provides a <a href="https://en.wikipedia.org/wiki/BASIC">BASIC</a> bootstrap program that can be run in QBASIC on the DOS computer.<br />
+        <br />
+        Anyway, for future reference, here is the &#34;decode&#34; program:<br />
+        (Assemble it under Linux with <a href="https://www.nasm.us/">NASM</a> like so: nasm decode.asm -fbin -o decode.com)<br />
+      </p>
+        <div class="box">
+          <pre>
+org 0x100 ; DOS COM file start offset.
+
+section .text
+start:
+  ; Call BIOS to initialize serial port.
+  mov ah, 0x00
+  mov al, 0xe3 ; 9600,8,n,1
+  mov dx, 0x00 ; COM1
+  int 0x14
+
+  ; Call DOS to create new file and handle.
+  mov ah, 0x3c
+  mov cx, 0 ; Standard attributes.
+  mov dx, filename
+  int 0x21
+  jc end_file_create_error
+  mov [filehandle], ax
+
+read_loop:
+  ; Call BIOS to read byte from serial port.
+  mov ah, 0x02
+  mov dx, 0x00 ; COM1
+  int 0x14
+  and ah, 0x80
+  jnz end_read_serial_error
+
+  ; Check if DOS-style EOF.
+  cmp al, 0x1A
+  je end_success
+
+  ; Determine high or low nibble next.
+  mov bl, [have_seen_high_nibble]
+  cmp bl, 0
+  jne convert_low_nibble
+
+convert_high_nibble:
+  sub al, 0x30
+  mov cl, 4
+  shl al, cl
+  mov [high_nibble], al
+  mov byte [have_seen_high_nibble], 1
+  jmp read_loop
+
+convert_low_nibble:
+  sub al, 0x30
+  or al, [high_nibble]
+  mov byte [have_seen_high_nibble], 0
+
+  ; Call DOS to write to file.
+  mov [write_buffer], al
+  mov ah, 0x40
+  mov bx, [filehandle]
+  mov cx, 1 ; One byte at a time.
+  mov dx, write_buffer
+  int 0x21
+  jc end_file_write_error
+
+  ; Call DOS to display &#39;.&#39; for progress.
+  mov ah, 0x2
+  mov dl, &#39;.&#39;
+  int 0x21
+
+  jmp read_loop
+
+end_success:
+  ; Call DOS to close file handle.
+  mov ah, 0x3e
+  mov bx, [filehandle]
+  int 0x21
+
+  ; Call DOS to terminate program.
+  mov ah, 0x4c
+  mov al, 0 ; 0 = OK
+  int 0x21
+
+end_file_create_error:
+  mov [error_code], ax
+  ; Call DOS to display &#39;C&#39; signifying &#34;Create Error&#34;.
+  mov ah, 0x2
+  mov dl, &#39;C&#39;
+  int 0x21
+
+  ; Call DOS to display error code.
+  ; mov ah, 0x2
+  mov dl, [error_code]
+  add dl, 0x30
+  int 0x21
+  jmp end_error
+
+end_read_serial_error:
+  ; Call DOS to display &#39;R&#39; signifying &#34;Read Error&#34;.
+  mov ah, 0x2
+  mov dl, &#39;R&#39;
+  int 0x21
+
+  ; Call BIOS to get serial port status
+  mov ah, 03
+  mov dx, 0x00 ; COM1
+  int 0x14
+  mov [error_code], ax
+
+  ; Call DOS to display error code(s).
+  mov ah, 0x2
+  mov dl, [error_code] ; Modem Status
+  mov cl, 4
+  shr dl, cl ; High Nibble
+  add dl, 0x30
+  int 0x21
+
+  ; mov ah, 0x2
+  mov dl, [error_code] ; Modem Status
+  and dl, 0x0f ; Low Nibble
+  add dl, 0x30
+  int 0x21
+
+  ; mov ah, 0x2
+  mov dl, [error_code+1] ; Port Status
+  mov cl, 4
+  shr dl, cl ; High Nibble
+  add dl, 0x30
+  int 0x21
+
+  ; mov ah, 0x2
+  mov dl, [error_code+1] ; Port Status
+  and dl, 0x0f ; Low Nibble
+  add dl, 0x30
+  int 0x21
+  jmp end_error
+
+end_file_write_error:
+  mov [error_code], ax
+  ; Call DOS to display &#39;W&#39; signifying &#34;Write Error&#34;.
+  mov ah, 0x2
+  mov dl, &#39;W&#39;
+  int 0x21
+
+  ; Call DOS to display error code.
+  ; mov ah, 0x2
+  mov dl, [error_code]
+  add dl, 0x30
+  int 0x21
+
+end_error:
+  ; Call DOS to terminate program.
+  mov ah, 0x4c
+  mov al, 1 ; 1 = Error
+  int 0x21
+ 
+section .data:
+
+high_nibble:
+  db 0
+
+have_seen_high_nibble:
+  db 0
+
+error_code:
+filehandle:
+  dw 0
+
+write_buffer:
+  db 0
+
+filename:
+  db &#34;DECODE.BIN&#34;,0
+          </pre>
+        </div>
+      <p>
+        <br />
+        And the &#34;encode&#34; program:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;termios.h&gt;
+#include &lt;sys/ioctl.h&gt;
+
+int main(int argc, char *argv[])
+{
+  int c, fd, result;
+  unsigned char byte;
+  struct termios attr;
+
+  if (argc != 2) {
+    fprintf(stderr, &#34;Usage: %s &lt;TTY&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  fd = open(argv[1], O_RDWR | O_NOCTTY);
+  if (fd == -1) {
+    fprintf(stderr, &#34;open() failed with errno: %d&#92;n&#34;, errno);
+    return 1;
+  }
+
+  result = tcgetattr(fd, &amp;attr);
+  if (result == -1) {
+    fprintf(stderr, &#34;tcgetattr() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return 1;
+  }
+
+  attr.c_cflag = B9600 | CS8 | CRTSCTS | CLOCAL;
+  attr.c_iflag = 0;
+  attr.c_oflag = 0;
+  attr.c_lflag = 0;
+
+  result = tcsetattr(fd, TCSANOW, &amp;attr);
+  if (result == -1) {
+    fprintf(stderr, &#34;tcgetattr() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return 1;
+  }
+
+  while ((c = fgetc(stdin)) != EOF) {
+    byte = ((c &amp; 0xf0) &gt;&gt; 4) + 0x30;
+    write(fd, &amp;byte, 1);
+    byte = (c &amp; 0x0f) + 0x30;
+    write(fd, &amp;byte, 1);
+  }
+
+  byte = 0x1a; /* DOS EOF */
+  write(fd, &amp;byte, 1);
+
+  close(fd);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        19/08-2018, 
+        <a href="article-134.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

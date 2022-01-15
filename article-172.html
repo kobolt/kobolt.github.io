@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Turning Frog VL6180 Upgrade</h1>
+      <p>
+        Many years ago I got a soldering kit, the &#34;ELENCO 21-882&#34; which is a &#34;frog robot&#34; with two motors that reacts to sound. I had been thinking about ways to upgrade it, and I finally got around to doing that by controlling it with a <a href="https://store.arduino.cc/arduino-pro-mini">Arduino Pro Mini</a> and a <a href="https://www.adafruit.com/product/3316">VL6180 sensor</a> to measure distance.<br />
+        <br />
+        The original sound based control works by clocking a &#34;4017 Decade Counter&#34; IC with the input from a electret microphone. The easiest way to hijack the control is to remove this IC from the socket and wire the Arduino into it.<br />
+        <br />
+        I used the following connections:<br />
+        Arduino RAW &lt;-&gt; Socket pin 16 (VDD, 9V supply from battery.)<br />
+        Arduino GND &lt;-&gt; Socket pin 8 (VSS)<br />
+        Arduino D10 &lt;-&gt; Socket pin 1 (Output, diode for left motor.)<br />
+        Arduino D11 &lt;-&gt; Socket pin 7 (Output, diode for right motor.)<br />
+        Arduino D12 &lt;-&gt; Socket pin 2 (Output, diodes for both motors.)<br />
+        <br />
+        Cobbled together it looks like this:<br />
+      </p>
+      <img class="border" src="images/frog_upgrade.jpg" alt="Frog Upgrade" />
+      <p>
+        The FTDI is only used for uploading the program and can be removed of course.<br />
+        <br />
+        The Arduino Sketch code is very simple:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &#34;Adafruit_VL6180X.h&#34;
+
+static Adafruit_VL6180X vl = Adafruit_VL6180X();
+static int keep_going = 0;
+
+void setup() {
+  pinMode(10, OUTPUT); // Left motor
+  pinMode(11, OUTPUT); // Right motor
+  pinMode(12, OUTPUT); // Both motors
+  pinMode(13, OUTPUT); // On-board Arduino LED
+  vl.begin();
+}
+
+void loop() {
+  uint8_t range = vl.readRange();
+  uint8_t status = vl.readRangeStatus();
+
+  if ((status == VL6180X_ERROR_NONE) &amp;&amp; (range &lt; 200)) {
+    // Go left
+    digitalWrite(12, LOW);
+    digitalWrite(10, HIGH);
+    keep_going = 10; // Keep going to finish the turn...
+  } else {
+    if (keep_going &gt; 0) {
+      keep_going--;
+    } else {
+      // Go forward
+      digitalWrite(10, LOW);
+      digitalWrite(12, HIGH);
+    }
+  }
+  
+  delay(50);
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        13/02-2021, 
+        <a href="article-172.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

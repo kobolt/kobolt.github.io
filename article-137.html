@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>eLua support for GR-SAKURA</h1>
+      <p>
+        I have managed to get <a href="http://www.eluaproject.net/">eLua</a> running on the <a href="http://gadget.renesas.com/en/product/sakura.html">GR-SAKURA</a> board. It&#39;s an embedded version of version of <a href="https://www.lua.org/">The Programming Language Lua</a> that can be run on bare-metal.<br />
+        <br />
+        I forked the original eLua repository and made the necessary changes <a href="https://github.com/kobolt/elua">here</a> on my own copy. Note however that this initial support is very basic; only limited versions of the &#34;tmr&#34;, &#34;uart&#34; and &#34;pio&#34; modules are supported at the moment.<br />
+        <br />
+        Here is an example Lua script that can be run on the board. Name it &#34;autorun.lua&#34; and put it in the &#34;romfs/&#34; directory to run it automatically on startup:<br />
+      </p>
+        <div class="box">
+          <pre>
+require &#34;pio&#34;
+require &#34;pd&#34;
+require &#34;tmr&#34;
+
+print(&#34;Running LEDs on &#34; .. pd.board())
+print(&#34;Hold blue button to stop.&#34;)
+
+while pio.pin.getval(7) == 1 do
+  pio.pin.sethigh(0)
+  tmr.delay(0,200000)
+  pio.pin.sethigh(1)
+  tmr.delay(0,200000)
+  pio.pin.sethigh(2)
+  tmr.delay(0,200000)
+  pio.pin.sethigh(6)
+  tmr.delay(0,200000)
+
+  pio.pin.setlow(0)
+  tmr.delay(0,200000)
+  pio.pin.setlow(1)
+  tmr.delay(0,200000)
+  pio.pin.setlow(2)
+  tmr.delay(0,200000)
+  pio.pin.setlow(6)
+  tmr.delay(0,200000)
+end
+
+print(&#34;Finished.&#34;)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        09/11-2018, 
+        <a href="article-137.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

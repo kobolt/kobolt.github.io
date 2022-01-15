@@ -1,0 +1,618 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Serial Port Floppy Drive Emulation</h1>
+      <p>
+        While working on another project I needed to figure out a way to emulate a floppy drive. After doing some research I learned more about how the <a href="https://wiki.osdev.org/Interrupt_Vector_Table">Interrupt Vector Table</a> on PCs work and how <a href="https://en.wikipedia.org/wiki/Terminate_and_stay_resident_program">TSR programs</a> operate under DOS. So the result is a DOS TSR program that intercepts <a href="https://en.wikipedia.org/wiki/INT_13H">BIOS INT 13H</a> calls and forwards these over the serial port to a remote Linux box that operates on a floppy disk image.<br />
+        <br />
+        I have borrowed some code from my previous <a href="article-161.html">Kermit project</a> that also uses x86 assembly with serial ports. This program also shares some of the same limitations; hard coded with baudrate 9600 on the COM1 port. The TSR has been tested on the <a href="http://bochs.sourceforge.net/">Bochs</a> emulator and on a real 25MHz 80486SX PC.<br />
+        <br />
+        Here is the TSR part of the program, assembled with NASM as follows: nasm serialfd.asm -fbin -o serialfd.com<br />
+      </p>
+        <div class="box">
+          <pre>
+org 0x100
+bits 16
+cpu 8086
+
+COM1_BASE equ 0x3f8
+COM1_THR  equ COM1_BASE + 0 ; Transmitter Holding Buffer
+COM1_RBR  equ COM1_BASE + 0 ; Receiver Buffer
+COM1_IER  equ COM1_BASE + 1 ; Interrupt Enable Register
+COM1_FCR  equ COM1_BASE + 2 ; FIFO Control Register
+COM1_IIR  equ COM1_BASE + 2 ; Interrupt Identification Register
+COM1_LCR  equ COM1_BASE + 3 ; Line Control Register
+COM1_LSR  equ COM1_BASE + 5 ; Line Status Register
+COM1_DLL  equ COM1_BASE + 0 ; Divisor Latch Low Byte
+COM1_DLH  equ COM1_BASE + 1 ; Divisor Latch High Byte
+
+section .text
+start:
+  jmp main
+
+int13_interrupt:
+  ; Allow other interrupts:
+  sti
+
+  ; Check if accessing drive 0 (A:) or drive 1 (B:)
+  ; If not, then jump to original interrupt instead.
+  cmp dl, 0
+  je _int13_interrupt_dl_ok
+  cmp dl, 1
+  jne original_int13
+_int13_interrupt_dl_ok:
+
+  ; Only operation 0x02 (Read) and 0x03 (Write) are forwarded.
+  ; The rest are bypassed directly and returns OK.
+  cmp ah, 2
+  je _int13_interrupt_ah_ok
+  cmp ah, 3
+  jne _int13_interrupt_end
+_int13_interrupt_ah_ok:
+
+  ; Save registers:
+  push bx
+  push cx
+  push dx
+
+  ; Save sectors and operation information on stack for use later:
+  push ax
+  push ax
+  push ax
+
+  ; Register AL already set.
+  call com_port_send
+  mov al, ah
+  call com_port_send
+  mov al, cl
+  call com_port_send
+  mov al, ch
+  call com_port_send
+  mov al, dl
+  call com_port_send
+  mov al, dh
+  call com_port_send
+
+  ; Retrieve sector information (stack AL) into DL register:
+  pop dx
+  xor dh, dh
+
+  mov ax, 512
+  mul dx ; DX:AX = AX * DX
+  mov cx, ax
+
+  ; Determine receive (Read) or send (Write) from operation (stack AH):
+  pop ax
+  cmp ah, 3
+  je _int13_interrupt_send_loop
+
+_int13_interrupt_recv_loop:
+  call com_port_recv
+  mov [es:bx], al
+  inc bx
+  loop _int13_interrupt_recv_loop
+  jmp _int13_loop_done
+
+_int13_interrupt_send_loop:
+  mov al, [es:bx]
+  call com_port_send
+  inc bx
+  loop _int13_interrupt_send_loop
+
+_int13_loop_done:
+
+  ; Retrieve sector information (stack AL) as sectors handled:
+  pop ax
+
+  ; Restore registers:
+  pop dx
+  pop cx
+  pop bx
+
+_int13_interrupt_end:
+  ; AL register will have same value as upon entering routine.
+  xor ah, ah ; Code 0 (No Error)
+  clc ; Clear error bit.
+  retf 2
+
+original_int13:
+  jmp original_int13:original_int13 ; Will be overwritten runtime!
+
+; Send contents from AL on COM1 port:
+com_port_send:
+  push dx
+  mov dx, COM1_THR
+  out dx, al
+  mov dx, COM1_LSR
+_com_port_send_wait:
+  in al, dx
+  and al, 0b00100000 ; Empty Transmit Holding Register
+  test al, al
+  jz _com_port_send_wait
+  pop dx
+  ret
+
+; Return contents in AL on COM1 port:
+com_port_recv:
+  push dx
+_com_port_recv_wait:
+  mov dx, COM1_IIR
+  in al, dx
+  and al, 0b00001110 ; Identification
+  cmp al, 0b00000100 ; Enable Received Data Available Interrupt
+  jne _com_port_recv_wait
+  mov dx, COM1_RBR
+  in al, dx
+  pop dx
+  ret
+
+; TSR end marker:
+tsr_end:
+
+main:
+  ; NOTE: No protection to prevent TSR from being loaded twice or more!
+
+  ; Set Baudrate on COM1 to 9600, divisor = 12:
+  mov dx, COM1_LCR
+  in al, dx
+  or al, 0b10000000 ; Set Divisor Latch Access Bit (DLAB).
+  out dx, al
+
+  mov dx, COM1_DLL
+  mov al, 0xc
+  out dx, al
+  
+  mov dx, COM1_DLH
+  mov al, 0
+  out dx, al
+
+  mov dx, COM1_LCR
+  in al, dx
+  and al, 0b01111111 ; Reset Divisor Latch Access Bit (DLAB).
+  out dx, al
+
+  ; Disable and clear FIFO on COM1, to put it in 8250 compatibility mode:
+  mov dx, COM1_FCR
+  mov al, 0b00000110 ; Clear both FIFOs.
+  out dx, al
+  ; NOTE: Not tested what happens if this is run on an actual 8250 chip...
+
+  ; Set mode on COM1 to 8 data bits, no parity and 1 stop bit:
+  mov dx, COM1_LCR
+  mov al, 0b00000011 ; 8-N-1
+  out dx, al
+
+  ; Enable interrupt bit on COM1:
+  mov dx, COM1_IER
+  in al, dx
+  or al, 0b00000001 ; Enable Received Data Available Interrupt
+  out dx, al
+
+  ; Call DOS to get original interrupt handler:
+  mov al, 0x13
+  mov ah, 0x35
+  int 0x21
+  mov word [original_int13 + 3], es
+  mov word [original_int13 + 1], bx
+
+  ; Call DOS to set interrupt handler:
+  mov al, 0x13
+  mov ah, 0x25
+  ; DS is already same as CS, no need to change.
+  mov dx, int13_interrupt
+  int 0x21
+
+  ; Terminate and Stay Resident:
+  mov dx, tsr_end
+  shr dx, 1
+  shr dx, 1
+  shr dx, 1
+  shr dx, 1
+  add dx, 0x11 ; Add 0x1 for remainder and 0x10 for PSP.
+  mov ax, 0x3100
+  int 0x21
+          </pre>
+        </div>
+      <p>
+        <br />
+        And here the Linux counterpart in C, just compile with GCC:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;termios.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;string.h&gt;
+
+#define REGISTER_AL 0
+#define REGISTER_AH 1
+#define REGISTER_CL 2
+#define REGISTER_CH 3
+#define REGISTER_DL 4
+#define REGISTER_DH 5
+
+#define SECTOR_SIZE 512
+#define HEADS_PER_CYLINDER_DEFAULT 2
+
+#define OPERATION_READ_DISK_SECTORS 0x02
+#define OPERATION_WRITE_DISK_SECTORS 0x03
+
+static uint16_t get_sectors_per_track(FILE *fh)
+{
+  uint16_t spt;
+
+  fseek(fh, 24, SEEK_SET); /* Offset in Volume Boot Record. */
+
+  if (fread(&amp;spt, sizeof(uint16_t), 1, fh) != 1) {
+    return 0; /* Error */
+  }
+
+  /* Currently handling 720K and 1.44M floppies. */
+  if (spt == 9 || spt == 18) {
+    return spt; /* Valid */
+  }
+
+  return 0; /* Invalid */
+}
+
+static void display_help(char *progname)
+{ 
+  fprintf(stderr, &#34;Usage: %s &lt;options&gt;&#92;n&#34;, progname);
+  fprintf(stderr, &#34;Options:&#92;n&#34;
+     &#34;  -h          Display this help and exit.&#92;n&#34;
+     &#34;  -d DEVICE   Use TTY DEVICE.&#92;n&#34;
+     &#34;  -a IMAGE    Floppy IMAGE for A:&#92;n&#34;
+     &#34;  -b IMAGE    Floppy IMAGE for B:&#92;n&#34;
+     &#34;  -H HPC      Force HPC heads per cylinder.&#92;n&#34;
+     &#34;  -S SPT      Force SPT sectors per track.&#92;n&#34;
+     &#34;  -v          Verbose debugging output.&#92;n&#34;
+     &#34;&#92;n&#34;);
+}
+
+int main(int argc, char *argv[])
+{
+  int result = EXIT_SUCCESS;
+  int i, c, arg;
+  int cylinder, sector, lba;
+  struct termios attr;
+  unsigned char registers[6];
+  int debug_output = 0;
+  char *tty_device = NULL;
+  int tty_fd = -1;
+  FILE *fh;
+  char *floppy_a_image = NULL;
+  char *floppy_b_image = NULL;
+  FILE *floppy_a_fh = NULL;
+  FILE *floppy_b_fh = NULL;
+  uint16_t floppy_a_spt = 0;
+  uint16_t floppy_b_spt = 0;
+  int spt = 0;
+  int hpc = HEADS_PER_CYLINDER_DEFAULT;
+  char *operation;
+
+  while ((c = getopt(argc, argv, &#34;hd:a:b:H:S:v&#34;)) != -1) {
+    switch (c) {
+    case &#39;h&#39;:
+      display_help(argv[0]);
+      return EXIT_SUCCESS;
+
+    case &#39;d&#39;:
+      tty_device = optarg;
+      break;
+
+    case &#39;a&#39;:
+      floppy_a_image = optarg;
+      break;
+
+    case &#39;b&#39;:
+      floppy_b_image = optarg;
+      break;
+
+    case &#39;H&#39;:
+      hpc = atoi(optarg);
+      break;
+
+    case &#39;S&#39;:
+      spt = atoi(optarg);
+      break;
+
+    case &#39;v&#39;:
+      debug_output = 1;
+      break;
+
+    case &#39;?&#39;:
+    default:
+      display_help(argv[0]);
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (tty_device == NULL) {
+    fprintf(stderr, &#34;Please specify a TTY!&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  if (floppy_a_image == NULL &amp;&amp; floppy_b_image == NULL) {
+    fprintf(stderr, &#34;Please specify at least one floppy image!&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  if (hpc == 0) {
+    fprintf(stderr, &#34;Invalid heads per cylinder!&#92;n&#34;);
+    return EXIT_FAILURE;
+  }
+
+  /* Open serial TTY device. */
+  tty_fd = open(tty_device, O_RDWR | O_NOCTTY);
+  if (tty_fd == -1) {
+    fprintf(stderr, &#34;open() on TTY device failed with errno: %d&#92;n&#34;, errno);
+    return EXIT_FAILURE;
+  }
+
+  /* Set TTY into a very raw mode. */
+  memset(&amp;attr, 0, sizeof(struct termios));
+  attr.c_cflag = B9600 | CS8 | CLOCAL | CREAD;
+  attr.c_cc[VMIN] = 1;
+
+  if (tcsetattr(tty_fd, TCSANOW, &amp;attr) == -1) {
+    fprintf(stderr, &#34;tcgetattr() on TTY device failed with errno: %d&#92;n&#34;, errno);
+    close(tty_fd);
+    return EXIT_FAILURE;
+  }
+
+  /* Make sure TTY &#34;Clear To Send&#34; signal is set. */
+  arg = TIOCM_CTS;
+  if (ioctl(tty_fd, TIOCMBIS, &amp;arg) == -1) {
+    fprintf(stderr, &#34;ioctl() on TTY device failed with errno: %d&#92;n&#34;, errno);
+    close(tty_fd);
+    return EXIT_FAILURE;
+  }
+
+  /* Get information about floppy A: */
+  if (floppy_a_image != NULL) {
+    floppy_a_fh = fopen(floppy_a_image, &#34;r+b&#34;);
+    if (floppy_a_fh == NULL) {
+      fprintf(stderr, &#34;fopen() for floppy A: failed with errno: %d&#92;n&#34;, errno);
+      result = EXIT_FAILURE;
+      goto main_end;
+    }
+
+    if (spt == 0) {
+      floppy_a_spt = get_sectors_per_track(floppy_a_fh);
+    } else {
+      floppy_a_spt = spt;
+    }
+    if (floppy_a_spt == 0) {
+      fprintf(stderr, &#34;Invalid sectors per track for floppy A:&#92;n&#34;);
+      result = EXIT_FAILURE;
+      goto main_end;
+    }
+  }
+
+  /* Get information about floppy B: */
+  if (floppy_b_image != NULL) {
+    floppy_b_fh = fopen(floppy_b_image, &#34;r+b&#34;);
+    if (floppy_b_fh == NULL) {
+      fprintf(stderr, &#34;fopen() for floppy B: failed with errno: %d&#92;n&#34;, errno);
+      result = EXIT_FAILURE;
+      goto main_end;
+    }
+
+    if (spt == 0) {
+      floppy_b_spt = get_sectors_per_track(floppy_b_fh);
+    } else {
+      floppy_b_spt = spt;
+    }
+    if (floppy_b_spt == 0) {
+      fprintf(stderr, &#34;Invalid sectors per track for floppy B:&#92;n&#34;);
+      result = EXIT_FAILURE;
+      goto main_end;
+    }
+  }
+
+  /* Process input and output. */
+  while (1) {
+    for (i = 0; i &lt; 6; i++) {
+      if (read(tty_fd, &amp;registers[i], sizeof(unsigned char)) != 1) {
+        fprintf(stderr, &#34;read() failed with errno: %d&#92;n&#34;, errno);
+        result = EXIT_FAILURE;
+        goto main_end;
+      }
+    }
+
+    if (debug_output) {
+      fprintf(stderr, &#34;AL: 0x%02x&#92;n&#34;, registers[REGISTER_AL]);
+      fprintf(stderr, &#34;AH: 0x%02x&#92;n&#34;, registers[REGISTER_AH]);
+      fprintf(stderr, &#34;CL: 0x%02x&#92;n&#34;, registers[REGISTER_CL]);
+      fprintf(stderr, &#34;CH: 0x%02x&#92;n&#34;, registers[REGISTER_CH]);
+      fprintf(stderr, &#34;DL: 0x%02x&#92;n&#34;, registers[REGISTER_DL]);
+      fprintf(stderr, &#34;DH: 0x%02x&#92;n&#34;, registers[REGISTER_DH]);
+    }
+
+    if (registers[REGISTER_DL] == 0x00) {
+      spt = floppy_a_spt;
+      fh = floppy_a_fh;
+    } else if (registers[REGISTER_DL] == 0x01) {
+      spt = floppy_b_spt;
+      fh = floppy_b_fh;
+    } else {
+      fprintf(stderr, &#34;Error: Invalid drive number: %02x&#92;n&#34;,
+        registers[REGISTER_DL]);
+      result = EXIT_FAILURE;
+      goto main_end;
+    }
+
+    /* CX =       ---CH--- ---CL---
+     * cylinder : 76543210 98
+     * sector   :            543210
+     * LBA = ( ( cylinder * HPC + head ) * SPT ) + sector - 1
+    */
+
+    cylinder = ((registers[REGISTER_CL] &amp; 0xc0) &lt;&lt; 2)
+      + registers[REGISTER_CH];
+    sector = registers[REGISTER_CL] &amp; 0x3f;
+    lba = ((cylinder * hpc + registers[REGISTER_DH]) * spt) + sector - 1;
+
+    if (debug_output) {
+      fprintf(stderr, &#34;Cylinder: %d&#92;n&#34;, cylinder);
+      fprintf(stderr, &#34;Sector  : %d&#92;n&#34;, sector);
+      fprintf(stderr, &#34;SPT     : %d&#92;n&#34;, spt);
+      fprintf(stderr, &#34;HPC     : %d&#92;n&#34;, hpc);
+      fprintf(stderr, &#34;LBA     : %d&#92;n&#34;, lba);
+      fprintf(stderr, &#34;Offset  : 0x%x&#92;n&#34;, lba * SECTOR_SIZE);
+    } else {
+      switch (registers[REGISTER_AH]) {
+      case OPERATION_READ_DISK_SECTORS:
+        operation = &#34;Read&#34;;
+        break;
+      case OPERATION_WRITE_DISK_SECTORS:
+        operation = &#34;Write&#34;;
+        break;
+      default:
+        operation = &#34;Unknown&#34;;
+        break;
+      }
+      fprintf(stderr, &#34;%s %c: sector=%d, cylinder=%d count=%d&#92;n&#34;,
+        operation, (registers[REGISTER_DL] == 0x00) ? &#39;A&#39; : &#39;B&#39;,
+        sector, cylinder, registers[REGISTER_AL]);
+    }
+
+    if (fh != NULL) {
+      if (fseek(fh, lba * SECTOR_SIZE, SEEK_SET) == -1) {
+        fprintf(stderr, &#34;fseek() failed with errno: %d&#92;n&#34;, errno);
+        result = EXIT_FAILURE;
+        goto main_end;
+      }
+    }
+
+    switch (registers[REGISTER_AH]) {
+    case OPERATION_READ_DISK_SECTORS:
+      if (debug_output) {
+        fprintf(stderr, &#34;READ SECTOR DATA:&#92;n&#34;);
+      }
+      for (i = 0; i &lt; (SECTOR_SIZE * registers[REGISTER_AL]); i++) {
+        if (fh != NULL) {
+          c = fgetc(fh);
+        } else {
+          c = 0xFF; /* Dummy data if image is not loaded. */
+        }
+        if (debug_output) {
+          fprintf(stderr, &#34;%02x &#34;, c);
+          if (i % 16 == 15) {
+            fprintf(stderr, &#34;&#92;n&#34;);
+          }
+        }
+        write(tty_fd, &amp;c, sizeof(unsigned char));
+      }
+      break;
+
+    case OPERATION_WRITE_DISK_SECTORS:
+      if (debug_output) {
+        fprintf(stderr, &#34;WRITE SECTOR DATA:&#92;n&#34;);
+      }
+      for (i = 0; i &lt; (SECTOR_SIZE * registers[REGISTER_AL]); i++) {
+        read(tty_fd, &amp;c, sizeof(unsigned char));
+        if (fh != NULL) {
+          fputc(c, fh);
+        }
+        if (debug_output) {
+          fprintf(stderr, &#34;%02x &#34;, c);
+          if (i % 16 == 15) {
+            fprintf(stderr, &#34;&#92;n&#34;);
+          }
+        }
+      }
+      if (fh != NULL) {
+        fflush(fh);
+      }
+      break;
+
+    default:
+      fprintf(stderr, &#34;Error: Unhandled operation: %02x&#92;n&#34;,
+        registers[REGISTER_AH]);
+      result = EXIT_FAILURE;
+      goto main_end;
+    }
+  }
+
+main_end:
+  if (tty_fd != -1) close(tty_fd);
+  if (floppy_a_fh != NULL) fclose(floppy_a_fh);
+  if (floppy_b_fh != NULL) fclose(floppy_b_fh);
+
+  return result;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        I have also uploaded the code to <a href="https://github.com/kobolt/serialfd">GitHub</a> in case case of further improvements in the future.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        03/07-2020, 
+        <a href="article-162.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

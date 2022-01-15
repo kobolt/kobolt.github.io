@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Curses Snow Crash</h1>
+      <p>
+        On my way to work one morning I got the idea for this program. Can it actually be called a program? It&#39;s more like a novelty, but so simple to make. Take a look at the excellent <a href="http://www.asty.org/cmatrix/">cmatrix</a> for a similar, but much more advanced program.<br />
+        <br />
+        The name is from Neal Stephenson&#39;s <a href="http://en.wikipedia.org/wiki/Snowcrash">novel</a>, where I imagine that the &#34;Snow Crash&#34; would look something like the output of this program.<br />
+        <br />
+        Use it as a screen saver or just for fun, so check out the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;time.h&gt;
+#include &lt;curses.h&gt;
+
+int main(int argc, char *argv[])
+{
+  int x, y, maxy, maxx;
+
+  srand(time(NULL));
+
+  initscr();
+  atexit((void *)endwin);
+  noecho();
+  timeout(0);
+
+  while (1) {
+    if (getch() != ERR)
+      return 0; /* Stop on any key press. */
+
+    getmaxyx(stdscr, maxy, maxx);
+    for (y = 0; y &lt; maxy; y++) {
+      for (x = 0; x &lt; maxx; x++) {
+        mvaddch(y, x, (rand() % 0x5E) + 0x21); /* 0x21 -&gt; 0x7E */
+      }
+    }
+    refresh();
+    usleep(40000); /* ~24 frames per second. */
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Compiled and run; it will look something like this for each frame, just random characters splattered over the screen:<br />
+      </p>
+      <img class="border" src="images/curses-snowcrash.png" alt="Snow Crash!" />
+      <p>
+        <br />
+        Here&#39;s a statically linked <a href="supplies/snowcrash.exe">Win32 binary</a> for convenience.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/12-2013, 
+        <a href="article-86.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

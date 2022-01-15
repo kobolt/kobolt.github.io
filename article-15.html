@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>BMP Header Info</h1>
+      <p>
+        Following the <a href="article-14.html">tradition</a> of analysing image headers, I have made another small program in C to read header information from BMP (BitMaP) images. There does not seem to be a complete specification of BMP images, so the program is based on various information found on the Internet.<br />
+        <br />
+        This program works the same way as the other one; by reading the image as standard input, and presenting information in human readable form on standard out.<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+typedef struct bmp_infoheader_s {
+   unsigned long int header_size;
+   signed long int width, height;
+   unsigned short int planes;
+   unsigned short int bits;
+   unsigned long int compression;
+   unsigned long int image_size;
+   signed long int xres, yres;
+   unsigned long int colors;
+   unsigned long int imp_colors;
+} bmp_infoheader_t;
+
+int main(void)
+{
+  bmp_infoheader_t infoheader;
+  char *p;
+
+  /* First header cannot be defined as a structure, because of aligment
+     problems with the compiler. */
+  unsigned short int bmp_header_type;
+  unsigned long int bmp_header_size;
+  unsigned short int bmp_header_reserved_1, bmp_header_reserved_2;
+  unsigned long int bmp_header_offset;
+
+  /* Read first header (in many steps). */
+  fread(&amp;bmp_header_type, sizeof(unsigned short int), 1, stdin);
+  fread(&amp;bmp_header_size, sizeof(unsigned long int), 1, stdin);
+  fread(&amp;bmp_header_reserved_1, sizeof(unsigned short int), 1, stdin);
+  fread(&amp;bmp_header_reserved_2, sizeof(unsigned short int), 1, stdin);
+  fread(&amp;bmp_header_offset, sizeof(unsigned long int), 1, stdin);
+  if (feof(stdin)) {
+    fprintf(stderr, &#34;Error: Could not read first BMP header.&#92;n&#34;);
+    return 1;
+  }
+
+  if (bmp_header_type != 19778) { /* (77[M] * 256) + 66[B] = 19778 */
+    fprintf(stderr, &#34;Error: Not a BMP image. (%d)&#92;n&#34;, bmp_header_type);
+    return 1;
+  }
+  printf(&#34;--- First Header ---&#92;n&#34;);
+  printf(&#34;File size        : %lu bytes&#92;n&#34;, bmp_header_size);
+  printf(&#34;Reserved 1       : %hd&#92;n&#34;, bmp_header_reserved_1);
+  printf(&#34;Reserved 2       : %hd&#92;n&#34;, bmp_header_reserved_2);
+  printf(&#34;Image data offset: 0x%lx&#92;n&#34;, bmp_header_offset);
+
+  /* Read second header (infoheader). */
+  fread(&amp;infoheader, sizeof(bmp_infoheader_t), 1, stdin);
+  if (feof(stdin)) {
+    fprintf(stderr, &#34;Error: Could not read second BMP header.&#92;n&#34;);
+    return 1;
+  }
+  printf(&#34;--- Second Header ---&#92;n&#34;);
+  printf(&#34;Header size (2nd): %lu bytes&#92;n&#34;, infoheader.header_size);
+  printf(&#34;Image height     : %ld pixels&#92;n&#34;, infoheader.height);
+  printf(&#34;Image width      : %ld pixels&#92;n&#34;, infoheader.width);
+  printf(&#34;Bits per pixel   : %hu&#92;n&#34;, infoheader.bits);
+  switch (infoheader.compression) {
+  case 0:
+    p = &#34;None/RGB&#34;;
+    break;
+  case 1:
+    p = &#34;8-bit Run-length encoding&#34;;
+    break;
+  case 2:
+    p = &#34;4-bit Run-length encoding&#34;;
+    break;
+  case 3:
+    p = &#34;Bit fields&#34;;
+    break;
+  case 4:
+    p = &#34;Embedded JPEG&#34;;
+    break;
+  case 5:
+    p = &#34;Embedded PNG&#34;;
+    break;
+  default:
+    p = &#34;Unknown&#34;;
+    break;
+  }
+  printf(&#34;Compression type : %lu (%s)&#92;n&#34;, infoheader.compression, p);
+  printf(&#34;Image size       : %lu bytes&#92;n&#34;, infoheader.image_size);
+  printf(&#34;Pixels/Meter (X) : %ld&#92;n&#34;, infoheader.xres);
+  printf(&#34;Pixels/Meter (Y) : %ld&#92;n&#34;, infoheader.yres);
+  printf(&#34;Color planes     : %hu&#92;n&#34;, infoheader.planes);
+  printf(&#34;Colors in palette: %lu&#92;n&#34;, infoheader.colors);
+  printf(&#34;Important colors : %lu&#92;n&#34;, infoheader.imp_colors);
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        21/03-2008, 
+        <a href="article-15.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>GR-SAKURA Shell Update</h1>
+      <p>
+        I have added two new commands to the <a href="article-128.html">GR-SAKURA Shell</a>. One is just a &#34;button&#34; command to print the state of the blue push button, known as SW2. The other &#34;adc&#34; command prints the binary value of the 12-bit A/D converter connected to analog inputs AN0 to AN5.<br />
+        <br />
+        ADC command:<br />
+      </p>
+        <div class="box">
+          <pre>
+sakura&gt; adc
+AN0: 101111011010
+AN1: 110000101110
+AN2: 110001111111
+AN3: 100000001000
+AN4: 000000000001
+AN5: 110000110001
+sakura&gt; adc
+AN0: 101110111011
+AN1: 110000000010
+AN2: 110001010111
+AN3: 110001000001
+AN4: 011111000010
+AN5: 000000000011
+          </pre>
+        </div>
+      <p>
+        <br />
+        Button command:<br />
+      </p>
+        <div class="box">
+          <pre>
+sakura&gt; button
+released
+sakura&gt; button
+pressed
+          </pre>
+        </div>
+      <p>
+        <br />
+        Get the source code <a href="supplies/sakura-shell-0.3.tar.gz">here</a> or from my <a href="https://gitlab.com/kobolt/sakura-tools">GitLab</a> or <a href="https://github.com/kobolt/sakura-tools">GitHub</a> pages.<br />
+        <br />
+        Also consider using my updated <a href="article-129.html">instructions</a> on to build the cross compilation toolchain for the Renesas RX CPU.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        11/10-2018, 
+        <a href="article-136.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

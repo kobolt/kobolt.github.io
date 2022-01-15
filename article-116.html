@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Bluray on Slackware</h1>
+      <p>
+        Here&#39;s information on how I was able to play encrypted Bluray disks on Slackware using a custom MPlayer.<br />
+        <br />
+        This statement from the <a href="http://www.mplayerhq.hu/design7/news.html">MPlayer homepage</a> is vital:<br />
+        &#34;MPlayer does support encrypted BluRay playback, though not all steps are handled by MPlayer itself. The two alternative methods use the URL schemes bd:// (always supports decryption, but you need the key for each and every disk in ~/.dvdcss/KEYDB.cfg and only works well with very simple BluRays, similar to dvd:// vs. dvdnav://) and br:// (uses libbluray and should support the same as VideoLAN in the link below but that is untested).&#34;<br />
+        <br />
+        I only got it to work with the &#34;br://&#34; scheme. The MPlayer package that follows the default Slackware installation does NOT link to libbluray, so I had to download and compile it manually, and then use this separate MPlayer binary for Bluray playback only. Prior to this, I had already installed <a href="http://www.videolan.org/developers/libbluray.html">libbluray</a>, <a href="https://www.videolan.org/developers/libbdplus.html">libbdplus</a> and <a href="http://www.videolan.org/developers/libaacs.html">libaacs</a> on the system.<br />
+        <br />
+        I launch it with the following helper script:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+if ! fgrep /mnt/cdrom /proc/mounts &gt; /dev/null; then
+  mount /mnt/cdrom || exit 1
+fi
+
+# Enable debugging info for libbluray:
+export BD_DEBUG_MASK=&#34;0xFFFFFFF&#34;
+
+# NOTE: Set the BLURAY_TITLE variable to change titles.
+# NOTE: Use -chapter &lt;id&gt; argument to change chapters.
+export BLURAY_TITLE=0
+exec ~/opt/mplayer-bluray-bin br://$BLURAY_TITLE//mnt/cdrom &#34;$@&#34;
+          </pre>
+        </div>
+      <p>
+        <br />
+        Finally, you will need to have an updated <a href="http://www.labdv.com/aacs/KEYDB.cfg">KEYDB.cfg</a> file at ~/.config/aacs/KEYDB.cfg and hope that the VUK (Volume Unique Key) has been discovered for your Bluray disc.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        18/02-2017, 
+        <a href="article-116.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

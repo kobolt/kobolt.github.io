@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Gould 1604 Oscilloscope Repair</h1>
+      <p>
+        I have gotten hold of a Gould DRO 1604 oscilloscope from 1989. It would power on, but the display was severely distorted and looked like this:<br />
+      </p>
+      <img class="border" src="images/gould_1604_before.jpg" alt="Gould 1604 Before" />
+      <p>
+        <br />
+        I cracked open the case and first of all removed a leaking battery, which is not related to the display problem, but important to fix as soon as possible:<br />
+      </p>
+      <img class="border" src="images/gould_1604_battery.jpg" alt="Gould 1604 Battery" />
+      <p>
+        <br />
+        Luckily there is a service manual available for this particular oscilloscope, which helps a lot in giving troubleshooting tips and places to measure. I first discovered that pin 4 of U803 (the Y DAC chip) had -3.3V but the service manual said it should be either -2.8V or -4.2V, depending on the &#34;dot joining&#34; state. This led me to Q811 (a MOSFET controlling the &#34;dot join&#34;) which had a strange voltage of -3.41V on it&#39;s gate, where it should have been either 0V or -5V. According to the circuit diagram the gate of Q811 is pulled by a resistor connected to the -12V power rail.<br />
+        <br />
+        I measured the -12V rail, and this was only around -11V which is too low. This rail is controlled by a LM377T linear regulator, which is adjusted by a set of resistors and capacitors. I checked the three associated resistors R1, R2 and R16 and they all had the correct values. However, the two capacitors C15 and C16 had correct capacitance but horrible <a href="https://en.wikipedia.org/wiki/Equivalent_series_resistance">ESR</a> value of 23 and 33 ohms.<br />
+        <br />
+        Here are the two bad capacitors, with blue casing:<br />
+      </p>
+      <img class="border" src="images/gould_1604_old_caps.jpg" alt="Gould 1604 Old Capacitors" />
+      <p>
+        <br />
+        Which i promptly replaced with new ones:<br />
+      </p>
+      <img class="border" src="images/gould_1604_new_caps.jpg" alt="Gould 1604 New Capacitors" />
+      <p>
+        <br />
+        This fixed the -12V power rail, which now measures around actual -12 volts, and the display is now working:<br />
+      </p>
+      <img class="border" src="images/gould_1604_after.jpg" alt="Gould 1604 After" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        04/12-2020, 
+        <a href="article-169.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

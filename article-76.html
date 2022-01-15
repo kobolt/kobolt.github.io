@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore 64 RS-232 Interface</h1>
+      <p>
+        By using a TTL-level RS-232 to USB converter, like <a href="http://dx.com/p/usb-to-uart-5-pin-cp2102-module-serial-converter-81872">this one</a>, it was surprisingly easy to connect the Commodore 64 to a Linux box. I read somewhere that an inverter was required on the RxD/TxD signals, but during my testing with this converter, that was not necessary. This means you only need wires, and no additional electronics!<br />
+        <br />
+        The RS-232 interface is found on the C64&#39;s user port, and the wiring is as follows:<br />
+      </p>
+        <div class="box">
+          <pre>
+C64 Signal:   C64 User Port:   Converter:
+-----------------------------------------
+Ground        A + N            Gnd
+RxD           B + C            TxD
+TxD           M                RxD 
+          </pre>
+        </div>
+      <p>
+        <br />
+        The best terminal program for the Commodore 64 is <a href="http://www.everythingcommodore.com/download.php?view.417">NovaTerm</a>, since it supports VT102/ANSI emulation and such.<br />
+        <br />
+        Assuming the converter is connected to a Linux box and detected as /dev/ttyUSB0, the connection can be tested like this at 1200 baud, which is the most common:<br />
+      </p>
+        <div class="box">
+          <pre>
+screen /dev/ttyUSB0 1200
+          </pre>
+        </div>
+      <p>
+        <br />
+        To provide a login prompt at 1200 baud and supporting ANSI escape characters, something like this can be run as root:<br />
+      </p>
+        <div class="box">
+          <pre>
+agetty -L ttyUSB0 1200 ansi
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here&#39;s a &#34;screenshot&#34; of NovaTerm 9.6c connected to a Linux box and running top:<br />
+      </p>
+      <img class="border" src="images/novaterm-top.jpg" alt="Screenshot of top via NovaTerm." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        19/01-2013, 
+        <a href="article-76.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

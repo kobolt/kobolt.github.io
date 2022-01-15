@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Fluxbox Styles</h1>
+      <p>
+        I almost exclusively use the <a href="http://fluxbox.org/">Fluxbox</a> window manager on my systems. Recently I have looked into how to create custom styles, and have finally been able to boil it down into something that&#39;s easy to manage.<br />
+        <br />
+        Here&#39;s a desktop screenshot of a style I made:<br />
+      </p>
+      <img class="border" src="images/fluxbox-custom.png" alt="Custom Fluxbox Style" />
+      <p>
+        <br />
+        But the most interesting part is the trimmed down style file:<br />
+      </p>
+        <div class="box">
+          <pre>
+*.textColor: #009900
+*.color: black
+*.focus.color: #009900
+*.focus.textColor: black
+*.focused.color: #009900
+*.focused.textColor: black
+*.font: glisp
+*.borderWidth: 1
+*.borderColor: #009900
+
+menu.bullet: triangle
+menu.bullet.position: right
+menu.title.color: #009900
+menu.title.textColor: black
+menu.title.justify: center
+menu.frame.color: black
+menu.frame.textColor: green
+menu.hilite.color: #009900
+menu.hilite.textColor: black
+menu.frame.disableColor: grey50
+
+window.button.focus.picColor: black
+window.button.unfocus.picColor: green
+
+window.*.focus: raised gradient vertical
+window.*.focus.colorTo: #00ee00
+toolbar.*.focused: raised gradient vertical
+toolbar.*.focused.colorTo: #00ee00
+menu.title: raised gradient vertical
+menu.title.colorTo: #00ee00
+          </pre>
+        </div>
+      <p>
+        <br />
+        In the corner of the screenshot you&#39;ll also notice <a href="https://github.com/brndnmtthws/conky">conky</a> running. Here is the conkyrc file creating a similar colorscheme to match the Fluxbox style.<br />
+      </p>
+        <div class="box">
+          <pre>
+alignment top_right
+background yes
+border_width 1
+cpu_avg_samples 2
+default_color green
+default_outline_color green
+default_shade_color green
+draw_borders no
+draw_graph_borders yes
+draw_outline no
+draw_shades no
+use_xft no
+xftfont DejaVu Sans Mono:size=12
+gap_x 5
+gap_y 5
+minimum_size 300 5
+net_avg_samples 2
+no_buffers yes
+out_to_console no
+out_to_stderr no
+extra_newline no
+own_window no
+own_window_class Conky
+own_window_type desktop
+own_window_transparent yes
+stippled_borders 0
+update_interval 1.0
+uppercase no
+use_spacer none
+show_graph_scale no
+show_graph_range no
+double_buffer yes
+
+TEXT
+${color green4}Uptime:$color $uptime
+${color green4}Battery:$color $battery ${battery_bar}
+${color green4}RAM Usage:$color $mem/$memmax - $memperc% ${membar 4}
+${color green4}CPU &#92;#1:$color ${cpu cpu1}% ${cpubar cpu1 4}
+${color green4}CPU &#92;#2:$color ${cpu cpu2}% ${cpubar cpu2 4}
+${color green4}CPU &#92;#3:$color ${cpu cpu3}% ${cpubar cpu3 4}
+${color green4}CPU &#92;#4:$color ${cpu cpu4}% ${cpubar cpu4 4}
+${color green4}Processes:$color $processes  ${color green4}Running:$color $running_processes
+${color green4}Wired:$color ${addr eth0}
+${color green4}Wireless:$color ${addr wlan0}
+          </pre>
+        </div>
+      <p>
+        <br />
+        A final recommendation when using styles like this is to make sure that the &#34;ls&#34; command does not produce garish results. This setting helps:<br />
+      </p>
+        <div class="box">
+          <pre>
+export LS_COLORS=&#39;rs=00:di=01:ln=00:mh=00:pi=01:so=01:do=01:bd=01:cd=01:or=31;01:mi=00:su=00:sg=00:ca=00:tw=00:ow=00:st=00:ex=00:&#39;
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        21/10-2017, 
+        <a href="article-124.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

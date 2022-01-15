@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>D64 PRG Dumper</h1>
+      <p>
+        Maybe such a program already exists, but I do not know of any, so I made my own. This program scans a <a href="http://vice-emu.sourceforge.net/vice_15.html">D64 file</a>, which is a disk image typically used by Commodore 64 emulators, and attempts to extract all programs (PRG files) from it.<br />
+        <br />
+        Take a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;ctype.h&gt;
+
+#define SECTOR_SIZE 256
+#define FIRST_DIR_TRACK 18
+#define FIRST_DIR_SECTOR 1
+#define DIR_ENTRIES_PER_SECTOR 8
+#define FILE_NAME_SIZE 16
+
+#pragma pack(1)
+typedef struct dir_entry_s {
+  uint8_t next_dir_track;
+  uint8_t next_dir_sector;
+  uint8_t file_type;
+  uint8_t first_file_track;
+  uint8_t first_file_sector;
+  uint8_t petscii_file_name[FILE_NAME_SIZE];
+  uint8_t extra[11]; /* Unused by this program. */
+} dir_entry_t;
+#pragma pack()
+
+static int byte_offset(int track_no, int sector_no)
+{
+  int offset = 0;
+
+  while (track_no-- &gt; 0) {
+    if (track_no &gt;= 31) {
+      offset += 17;
+    } else if (track_no &gt;= 25) {
+      offset += 18; 
+    } else if (track_no &gt;= 18) {
+      offset += 19;
+    } else if (track_no &gt;= 1) {
+      offset += 21;
+    }
+  }
+
+  return (offset + sector_no) * SECTOR_SIZE;
+}
+
+static void dump_program(FILE *d64, char *name, int first_track, int first_sector)
+{
+  uint8_t file_track, file_sector;
+  uint8_t data[254];
+  int size, saved = 0;
+  char path[PATH_MAX];
+  FILE *prg;
+
+  snprintf(path, PATH_MAX, &#34;%s.prg&#34;, name);
+  prg = fopen(path, &#34;wbx&#34;);
+  if (prg == NULL) {
+    fprintf(stderr, &#34;Warning: fopen(%s) failed: %s&#92;n&#34;, path, strerror(errno));
+    return;
+  }
+
+  file_track = first_track;
+  file_sector = first_sector;
+  do {
+    if (fseek(d64, byte_offset(file_track, file_sector), SEEK_SET) == -1) {
+      fprintf(stderr, &#34;Warning: fseek(%d,%d) failed: %s&#92;n&#34;, file_track, file_sector, strerror(errno));
+      fclose(prg);
+      return;
+    }
+
+    size =  fread(&amp;file_track, sizeof(uint8_t), 1, d64);
+    size += fread(&amp;file_sector, sizeof(uint8_t), 1, d64);
+    size += fread(&amp;data, sizeof(uint8_t), 254, d64);
+    if (size != SECTOR_SIZE) {
+      fprintf(stderr, &#34;Warning: fread() read less than a sector for program: &#92;&#34;%s&#92;&#34;&#92;n&#34;, name);
+      fclose(prg);
+      return;
+    }
+
+    saved += fwrite(&amp;data, sizeof(uint8_t), 254, prg);
+
+    /* NOTE: No protection against circular references. */
+  } while (file_track != 0);
+
+  printf(&#34;Extracted: &#92;&#34;%s&#92;&#34; (%d bytes)&#92;n&#34;, name, saved);
+  fclose(prg);
+}
+
+int main(int argc, char *argv[])
+{
+  FILE *d64;
+  int i, n, size;
+  uint8_t dir_track, dir_sector, petscii;
+  char ascii_name[FILE_NAME_SIZE + 1];
+  dir_entry_t de[DIR_ENTRIES_PER_SECTOR];
+
+  if (argc != 2) {
+    fprintf(stderr, &#34;Usage: %s &lt;d64 image&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  d64 = fopen(argv[1], &#34;rb&#34;);
+  if (d64 == NULL) {
+    fprintf(stderr, &#34;Error: fopen(%s) failed: %s&#92;n&#34;, argv[1], strerror(errno));
+    return 1;
+  }
+
+  /* Traverse directory entries: */
+  dir_track = FIRST_DIR_TRACK;
+  dir_sector = FIRST_DIR_SECTOR;
+  do {
+    if (fseek(d64, byte_offset(dir_track, dir_sector), SEEK_SET) == -1) {
+      fprintf(stderr, &#34;Error: fseek(%d,%d) failed: %s&#92;n&#34;, dir_track, dir_sector, strerror(errno));
+      return 1;
+    }
+    size = fread(&amp;de[0], sizeof(dir_entry_t), DIR_ENTRIES_PER_SECTOR, d64);
+    if (size != DIR_ENTRIES_PER_SECTOR) {
+      fprintf(stderr, &#34;Error: fread() read less than a sector for directory entry&#92;n&#34;);
+      return 1;
+    }
+
+    for (i = 0; i &lt; DIR_ENTRIES_PER_SECTOR; i++) {
+      /* Only extract if PRG type, meaning bit 2 is set: */
+      if ((de[i].file_type &amp; 0x2) == 0)
+        continue;
+
+      /* Convert file name from PETSCII to ASCII: */
+      memset(ascii_name, &#39;&#92;0&#39;, FILE_NAME_SIZE + 1);
+      for (n = 0; n &lt; FILE_NAME_SIZE; n++) {
+        petscii = de[i].petscii_file_name[n];
+        if (petscii == 0xA0) /* Padding, end of name. */
+          break;
+        if (isalnum(petscii)) {
+          ascii_name[n] = tolower(petscii);
+        } else if (petscii == &#39; &#39;) {
+          ascii_name[n] = &#39;_&#39;;
+        } else {
+          ascii_name[n] = &#39;.&#39;;
+        }
+      }
+
+      /* Dump the program unless 0: */
+      if (de[i].first_file_track == 0)
+        continue;
+      dump_program(d64, ascii_name, de[i].first_file_track, de[i].first_file_sector);
+    }
+
+    dir_track = de[0].next_dir_track;
+    dir_sector = de[0].next_dir_sector;
+
+    /* NOTE: No protection against circular references. */
+  } while (dir_track != 0);
+
+  fclose(d64);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        12/05-2016, 
+        <a href="article-109.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

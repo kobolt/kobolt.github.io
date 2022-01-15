@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>EXIF Remover</h1>
+      <p>
+        It would seem that some websites have started to use over-zealous (and faulty) detection algorithms when uploading images. I have had problems uploading images that are rotated 90 degrees, because the websites in question decides to look at the <a href="http://en.wikipedia.org/wiki/EXIF">EXIF</a> data in the JPEG images instead of the actual bitmap, and then counter-rotates the images! To fix this problem, I have made a simple program to just strip away all the EXIF data in a JPEG image.<br />
+        <br />
+        Here is the C code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+  int c, jpeg_marker_found, length_low, length_high, in_exif;
+
+  jpeg_marker_found = in_exif = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+
+    if (in_exif &gt; 0) {
+      in_exif--;
+      continue;
+    }
+
+    if (jpeg_marker_found &amp;&amp; c == 0xE1) { /* APP1 marker, used by EXIF. */
+      if ((length_high = fgetc(stdin)) == EOF)
+        return 1;
+      if ((length_low = fgetc(stdin)) == EOF)
+        return 1;
+      /* Remove one byte to avoid printing the next marker&#39;s first 0xFF... */
+      in_exif = length_low + (length_high * 0x100) - 1;
+      /* ...and this marker&#39;s 0xE1 will also not be printed. */
+    } else {
+      fputc(c, stdout);
+    }
+
+    jpeg_marker_found = (c == 0xFF) ? 1 : 0;
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        11/12-2010, 
+        <a href="article-48.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

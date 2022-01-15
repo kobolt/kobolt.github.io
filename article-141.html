@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>64-Bit Number Conversion Tool</h1>
+      <p>
+        Around 10 years ago I posted about a <a href="article-32.html">number conversion tool</a>. Several improvements have made it into the tool in those years, so it&#39;s time for an update. The most notable change is the support for 64-bit resolution on the numbers (also when compiled on 32-bit systems). In addition there is support for more operators like and (&amp;), or (|), multiplication (*), division (/) and modulus (%).<br />
+        <br />
+        Here is the updated code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;limits.h&gt; /* __WORDSIZE */
+
+static uint64_t power_of_two(uint64_t n)
+{
+  if (n == 0)
+    return 1;
+  else
+    return 2 * power_of_two(n - 1);
+}
+
+static char *convert_to_bin(uint64_t integer)
+{
+  static char buffer[65]; /* Should not be longer than 64-bits + NULL. */
+  int i, first_one;
+
+  buffer[64] = &#39;&#92;0&#39;; /* Always terminate. */
+
+  first_one = 63;
+  for (i = 63; i &gt;= 0; i--) {
+    if (integer &gt;= power_of_two(i)) {
+      buffer[63 - i] = &#39;1&#39;;
+      if (first_one &gt; (63 - i))
+      {
+        first_one = (63 - i);
+      }
+      integer -= power_of_two(i);
+    } else {
+      buffer[63 - i] = &#39;0&#39;;
+    }
+  }
+
+  return &amp;buffer[first_one];
+}
+
+static uint64_t convert_from_bin(char *number)
+{
+  uint64_t value;
+  int n;
+  char *p;
+
+  value = 0; 
+  n = strlen(number) - 3; /* Also minus &#34;0b&#34;. */
+  p = &amp;number[2];
+  do {
+    if (*p == &#39;0&#39;) {
+      n--;
+    } else if (*p == &#39;1&#39;) {
+      value += power_of_two(n);
+      n--;
+    }
+  } while (*p++ != &#39;&#92;0&#39;);
+
+  return value;
+}
+
+static uint64_t convert_to_int(char *number)
+{
+  uint64_t integer;
+
+  if (strncmp(number, &#34;0x&#34;, 2) == 0) {
+    integer = strtoull(number, NULL, 16);
+  } else if (strncmp(number, &#34;0b&#34;, 2) == 0) { 
+    integer = convert_from_bin(number);
+  } else if (strncmp(number, &#34;-&#34;, 1) == 0) {
+    integer = atoll(number); /* Handle signed integers. */
+  } else {
+    integer = strtoull(number, NULL, 10);
+  }
+  
+  return integer;
+}
+
+static uint64_t biggest_int(uint64_t n1, uint64_t n2, uint64_t n3)
+{
+  /* NOTE: Does not handle signed integers, so padding will be off. */
+  if (n1 &gt; n2 &amp;&amp; n1 &gt; n3) {
+    return n1;
+  } else if (n2 &gt; n3) {
+    return n2;
+  } else {
+    return n3;
+  }
+}
+
+static void display_int(uint64_t integer, char *prefix, uint64_t biggest)
+{
+  int pad;
+
+  if (prefix != NULL)
+  {
+    printf(&#34;%s&#34;, prefix);
+  }
+
+#if (__WORDSIZE == 64)
+  pad = snprintf(NULL, 0, &#34;%ld&#34;, biggest)
+      - snprintf(NULL, 0, &#34;%ld&#34;, integer);
+#else /* __WORDSIZE == 32 */
+  pad = snprintf(NULL, 0, &#34;%lld&#34;, biggest)
+      - snprintf(NULL, 0, &#34;%lld&#34;, integer);
+#endif /* __WORDSIZE */
+  while (pad-- &gt; 0) {
+    printf(&#34; &#34;);
+  }
+
+#if (__WORDSIZE == 64)
+  printf(&#34;%ld &#34;, integer);
+#else /* __WORDSIZE == 32 */
+  printf(&#34;%lld &#34;, integer);
+#endif /* __WORDSIZE */
+
+  printf(&#34;0x&#34;);
+#if (__WORDSIZE == 64)
+  pad = snprintf(NULL, 0, &#34;%lx&#34;, biggest)
+      - snprintf(NULL, 0, &#34;%lx&#34;, integer);
+#else /* __WORDSIZE == 32 */
+  pad = snprintf(NULL, 0, &#34;%llx&#34;, biggest)
+      - snprintf(NULL, 0, &#34;%llx&#34;, integer);
+#endif /* __WORDSIZE */
+  while (pad-- &gt; 0) {
+    printf(&#34;0&#34;);
+  }
+
+#if (__WORDSIZE == 64)
+  printf(&#34;%lx &#34;, integer);
+#else /* __WORDSIZE == 32 */
+  printf(&#34;%llx &#34;, integer);
+#endif /* __WORDSIZE */
+
+  printf(&#34;0b&#34;);
+  pad = strlen(convert_to_bin(biggest))
+      - strlen(convert_to_bin(integer));
+  while (pad-- &gt; 0) {
+    printf(&#34;0&#34;);
+  }
+
+  printf(&#34;%s&#92;n&#34;, convert_to_bin(integer));
+}
+
+int main(int argc, char *argv[])
+{
+  uint64_t n1, n2, result, biggest;
+  char *prefix;
+
+  if (argc == 2) { /* Just display the number in different forms. */
+    n1 = convert_to_int(argv[1]);
+    display_int(n1, NULL, n1);
+
+  } else if (argc == 4) { /* Perform extra operation. */
+    n1 = convert_to_int(argv[1]);
+    n2 = convert_to_int(argv[3]);
+    if (argv[2][0] == &#39;+&#39;) {
+      result = n1 + n2;
+      prefix = &#34; + &#34;;
+    } else if (argv[2][0] == &#39;-&#39;) {
+      result = n1 - n2;
+      prefix = &#34; - &#34;;
+    } else if (argv[2][0] == &#39;^&#39;) {
+      result = n1 ^ n2;
+      prefix = &#34; ^ &#34;;
+    } else if (argv[2][0] == &#39;&amp;&#39;) {
+      result = n1 &amp; n2;
+      prefix = &#34; &amp; &#34;;
+    } else if (argv[2][0] == &#39;|&#39;) {
+      result = n1 | n2;
+      prefix = &#34; | &#34;;
+    } else if (argv[2][0] == &#39;*&#39;) {
+      result = n1 * n2;
+      prefix = &#34; * &#34;;
+    } else if (argv[2][0] == &#39;/&#39;) {
+      result = n1 / n2;
+      prefix = &#34; / &#34;;
+    } else if (argv[2][0] == &#39;%&#39;) {
+      result = n1 % n2;
+      prefix = &#34; % &#34;;
+    } else {
+      fprintf(stderr, &#34;%s: error: invalid operator.&#92;n&#34;, argv[0]);
+      return -1;
+    }
+    biggest = biggest_int(n1, n2, result);
+    display_int(n1, &#34;   &#34;, biggest);
+    display_int(n2, prefix, biggest);
+    display_int(result, &#34; = &#34;, biggest);
+
+  } else {
+    fprintf(stderr, &#34;Usage: %s &lt;number&gt; [&lt;operator&gt; &lt;number&gt;]&#92;n&#34;, argv[0]);
+    fprintf(stderr, &#34;  number can be integer decimal, hex (0x) or binary (0b)&#92;n&#34;);
+    fprintf(stderr, &#34;  valid operators: + - ^ &amp; | * / %%&#92;n&#34;);
+    return -1;
+  }
+   
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        09/03-2019, 
+        <a href="article-141.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

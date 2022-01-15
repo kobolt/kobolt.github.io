@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore PC 30-III Repair</h1>
+      <p>
+        The Commodore PC 30-III is a AT-class 286 clone PC running at 12MHz with 1MB of RAM. My first and initial problem was the battery failure upon booting:<br />
+      </p>
+      <img class="border" src="images/commodore_pc30-III_battery_failure.jpg" alt="Commodore PC 30-III Battery Failure" />
+      <p>
+        <br />
+        For some reason, It was not possible to get past this error and continue booting anyway, so a replacement was needed. I got hold of a <a href="https://www.tindie.com/products/glitchwrks/gw-12887-1-ds12887-rtc-replacement-module/">Glitch Works GW-12887-1</a> which can replace the original Dallas 1287 RTC in this machine:<br />
+      </p>
+      <img class="border" src="images/commodore_pc30-III_dallas_ds1287.jpg" alt="Commodore PC 30-III Dallas DS1287 RTC" />
+      <p>
+        <br />
+        This is unfortunately soldered directly to the motherboard. But I cut a socket and soldered that one on instead:<br />
+      </p>
+      <img class="border" src="images/commodore_pc30-III_u201_socket.jpg" alt="Commodore PC 30-III U201 Socket Replacement" />
+      <p>
+        <br />
+        In which the replacement fits nicely:<br />
+      </p>
+      <img class="border" src="images/commodore_pc30-III_gw-12887-1.jpg" alt="Commodore PC 30-III GW-12887-1" />
+      <p>
+        <br />
+        This got the machine booting properly. But after a while of playing around with Compact Flash disk replacements, <a href="https://en.wikipedia.org/wiki/Magic_smoke">magic smoke</a> suddenly appeared. Which became my second problem. I located the source; a burned ceramic capacitor:<br />
+      </p>
+      <img class="border" src="images/commodore_pc30-III_burned_cap.jpg" alt="Commodore PC 30-III Burned Ceramic Capacitor" />
+      <p>
+        <br />
+        From what I could find out online, these capacitors can fail if cracks appear in them, and moisture gets in over time. So that&#39;s most likely what happened to this 30 year old component. I got a replacement and removed the bad one, which disintegrated almost by itself:<br />
+      </p>
+      <img class="border" src="images/commodore_pc30-III_cap_replacement.jpg" alt="Commodore PC 30-III Capacitor Replacement" />
+      <p>
+        <br />
+        The brand new ceramic capacitor in place:<br />
+      </p>
+      <img class="border" src="images/commodore_pc30-III_new_cap.jpg" alt="Commodore PC 30-III New Capacitor" />
+      <p>
+        <br />
+        The machine is now up and running again:<br />
+      </p>
+      <img class="border" src="images/commodore_pc30-III_front.jpg" alt="Commodore PC 30-III Front" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        08/12-2019, 
+        <a href="article-154.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

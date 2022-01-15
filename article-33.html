@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>ASCII-fication Filter</h1>
+      <p>
+        I made a filter program to convert normal images into random colored ASCII characters. It is similar to <a href="http://aa-project.sourceforge.net/aalib/">aalib</a>, but aalib does not use random characters, and uses only a few colors, (in order to comply with text terminals I think).<br />
+        <br />
+        It operates on <a href="http://netpbm.sourceforge.net/doc/pgm.html">plain PGM</a> (Portable Greymap) image files only, since this is easy to parse. You can involve the convert tool from <a href="http://www.imagemagick.org">ImageMagick</a> to use any kind of image file, like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+convert foo.jpg -compress none pgm:- | ./pgm-asciify | convert pgm:- foo.png
+          </pre>
+        </div>
+      <p>
+        <br />
+        Please note that you will get the best results by using big images with high contrast.<br />
+        <br />
+        The code is released under a MIT licence, and can be fetched <a href="supplies/pgm-asciify.tar.gz">here</a>.<br />
+        <br />
+        Here is an example:<br />
+      </p>
+      <img class="border" src="images/keyboard-asciified.png" alt="Keyboard asciified." />
+      <p>
+        Filtered from this image:<br />
+      </p>
+      <img class="border" src="images/keyboard-normal.jpg" alt="Keyboard in normal appearance." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        19/04-2009, 
+        <a href="article-33.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

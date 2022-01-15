@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>DVB-T USB Stick Playback</h1>
+      <p>
+        I got one of those <a href="https://en.wikipedia.org/wiki/DVB-T">DVB-T</a> tuners a while ago, in the form of a USB stick, specifically this one:<br />
+      </p>
+        <div class="box">
+          <pre>
+15a4:1001 Afatech Technologies, Inc. AF9015/AF9035 DVB-T stick
+          </pre>
+        </div>
+      <p>
+        <br />
+        However, it took me many years to finally get this working on Linux after a lot of trial and error. There are two important things I discovered during this time. The first is that MPlayer is quite bad at handling <a href="https://en.wikipedia.org/wiki/MPEG_transport_stream">MPEG TS</a> files (or streams). The second is that, at least in my case with this particular stick, the /dev/dvb/adapter0/dvr0 device would not work as advertised. <br />
+        <br />
+        The solution I ended up with is <a href="http://slackbuilds.org/repository/14.2/multimedia/w_scan/">w_scan</a> for scanning, <a href="https://www.linuxtv.org/wiki/index.php/Dvbv5-zap">v4l-utils</a> for tuning and <a href="http://slackbuilds.org/repository/14.2/multimedia/ffmpeg/">ffmpeg</a> for playback.<br />
+        <br />
+        Use these steps to scan and generate the channels list:<br />
+      </p>
+        <div class="box">
+          <pre>
+w_scan --output-initial &gt; channels.conf
+dvbv5-scan --input-format=CHANNEL --output=dvb_channel.conf channels.conf
+          </pre>
+        </div>
+      <p>
+        <br />
+        Then use these steps for playback:<br />
+      </p>
+        <div class="box">
+          <pre>
+mkfifo /tmp/dvb.ts
+dvbv5-zap -c dvb_channel.conf &#34;name-of-the-channel&#34; -o /tmp/dvb.ts &amp;
+ffplay /tmp/dvb.ts
+          </pre>
+        </div>
+      <p>
+        <br />
+        I found that TV (video and audio) playback works OK, but radio (audio only) will buffer for a very long time before playback starts, so not very convenient.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        27/03-2021, 
+        <a href="article-174.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

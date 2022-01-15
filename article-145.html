@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore 64 Game Cheats</h1>
+      <p>
+        I recently tried out the same tricks from <a href="article-81.html">my older article about DOS games</a>, but for a Commodore 64 game instead. This time using the <a href="http://vice-emu.sourceforge.net/">VICE emulator</a> for <a href="https://www.lemon64.com/?game_id=294">Blagger by Alligata</a>, a game I could never finish as a kid.<br />
+        <br />
+        I present some of the steps I used to create the &#34;cheat&#34; patch for infinite lives.<br />
+        1) Start the game (should start with 5 lives) and go into the VICE monitor.<br />
+        2) Dump the memory and state of the C64 with the &#34;dump&#34; command.<br />
+        3) Continue the game, and just loose 1 life.<br />
+        4) Re-enter the monitor and dump the memory and state again with the &#34;dump&#34; command.<br />
+        5) Convert the dumps to hex and do a diff on them, to see what has changed. It may take a while to find what you are looking for, which may require additional dumps.<br />
+        Eventually I found this suspicious memory area, where two values were decremented twice:<br />
+      </p>
+        <div class="box">
+          <pre>
+101c101
+&lt; 00000740  20 20 20 20 1e 57 57 1e  57 57 1e 7a 3a 3b 42 43  |    .WW.WW.z:;BC|
+---
+&gt; 00000740  20 20 20 20 1e 57 57 1e  57 57 1e 7a 3a 3b 44 45  |    .WW.WW.z:;DE|
+          </pre>
+        </div>
+      <p>
+        Although this is at address 0x74e and 0x74f in the dump file, the actual memory addresses are 0x6ca and 0x6cb due to the format of the dump.<br />
+        6) Now, with an address to look at, set a watch point on this in the VICE monitor.<br />
+        7) Continue the game again and loose another life.<br />
+        8) The monitor should now stop execution automatically if done correctly. In my case it displayed:<br />
+      </p>
+        <div class="box">
+          <pre>
+(C:$1102) w $06ca
+WATCH: 1  C:$06ca  (Stop on load store)
+(C:$1102) x
+#1 (Stop on  load 06ca)  076 050
+.C:0de6  AE CA 06    LDX $06CA      - A:01 X:44 Y:00 SP:f6 ..-....C  184810550
+.C:0de9  CA          DEX            - A:01 X:44 Y:00 SP:f6 ..-....C  184810550
+(C:$0de9)
+          </pre>
+        </div>
+      <p>
+        This assembly instruction (DEX) means the memory area is being decremented, exactly what we are looking for.<br />
+        9) After investigation of the assembly code in that area I found two decrement instructions. These could be patched with NOP (No Operation) instructions (6502 machine code 0xEA) from the VICE monitor like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+(C:$0e0c) &gt; $0de9 ea
+(C:$0e0c) &gt; $0dea ea
+          </pre>
+        </div>
+      <p>
+        10) Now, when continuing to play the game, any lost life is simply ignored.<br />
+        <br />
+        To apply a patch like this permanently, do it on the file (in this case a PRG file) instead of directly in memory of course. The code location will be different, so it must be searched for manually.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        02/07-2019, 
+        <a href="article-145.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

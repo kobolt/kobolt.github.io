@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Buildroot for KVM Guest</h1>
+      <p>
+        Here is a set of configuration files to quickly build a minimal <a href="http://www.linux-kvm.org/">KVM</a>-based hypervisor guest with Buildroot. It attempts to use mostly VirtIO paravirtualization to maximize performance. This includes virtual console, virtual network and virtualized filesystem with the <a href="https://en.wikipedia.org/wiki/9P_%28protocol%29">9P protocol</a>.<br />
+        <br />
+        These files are based on version 2016.11 of Buildroot, gotten from <a href="https://buildroot.org/downloads/buildroot-2016.11.tar.bz2">https://buildroot.org/downloads/buildroot-2016.11.tar.bz2</a><br />
+        <br />
+        Main Buildroot configuration file, should be stored as &#34;configs/kvm_guest_defconfig&#34; in the Buildroot structure:<br />
+      </p>
+        <div class="box">
+          <pre>
+BR2_x86_64=y
+BR2_x86_core2=y
+BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
+BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_4_4=y
+BR2_TOOLCHAIN_BUILDROOT_CXX=y
+BR2_TARGET_GENERIC_HOSTNAME=&#34;kvm-guest&#34;
+BR2_TARGET_GENERIC_ISSUE=&#34;Welcome to Virtualized KVM Guest&#34;
+BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_EUDEV=y
+BR2_TARGET_GENERIC_GETTY_PORT=&#34;hvc0&#34;
+BR2_TARGET_GENERIC_GETTY_BAUDRATE_115200=y
+BR2_LINUX_KERNEL=y
+BR2_LINUX_KERNEL_CUSTOM_VERSION=y
+BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE=&#34;4.4.38&#34;
+BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
+BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE=&#34;board/kvm_guest/linux-4.4.config&#34;
+BR2_LINUX_KERNEL_INSTALL_TARGET=y
+BR2_TARGET_ROOTFS_EXT2=y
+BR2_TARGET_ROOTFS_EXT2_4=y
+# BR2_TARGET_ROOTFS_TAR is not set
+          </pre>
+        </div>
+      <p>
+        <br />
+        Linux kernel configuration, should be stored as &#34;board/kvm_guest/linux-4.4.config&#34;:<br />
+      </p>
+        <div class="box">
+          <pre>
+CONFIG_SYSVIPC=y
+CONFIG_NO_HZ_IDLE=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_VIRT_CPU_ACCOUNTING_GEN=y
+CONFIG_NAMESPACES=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_EMBEDDED=y
+CONFIG_MODULES=y
+CONFIG_MODULE_UNLOAD=y
+CONFIG_SMP=y
+CONFIG_HYPERVISOR_GUEST=y
+CONFIG_SCHED_SMT=y
+CONFIG_NUMA=y
+CONFIG_IA32_EMULATION=y
+CONFIG_NET=y
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_INET=y
+CONFIG_NET_9P=y
+CONFIG_NET_9P_VIRTIO=y
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_VIRTIO_BLK=y
+CONFIG_NETDEVICES=y
+CONFIG_VIRTIO_NET=y
+CONFIG_VT_HW_CONSOLE_BINDING=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_VIRTIO_CONSOLE=y
+CONFIG_HW_RANDOM=y
+CONFIG_HW_RANDOM_VIRTIO=y
+CONFIG_VIRT_DRIVERS=y
+CONFIG_VIRTIO_PCI=y
+CONFIG_VIRTIO_BALLOON=y
+CONFIG_VIRTIO_INPUT=y
+CONFIG_VIRTIO_MMIO=y
+CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES=y
+CONFIG_EXT2_FS=y
+CONFIG_EXT3_FS=y
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_9P_FS=y
+CONFIG_9P_FS_POSIX_ACL=y
+CONFIG_DEBUG_FS=y
+CONFIG_STACKTRACE=y
+          </pre>
+        </div>
+      <p>
+        <br />
+        Once the files are in place, the build can be performed with:<br />
+      </p>
+        <div class="box">
+          <pre>
+make kvm_guest_defconfig
+make
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a helper script to unpack the root filesystem and launch the whole thing under <a href="http://www.qemu.org/">QEMU</a>:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+
+if [ `id -u` != &#34;0&#34; ]; then
+  echo &#34;Must be root!&#34;
+  exit 1
+fi
+
+cd `dirname &#34;$0&#34;`
+
+if [ ! -d /tmp/kvm_guest ]; then
+  mkdir -p /tmp/kvm_guest
+  mkdir -p /tmp/kvm_guest_loop
+  mount -o loop output/images/rootfs.ext4 /tmp/kvm_guest_loop
+  cp -a /tmp/kvm_guest_loop/* /tmp/kvm_guest
+  umount /tmp/kvm_guest_loop
+  rmdir /tmp/kvm_guest_loop
+fi
+
+qemu-system-x86_64 &#92;
+  -enable-kvm &#92;
+  -cpu host &#92;
+  -m 128 &#92;
+  -kernel output/images/bzImage &#92;
+  -serial none &#92;
+  -display none &#92;
+  -monitor none &#92;
+  -chardev stdio,id=char0 &#92;
+  -device virtio-serial &#92;
+  -device virtconsole,chardev=char0 &#92;
+  -fsdev local,id=fs0,path=/tmp/kvm_guest,security_model=none &#92;
+  -device virtio-9p-pci,fsdev=fs0,mount_tag=/dev/root &#92;
+  -net nic,macaddr=00:00:de:ad:be:ef,model=virtio,vlan=1 &#92;
+  -net tap,ifname=tap0,vlan=1,script=no,downscript=no &#92;
+  -append &#34;root=/dev/root rw rootfstype=9p rootflags=trans=virtio console=hvc0&#34;
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        14/01-2017, 
+        <a href="article-115.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

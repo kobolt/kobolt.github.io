@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>FreeRTOS support for GR-SAKURA</h1>
+      <p>
+        I have managed to get <a href="https://www.freertos.org/">FreeRTOS</a> running on the <a href="https://www.renesas.com/eu/en/products/gadget-renesas/boards/gr-sakura">GR-SAKURA</a> board. Currently it&#39;s just a demo that blinks the LEDs, but maybe I will improve on that later. Anyway, this makes it possible to do multitasking. It is based code from the other FreeRTOS demos and some of the stuff from my earlier GR-SAKURA projects.<br />
+        <br />
+        I started on this a while ago so the code is built around version 10.0.0 of FreeRTOS, but maybe it will work on newer versions as well.<br />
+        <br />
+        Download the code from <a href="supplies/sakura-freertos-demo.tgz">here</a> and unpack the &#34;GR-SAKURA&#34; directory alongside the others into the &#34;Demos&#34; directory of FreeRTOS. Compile it by running &#34;make&#34; from that directory, but you will need the <a href="article-129.html">GCC toolchain for the Renesas RX CPU</a> installed first.<br />
+        <br />
+        I also finally got hold of the excellent <a href="https://www.segger.com/products/debug-probes/j-link/">Segger J-Link</a> debug probe which makes it possible to use GDB (&#34;rx-elf-gdb&#34; from the RX GCC toolchain) to connect to the GR-SAKURA JTAG port, which I have soldered on:<br />
+      </p>
+      <img class="border" src="images/sakura-jtag.jpg" alt="GR-SAKURA with JTAG connector." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        08/05-2021, 
+        <a href="article-176.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

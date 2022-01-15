@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore 1541-II Floppy Drive Repair</h1>
+      <p>
+        I was able to repair my Commodore 1541-II floppy drive, which is typically used together with the Commodore 64.<br />
+        <br />
+        The first problem was that I do not have the original (external) power supply, but fortunately it uses fairly standard +5V and +12V voltages, which are also used by most PC hardware. So I made an adapter from a 4-pin molex to a 4-pin DIN connector:<br />
+      </p>
+      <img class="border" src="images/commodore_1541-II_power_adapter.jpg" alt="Commodore 1541-II Power Adapter" />
+      <p>
+        The pinout of the DIN connector can be found <a href="http://www.the-liberator.net/site-files/retro-games/hardware/Commodore-1541-II-Floppy-Drive/commodore-1541-ii-floppy-drive-rev-7.htm">here</a> among other places.<br />
+        <br />
+        When powering up the drive for the first time, it would keep the drive motor running constantly, which is apparently a known problem. Some other people online said this could be caused by a faulty PSU or bad ROM chip...<br />
+        <br />
+        When I attempted to continue troubleshooting the next day, the situation had worsened. Now the power LED on the drive would flash a little on power on and slowly fade away. Symptoms of a short circuit or something perhaps...<br />
+        <br />
+        With no idea on what to do about this, I decided to try to replace the electrolytic capacitors, which people often do on restoration/repair projects.<br />
+        <br />
+        There are only three of them on the main board, all 10uF and 25V, located here:<br />
+      </p>
+      <img class="border" src="images/commodore_1541-II_cap_locations.jpg" alt="Commodore 1541-II Capacitor Locations" />
+      <p>
+        <br />
+        Old and new replacements:<br />
+      </p>
+      <img class="border" src="images/commodore_1541-II_cap_replacement.jpg" alt="Commodore 1541-II Capacitor Replacement" />
+      <p>
+        <br />
+        To my surprise, this actually worked, and the drive is now working:<br />
+      </p>
+      <img class="border" src="images/commodore_1541-II_working.jpg" alt="Commodore 1541-II Working" />
+      <p>
+        <br />
+        I have a theory: Two of those capacitors I changed are between the incoming 12V/5V and ground, acting as &#34;decouping/bypass&#34; to filter out noise. If there happened to be a short circuit or weakened resistance in the capacitors, that would explain parts of the symptoms at least.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        26/10-2019, 
+        <a href="article-151.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

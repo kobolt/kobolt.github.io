@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Outlaws in Wine</h1>
+      <p>
+        I have made an effort in getting the classic LucasArts game <a href="https://en.wikipedia.org/wiki/Outlaws_(1997_video_game)">Outlaws</a> working in Wine with music, which is essential due to its excellent soundtrack. This is a similar to my <a href="article-160.html">other effort with M.I.A.</a>, except this time the music playback mechanism is more advanced. I had to make additional hacks to the Wine &#34;mcicda&#34; library to make it pause and resume in the middle of tracks.<br />
+        <br />
+        Here is a rough guide for the commands required for installation. Also, when the installation asks about DirectX 3.0A, just skip this. <br />
+      </p>
+        <div class="box">
+          <pre>
+mkdir -p ~/opt/outlaws
+mkdir ~/opt/outlaws/cd1 # Then copy files from CD1 into here.
+mkdir ~/opt/outlaws/cd2 # Then copy files from CD2 into here.
+echo &#34;OUTLAWS_1&#34; &gt; ~/opt/outlaws/cd1/.windows-label
+echo &#34;OUTLAWS_2&#34; &gt; ~/opt/outlaws/cd2/.windows-label
+ln -s &#34;cd1&#34; ~/opt/outlaws/drive_d
+WINEARCH=win32 WINEPREFIX=~/opt/outlaws winecfg # D: = &#34;drive_d&#34; = CD-ROM
+WINEARCH=win32 WINEPREFIX=~/opt/outlaws wine ~/opt/outlaws/drive_d/SETUP.EXE
+          </pre>
+        </div>
+      <p>
+        <br />
+        I had to enable the &#34;Virtual Desktop&#34; setting with &#34;winecfg&#34; for certain stuff like menus to work. I also just configured my X windows resolution to 800x600 before playing the game.<br />
+        <br />
+        To make the music playback work, a lot of additional steps are required. First the patched &#34;mcicda.dll&#34;, which can be downloaded <a href="supplies/mcicda.dll.so">here</a>. This should placed at &#34;~/opt/outlaws/drive_c/windows/system32/mcicda.dll&#34;<br />
+        <br />
+        Here is the patched code in case you want to compile it yourself, using the Wine 4.0.2 source code as a basis:<br />
+      </p>
+        <div class="box">
+          <pre>
+--- mcicda.c.orig	2020-08-22 14:22:13.861217377 +0200
++++ mcicda.c	2020-08-22 14:22:18.323217425 +0200
+@@ -20,11 +20,21 @@
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+  */
+ 
++#define MPLAYER_FIFO_LOCATION &#34;/tmp/mplayer.fifo&#34;
++#define TOC_FILE_LOCATION &#34;/tmp/toc.txt&#34;
++
+ #include &#34;config.h&#34;
+ #include &lt;stdarg.h&gt;
+ #include &lt;stdio.h&gt;
+ #include &lt;string.h&gt;
+ 
++#include &lt;sys/types.h&gt;
++#include &lt;sys/stat.h&gt;
++#include &lt;fcntl.h&gt;
++#include &lt;unistd.h&gt;
++#include &lt;limits.h&gt;
++#include &lt;time.h&gt;
++
+ #define WIN32_NO_STATUS
+ #include &#34;windef.h&#34;
+ #include &#34;winbase.h&#34;
+@@ -79,10 +89,211 @@
+ typedef HRESULT(WINAPI*LPDIRECTSOUNDCREATE)(LPCGUID,LPDIRECTSOUND*,LPUNKNOWN);
+ static LPDIRECTSOUNDCREATE pDirectSoundCreate;
+ 
++static int mplayer_current_track = 0;
++static int mplayer_current_min   = 0;
++static int mplayer_current_sec   = 0;
++static int mplayer_current_frame = 0;
++static struct timespec mplayer_playback_started = {0,0};
++
++static void mplayer_command(const char *command)
++{
++    int fd, written;
++
++    fd = open(MPLAYER_FIFO_LOCATION, O_NONBLOCK | O_WRONLY);
++    if (fd == -1) {
++        TRACE(&#34;No pipe&#92;n&#34;);
++        return;
++    }
++
++    written = write(fd, command, strlen(command));
++    if (written &lt;= 0) {
++        TRACE(&#34;Write failed&#92;n&#34;);
++    }
++
++    close(fd);
++}
++
+ static BOOL device_io(HANDLE dev, DWORD code, void *inbuffer, DWORD insize, void *outbuffer, DWORD outsize, DWORD *retsize, OVERLAPPED *overlapped)
+ {
+     const char *str;
+-    BOOL ret = DeviceIoControl(dev, code, inbuffer, insize, outbuffer, outsize, retsize, overlapped);
++
++    int track_no, min, sec, frame;
++    BOOL ret = TRUE;
++    CDROM_TOC *toc;
++    CDROM_SUB_Q_DATA_FORMAT *qfmt;
++    SUB_Q_CHANNEL_DATA *qdata;
++    FILE *fh;
++    char buf[16];
++    struct timespec now;
++
++    *retsize = 0;
++
++    switch (code) {
++    case IOCTL_CDROM_READ_TOC:
++        toc = (CDROM_TOC *)outbuffer;
++        *retsize = CDROM_TOC_SIZE;
++
++        toc-&gt;Length[0] = 0;
++        toc-&gt;Length[1] = 0;
++        toc-&gt;FirstTrack = 1;
++        toc-&gt;LastTrack = 1;
++
++        // Set up first track as data track.
++        toc-&gt;TrackData[0].TrackNumber = 1;
++        toc-&gt;TrackData[0].Control = 0x4;
++        toc-&gt;TrackData[0].Address[1] = 0;
++        toc-&gt;TrackData[0].Address[2] = 0;
++        toc-&gt;TrackData[0].Address[3] = 0;
++
++        // Get other audio tracks from toc file.
++        fh = fopen(TOC_FILE_LOCATION, &#34;r&#34;);
++        if (fh == NULL) {
++          TRACE(&#34;IOCTL_CDROM_READ_TOC, Failed to open: %s&#92;n&#34;, TOC_FILE_LOCATION);
++          break;
++        }
++
++        while (fgets(buf, sizeof(buf), fh) != NULL)
++        {
++          sscanf(buf, &#34;%02d:%02d:%02d&#34;, &amp;min, &amp;sec, &amp;frame);
++
++          toc-&gt;TrackData[toc-&gt;LastTrack].TrackNumber = toc-&gt;LastTrack + 1;
++          toc-&gt;TrackData[toc-&gt;LastTrack].Control = 0;
++          toc-&gt;TrackData[toc-&gt;LastTrack].Address[1] = min;
++          toc-&gt;TrackData[toc-&gt;LastTrack].Address[2] = sec;
++          toc-&gt;TrackData[toc-&gt;LastTrack].Address[3] = frame;
++
++          toc-&gt;LastTrack++;
++
++          TRACE(&#34;IOCTL_CDROM_READ_TOC, Track %d = %02d:%02d:%02d&#92;n&#34;, toc-&gt;LastTrack, min, sec, frame);
++        }
++
++        toc-&gt;LastTrack--; // Remove the last dummy track:
++
++        fclose(fh);
++        break;
++
++    case IOCTL_CDROM_STOP_AUDIO:
++        mplayer_command(&#34;stop&#92;n&#34;);
++        break;
++
++    case IOCTL_CDROM_PAUSE_AUDIO:
++        mplayer_command(&#34;stop&#92;n&#34;);
++        break;
++
++    case IOCTL_CDROM_READ_Q_CHANNEL:
++        qfmt  = (CDROM_SUB_Q_DATA_FORMAT *)inbuffer;
++        qdata = (SUB_Q_CHANNEL_DATA *)outbuffer;
++        *retsize = sizeof(SUB_Q_CHANNEL_DATA);
++
++        if (qfmt-&gt;Format == IOCTL_CDROM_CURRENT_POSITION)
++        {
++            qdata-&gt;CurrentPosition.FormatCode = IOCTL_CDROM_CURRENT_POSITION;
++            qdata-&gt;CurrentPosition.Control = 0;
++            qdata-&gt;CurrentPosition.ADR = 0;
++            qdata-&gt;CurrentPosition.TrackNumber = mplayer_current_track;
++            qdata-&gt;CurrentPosition.IndexNumber = 0;
++
++            clock_gettime(CLOCK_MONOTONIC, &amp;now);
++            TRACE(&#34;IOCTL_CDROM_READ_Q_CHANNEL, Started = %lu.%lu&#92;n&#34;,
++                mplayer_playback_started.tv_sec, mplayer_playback_started.tv_nsec);
++            TRACE(&#34;IOCTL_CDROM_READ_Q_CHANNEL, Now = %lu.%lu&#92;n&#34;, now.tv_sec, now.tv_nsec);
++
++            min = (now.tv_sec - mplayer_playback_started.tv_sec) / 60;
++            sec = (now.tv_sec - mplayer_playback_started.tv_sec) % 60;
++            frame = (now.tv_nsec - mplayer_playback_started.tv_nsec);
++            if (frame &lt; 0) {
++                frame = 0 - frame;
++                sec--;
++                if (sec &lt; 0) {
++                  sec = 59;
++                  min--;
++                }
++            }
++            frame = (frame / 10000000) * 0.75;
++
++            if (mplayer_current_min &gt; 0 ||
++                mplayer_current_sec &gt; 0 ||
++                mplayer_current_frame &gt; 0)
++            {
++                min += mplayer_current_min;
++                sec += mplayer_current_sec;
++                if (sec &gt;= 60) {
++                    sec -= 60;
++                    min++;
++                }
++                frame += mplayer_current_frame;
++                if (frame &gt;= 76) {
++                    frame -= 76;
++                    sec++;
++                    if (sec &gt;= 60) {
++                        sec -= 60;
++                        min++;
++                    }
++                }
++            }
++
++            qdata-&gt;CurrentPosition.TrackRelativeAddress[0] = 0;
++            qdata-&gt;CurrentPosition.TrackRelativeAddress[1] = min;
++            qdata-&gt;CurrentPosition.TrackRelativeAddress[2] = sec;
++            qdata-&gt;CurrentPosition.TrackRelativeAddress[3] = frame;
++
++            qdata-&gt;CurrentPosition.AbsoluteAddress[0] = 0;
++            qdata-&gt;CurrentPosition.AbsoluteAddress[1] = min;
++            qdata-&gt;CurrentPosition.AbsoluteAddress[2] = sec;
++            qdata-&gt;CurrentPosition.AbsoluteAddress[3] = frame;
++
++            fh = fopen(TOC_FILE_LOCATION, &#34;r&#34;);
++            if (fh == NULL) {
++              TRACE(&#34;IOCTL_CDROM_READ_Q_CHANNEL, Failed to open: %s&#92;n&#34;, TOC_FILE_LOCATION);
++              break;
++            }
++
++            track_no = 2;
++            while (fgets(buf, sizeof(buf), fh) != NULL)
++            {
++                if (track_no == mplayer_current_track) {
++                    sscanf(buf, &#34;%02d:%02d:%02d&#34;, &amp;min, &amp;sec, &amp;frame);
++                    qdata-&gt;CurrentPosition.AbsoluteAddress[1] += min;
++                    qdata-&gt;CurrentPosition.AbsoluteAddress[2] += sec;
++                    if (qdata-&gt;CurrentPosition.AbsoluteAddress[2] &gt;= 60) {
++                        qdata-&gt;CurrentPosition.AbsoluteAddress[2] -= 60;
++                        qdata-&gt;CurrentPosition.AbsoluteAddress[1]++;
++                    }
++                    qdata-&gt;CurrentPosition.AbsoluteAddress[3] += frame;
++                    if (qdata-&gt;CurrentPosition.AbsoluteAddress[3] &gt;= 76) {
++                        qdata-&gt;CurrentPosition.AbsoluteAddress[3] -= 76;
++                        qdata-&gt;CurrentPosition.AbsoluteAddress[2]++;
++                        if (qdata-&gt;CurrentPosition.AbsoluteAddress[2] &gt;= 60) {
++                            qdata-&gt;CurrentPosition.AbsoluteAddress[2] -= 60;
++                            qdata-&gt;CurrentPosition.AbsoluteAddress[1]++;
++                        }
++                    }
++                    break;
++                }
++                track_no++;
++            }
++
++            fclose(fh);
++
++            TRACE(&#34;IOCTL_CDROM_READ_Q_CHANNEL, Current Track = %d&#92;n&#34;, mplayer_current_track);
++            TRACE(&#34;IOCTL_CDROM_READ_Q_CHANNEL, Rel Pos = %02d:%02d:%02d&#92;n&#34;,
++                qdata-&gt;CurrentPosition.TrackRelativeAddress[1],
++                qdata-&gt;CurrentPosition.TrackRelativeAddress[2],
++                qdata-&gt;CurrentPosition.TrackRelativeAddress[3]);
++            TRACE(&#34;IOCTL_CDROM_READ_Q_CHANNEL, Abs Pos = %02d:%02d:%02d&#92;n&#34;,
++                qdata-&gt;CurrentPosition.AbsoluteAddress[1],
++                qdata-&gt;CurrentPosition.AbsoluteAddress[2],
++                qdata-&gt;CurrentPosition.AbsoluteAddress[3]);
++        }
++        else
++        {
++           TRACE(&#34;IOCTL_CDROM_READ_Q_CHANNEL, Unknown format: %d&#92;n&#34;, qfmt-&gt;Format);
++        }
++        break;
++
++    default:
++        break;
++    }
+ 
+ #define XX(x) case (x): str = #x; break
+     switch (code)
+@@ -906,6 +1117,9 @@
+     SUB_Q_CHANNEL_DATA          data;
+     CDROM_TOC			toc;
+ 
++    int track_no, min, sec, frame;
++    char command[PATH_MAX];
++
+     TRACE(&#34;(%04X, %08X, %p);&#92;n&#34;, wDevID, dwFlags, lpParms);
+ 
+     if (lpParms == NULL)
+@@ -914,6 +1128,35 @@
+     if (wmcda == NULL)
+ 	return MCIERR_INVALID_DEVICE_ID;
+ 
++    mplayer_command(&#34;stop&#92;n&#34;);
++
++    track_no = MCI_TMSF_TRACK(lpParms-&gt;dwFrom);
++    min      = MCI_TMSF_MINUTE(lpParms-&gt;dwFrom);
++    sec      = MCI_TMSF_SECOND(lpParms-&gt;dwFrom);
++    frame    = MCI_TMSF_FRAME(lpParms-&gt;dwFrom);
++    TRACE(&#34;Track no: %d (%02d:%02d:%02d)&#92;n&#34;, track_no, min, sec, frame);
++
++    snprintf(command, PATH_MAX, &#34;loadfile track%02d.flac&#92;n&#34;, track_no);
++    mplayer_command(command);
++
++    mplayer_current_track = track_no;
++    clock_gettime(CLOCK_MONOTONIC, &amp;mplayer_playback_started);
++
++    if (min &gt; 0 || sec &gt; 0 || frame &gt; 0) {
++      mplayer_current_min = min;
++      mplayer_current_sec = sec;
++      mplayer_current_frame = frame;
++
++      sec += (min * 60);
++      frame *= 1.333333;
++      TRACE(&#34;Seek to: %d.%02d&#92;n&#34;, sec, frame);
++
++      snprintf(command, PATH_MAX, &#34;seek %d.%02d 2&#92;n&#34;, sec, frame);
++      mplayer_command(command);
++    }
++
++    return 0; // Because of hijacking, this ends here.
++
+     if (!MCICDA_ReadTOC(wmcda, &amp;toc, &amp;br))
+         return MCICDA_GetError(wmcda);
+          </pre>
+        </div>
+      <p>
+        <br />
+        To make music playback work as painlessly as possible, I have once again made a script to start the game:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+export WINEPREFIX=~/opt/outlaws
+
+MPLAYER_FIFO=/tmp/mplayer.fifo
+TOC_FILE=/tmp/toc.txt
+MPLAYER_PID_FILE=/tmp/mplayer.pid
+
+function mplayer_stop {
+  if [ -f &#34;$MPLAYER_PID_FILE&#34; ]; then
+    kill `cat &#34;$MPLAYER_PID_FILE&#34;`
+    rm -f &#34;$MPLAYER_PID_FILE&#34;
+  fi
+  rm -f &#34;$MPLAYER_FIFO&#34;
+}
+
+function mplayer_start {
+  if [ ! -p &#34;$MPLAYER_FIFO&#34; ]; then
+    mkfifo &#34;$MPLAYER_FIFO&#34;
+  fi
+  cd &#34;${WINEPREFIX}/drive_d&#34;
+  mplayer -vo null -idle -slave -input file=$MPLAYER_FIFO 1&amp;&gt;/dev/null &amp;
+  echo &#34;$!&#34; &gt; &#34;$MPLAYER_PID_FILE&#34;
+  cd -
+}
+
+CD_NO=&#34;0&#34;
+while [ &#34;$CD_NO&#34; != &#34;1&#34; ] &amp;&amp; [ &#34;$CD_NO&#34; != &#34;2&#34; ]; do
+  read -p &#34;CD number? [1 or 2] &#34; CD_NO
+done
+
+MODE=&#34;0&#34;
+while [ &#34;$MODE&#34; != &#34;g&#34; ] &amp;&amp; [ &#34;$MODE&#34; != &#34;c&#34; ]; do
+  read -p &#34;Start [g]ame or [c]hange CD only? &#34; MODE
+done
+
+mplayer_stop
+
+rm -f &#34;${WINEPREFIX}/drive_d&#34;
+ln -s &#34;cd$CD_NO&#34; &#34;${WINEPREFIX}/drive_d&#34;
+cp &#34;${WINEPREFIX}/drive_d/toc.txt&#34; &#34;$TOC_FILE&#34;
+
+mplayer_start
+
+if [ &#34;$MODE&#34; == &#34;c&#34; ]; then
+  # If only changing CD, exit now.
+  exit 0
+fi
+
+(cd &#34;${WINEPREFIX}/drive_c/Program Files/LucasArts/Outlaws&#34; &amp;&amp; WINEARCH=win32 wine OLWIN.EXE)
+
+mplayer_stop
+rm -f &#34;$TOC_FILE&#34;
+          </pre>
+        </div>
+      <p>
+        The same script is also used to change the CD while the game is running, as this is required in some instances.<br />
+        <br />
+        The CD audio tracks should be ripped to FLAC format and be placed as track02.flac to track08.flac in &#34;~/opt/outlaws/cd1/&#34; for CD1, followed by track02.flac to track09.flac in &#34;~/opt/outlaws/cd2/&#34; for CD2. In addition, you will need a couple of &#34;Table of Contents&#34; files for each CD. These will inform the patched &#34;mcicda.dll&#34; file about the length of each track.<br />
+        <br />
+        Put the following in &#34;~/opt/outlaws/cd1/toc.txt&#34;<br />
+      </p>
+        <div class="box">
+          <pre>
+00:00:00
+03:16:64
+07:34:64
+11:23:01
+15:13:33
+19:58:24
+23:39:66
+27:15:61
+          </pre>
+        </div>
+      <p>
+        <br />
+        Put the following in &#34;~/opt/outlaws/cd2/toc.txt&#34;<br />
+      </p>
+        <div class="box">
+          <pre>
+00:00:00
+04:42:15
+10:16:03
+13:41:47
+20:55:08
+24:58:10
+30:09:45
+33:50:23
+36:16:17
+          </pre>
+        </div>
+      <p>
+        <br />
+        Enjoy!<br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        24/08-2020, 
+        <a href="article-164.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

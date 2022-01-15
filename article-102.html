@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Buildroot for 486</h1>
+      <p>
+        Here are the steps I used in order to get a brand new Linux version 4 kernel running on an old 486 DX computer. The setup is based on the Buildroot system for making embedded systems. The end result is the kernel with a very simple <a href="http://www.busybox.net/">BusyBox</a> based userland.<br />
+        <br />
+        All the steps are based on the 2015.05 version of Buildroot, gotten from <a href="http://buildroot.uclibc.org/downloads/buildroot-2015.05.tar.gz">http://buildroot.uclibc.org/downloads/buildroot-2015.05.tar.gz</a><br />
+        <br />
+        Get the three necessary configuration files from <a href="supplies/buildroot-i486.tgz">Here</a>.<br />
+        <br />
+        First of all copy the configuration files into Buildroot and prepare it:<br />
+      </p>
+        <div class="box">
+          <pre>
+mkdir board/i486
+cp i486_defconfig configs/
+cp linux-4.0.4-i486.defconfig board/i486
+cp extlinux.conf board/i486
+make i486_defconfig
+          </pre>
+        </div>
+      <p>
+        <br />
+        For any further changes to the configuration, use:<br />
+      </p>
+        <div class="box">
+          <pre>
+make menuconfig
+make linux-menuconfig
+          </pre>
+        </div>
+      <p>
+        <br />
+        Then build!:<br />
+      </p>
+        <div class="box">
+          <pre>
+make
+          </pre>
+        </div>
+      <p>
+        <br />
+        I had to use extlinux as a bootloader, since neither syslinux nor GRUB worked correctly in my case. A Compact Flash card was inserted as /dev/sdd, and setup like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+fdisk /dev/sdd # One primary partition, active, uses all space.
+sudo cat /usr/share/syslinux/mbr.bin &gt; /dev/sdd
+mkfs.ext2 /dev/sdd1
+          </pre>
+        </div>
+      <p>
+        <br />
+        Once the CF card is prepared, relative from the Buildroot folder, the files can be copied over:<br />
+      </p>
+        <div class="box">
+          <pre>
+mount /mnt/sdd1
+sudo tar xf ./output/images/rootfs.tar -C /mnt/sdd1
+sudo mkdir /mnt/sdd1/boot
+sudo cp ./output/images/bzImage /mnt/sdd1/boot/
+sudo cp ./board/i486/extlinux.conf /mnt/sdd1/boot/
+sudo extlinux -i /mnt/sdd1/boot
+sync
+umount /mnt/sdd1
+          </pre>
+        </div>
+      <p>
+        <br />
+        The card is then ready to be used.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        01/08-2015, 
+        <a href="article-102.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

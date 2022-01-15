@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>TCP proxy with Netcat</h1>
+      <p>
+        Here is an interesting way to setup a generic TCP proxy using the <a href="http://netcat.sourceforge.net/">netcat</a> tool. What makes this method interesting is that traffic is not simply forwarded, but also sent back the other way. In order to do this, we require a two Unix pipes. One is created using the shell&#39;s own mechanism, and the other one is created manually as a named pipe (also known as a fifo).<br />
+        <br />
+        Imagine we want to connect with telnet to some remote host, through the proxy like this:<br />
+        local-host &lt;-&gt; proxy-host &lt;-&gt; remote-host.<br />
+        <br />
+        On the proxy-host, enter this on the shell:<br />
+      </p>
+        <div class="box">
+          <pre>
+mkfifo /tmp/backpipe
+nc -l -p 31337 &lt; /tmp/backpipe | nc remote-host 23 &gt; /tmp/backpipe
+          </pre>
+        </div>
+      <p>
+        <br />
+        On the local-host, you can now enter this...:<br />
+      </p>
+        <div class="box">
+          <pre>
+telnet proxy-host 31337
+          </pre>
+        </div>
+      <p>
+        ...to reach port 23 on the remote host, and the traffic will flow in both directions.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        18/07-2010, 
+        <a href="article-45.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

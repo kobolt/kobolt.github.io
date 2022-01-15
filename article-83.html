@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>File Renaming Using an Editor</h1>
+      <p>
+        Here is a script that builds on the principle of using a text editor to rename files. This is sometimes useful, since editors have more advanced features available, like <a href="http://vimdoc.sourceforge.net/htmldoc/visual.html">block mode editing</a>, compared to a shell.<br />
+        <br />
+        The script generates another script that performs the renaming, but before the script is called, it&#39;s loaded into the editor. It operates on the current directory or another one if it&#39;s specified as an argument.<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/bash
+
+SCRIPT=&#34;_rename.bash&#34;
+
+if [ ! -z &#34;$1&#34; ]; then
+  cd &#34;$1&#34;
+fi
+
+if [ -e &#34;./$SCRIPT&#34; ]; then
+  echo &#34;$SCRIPT already exists, delete it if necessary.&#34;
+  exit 1;
+fi
+
+LONGEST=0
+for FILE in *; do
+  if [ ! -e &#34;$FILE&#34; ]; then
+    echo &#34;Error: Directory empty!&#34;
+    exit 1;
+  fi
+
+  FILE=&#34;${FILE//&#92;&#92;/&#92;&#92;&#92;&#92;}&#34;
+  FILE=&#34;${FILE//&#92;&#39;/&#92;&#39;}&#34;
+
+  if [ ${#FILE} -gt $LONGEST ]; then
+    LONGEST=${#FILE}
+  fi
+done
+
+echo &#34;#!/bin/bash&#34; &gt; &#34;./$SCRIPT&#34;
+for FILE in *; do
+  if [ &#34;$FILE&#34; = &#34;$SCRIPT&#34; ]; then
+    continue
+  fi
+
+  FILE=&#34;${FILE//&#92;&#92;/&#92;&#92;&#92;&#92;}&#34;
+  FILE=&#34;${FILE//&#92;&#39;/&#92;&#39;}&#34;
+
+  echo -n &#34;mv -v $&#39;$FILE&#39; &#34; &gt;&gt; &#34;./$SCRIPT&#34;
+  PAD=$(( $LONGEST - ${#FILE} ))
+  while [ $PAD -gt 0 ]; do
+    echo -n &#34; &#34; &gt;&gt; &#34;./$SCRIPT&#34;
+    PAD=$(( $PAD - 1 ))
+  done
+
+  echo &#34;$&#39;$FILE&#39;&#34; &gt;&gt; &#34;./$SCRIPT&#34;
+done
+
+chmod +x &#34;./$SCRIPT&#34;
+
+if [ &#34;${EDITOR##*/}&#34; = &#34;vim&#34; ]; then
+  $EDITOR -c &#34;set nowrap&#34; &#34;./$SCRIPT&#34;
+else
+  $EDITOR &#34;./$SCRIPT&#34;
+fi
+
+bash &#34;./$SCRIPT&#34;
+rm -f &#34;./$SCRIPT&#34;
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        02/09-2013, 
+        <a href="article-83.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

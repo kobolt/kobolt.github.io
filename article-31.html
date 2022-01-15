@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Deus Ex vblank fix.</h1>
+      <p>
+        <a href="http://en.wikipedia.org/wiki/Deus_ex">Deus Ex</a> is one of those games that seems to work flawlessly under <a href="http://www.winehq.org/">Wine</a> in Linux, except for this issue I will mention below.<br />
+        <br />
+        If you play Deus Ex on a fast machine, you may experience that the audio dialogs cuts off to early. According to information lying around on the Internet, this seems to be a generic bug/weakness in the Unreal engine, and apparently affects all platforms(?). But it can be fixed by forcing sync to vblank, which slows down the (too fast) frame rate. There does not seem to be any way of doing this from the menus in Deus Ex, but it can be done by configuring it in the graphics driver.<br />
+        <br />
+        On Linux (at least with the proprietary Nvidia drivers) there is an easy way to setup sync to vblank automatically, by setting an <a href="http://us.download.nvidia.com/XFree86/Linux-x86/180.29/README/chapter-11.html">environment variable</a>.<br />
+        <br />
+        You can just wrap/replace the actual binary with a small shell script like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+export __GL_SYNC_TO_VBLANK=1
+exec /path/to/deusex
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        06/03-2009, 
+        <a href="article-31.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

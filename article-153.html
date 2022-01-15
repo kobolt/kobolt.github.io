@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Linux Distribution for 386SX</h1>
+      <p>
+        I have a Commodore PC 50-II system with a Intel 386SX CPU running at 16MHz and only 5MB of RAM, in addition, the harddrive controller and harddrive is also missing. To get around this, I have installed a 3Com 3C509B-TPO ISA Network card and have managed to boot Linux on this ancient PC over the network instead.<br />
+        <br />
+        At first I tried to use Buildroot, but I had to give up on this in the end, as it seems that pure 386 is not supported anywhere anymore. So instead, I have gone the route of building everything from scratch, so I could pick and choose specific source versions of GCC and the Linux kernel that supports 386 with math emulation. The end result is a cross-compiling toolchain for i386, a stripped down kernel and Busybox-based rootfs mounted over NFS from another host computer.<br />
+        <br />
+        I ended up using these specific software versions:<br />
+        * linux-2.4.37.9<br />
+        * gcc-3.4.6<br />
+        * busybox-1.01<br />
+        * uClibc-0.9.33.2<br />
+        * binutils-2.32<br />
+        <br />
+        I also had to statically link everything. I tried with dynamic linking in the beginning but the system would hang during boot, and I didn&#39;t want to troubleshoot this any further.<br />
+        <br />
+        I have made some scripts to greatly simplify the whole process of building the cross-compiling toolchain and all the binaries. Bundled in a file <a href="supplies/linux-386sx.tar.gz">here</a>.<br />
+        <br />
+        Unpack this into a directory and then simply run the following:<br />
+      </p>
+        <div class="box">
+          <pre>
+./build.sh
+./rootfs.sh
+          </pre>
+        </div>
+      <p>
+        I have used these on a Slackware 14.2 box with GCC 5.3.0<br />
+        The result will be a directory with the &#34;rootfs&#34; and a &#34;bzImage&#34; located inside the kernel build tree.<br />
+        <br />
+        The rootfs is exported over NFS in /etc/exports like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+/home/nfs/rootfs *(rw,sync,no_root_squash,no_all_squash,no_subtree_check)
+          </pre>
+        </div>
+      <p>
+        Also note that the legacy NFSv2 protocol needs to be actived!<br />
+        <br />
+        To prepare the kernel is the tricky part. To load it over TFTP with Etherboot you have to use the mkelf-linux script from the mknbi package. This package is not compilable on modern Linux distributions, so I ended up compiling and using it from an old Slackware 11.0 installation running in a QEMU virtual machine.<br />
+        <br />
+        I used the command as follows:<br />
+      </p>
+        <div class="box">
+          <pre>
+mkelf-linux --output=pc50linux.nb --ip=&#34;192.168.0.3:192.168.0.2:192.168.0.1:255.255.255.0:pc50&#34; --append=&#34;root=/dev/nfs nfsroot=/home/nfs/rootfs&#34; bzImage
+          </pre>
+        </div>
+      <p>
+        Where .3 is the booted client PC, .2 is the NFS server and .1 is the gateway and TFTP server.<br />
+        <br />
+        The final step is to activate the TFTP/DHCP server. I used dnsmasq for this, with the following relevant configuration:<br />
+      </p>
+        <div class="box">
+          <pre>
+dhcp-host=00:ff:ff:ff:ff:ff,192.168.0.3,infinite,set:pxelinux
+enable-tftp
+tftp-root=/var/ftpd
+dhcp-boot=net:pxelinux,/var/ftpd/pc50linux.nb,boothost,192.168.0.1
+          </pre>
+        </div>
+      <p>
+        <br />
+        Some additional information: I have no Boot ROM on the Ethernet card, so I used a floppy disk to actually kick-start the network booting. More specifically, the &#34;3c509.dsk&#34; image made from compiling parts of the <a href="http://etherboot.org/wiki/download">&#34;Etherboot&#34; package</a>. Since this also isn&#39;t compilable on modern distributions, I had to use the Slackware 11.0 QEMU virtual machine again.<br />
+        <br />
+      </p>
+      <img class="border" src="images/commodore_pc50-II_front.jpg" alt="Commodore PC 50-II" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        01/12-2019, 
+        <a href="article-153.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

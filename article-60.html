@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Python DNS Proxy</h1>
+      <p>
+        Here is a DNS proxy server script written in Python. The purpose is to forward DNS requests to another (real) DNS server, and then send the replies back to the client. No mangling of the UDP datagrams are performed, the packets are simply passing through.<br />
+        <br />
+        I have only tried to run the script on Linux, and the script will also attempt to find the script host&#39;s own DNS server in /etc/resolv.conf to use as the remote DNS server. And since it will attempt to bind on port 53, you will probably have to run the script as root.<br />
+        <br />
+        Enjoy:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+from threading import Thread
+import socket
+import Queue
+import time
+
+class Forward(Thread):
+    def __init__(self, packet, client_address, dns_ip, reply_queue):
+        Thread.__init__(self)
+        self.packet = packet
+        self.client_address = client_address
+        self.dns_ip = dns_ip
+        self.dns_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.reply_queue = reply_queue
+
+    def run(self):
+        self.dns_sock.sendto(self.packet, (self.dns_ip, 53))
+        while True:
+            new_packet, address = self.dns_sock.recvfrom(512)
+            if address[0] == self.dns_ip:
+                self.reply_queue.put((new_packet, self.client_address))
+                break
+
+class DNSProxy(object):
+    def __init__(self, listen_port, dns_ip):
+        self.dns_ip = dns_ip
+        self.reply_queue = Queue.Queue()
+        self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.server_sock.bind((&#34;&#34;, listen_port))
+        self.server_sock.setblocking(0)
+        print &#34;Using DNS server IP: %s&#34; % (dns_ip)
+
+    def check(self):
+        # Check for incoming requests and start threads on them.
+        try:
+            packet, address = self.server_sock.recvfrom(512)
+            if len(packet) &gt; 0:
+                print &#34;Recevied request from:&#34;, address
+                t = Forward(packet, address, self.dns_ip, self.reply_queue)
+                t.start()
+        except socket.error, e:
+            if e[0] != 11 and e[0] != 10035:
+                raise
+
+        # Check if any threads has put a reply on the queue to send.
+        try:
+            packet, address = self.reply_queue.get_nowait()
+            self.server_sock.sendto(packet, address)
+            print &#34;Sent reply to:&#34;, address
+        except Queue.Empty:
+            pass
+
+def get_dns_server():
+    fh = open(&#34;/etc/resolv.conf&#34;, &#34;r&#34;)
+    for line in fh:
+        if len(line) &gt; 11:
+            if line[:11] == &#34;nameserver &#34;:
+                return line[11:].strip()
+    fh.close()
+
+if __name__ == &#34;__main__&#34;:
+    proxy = DNSProxy(53, get_dns_server())
+    while True:
+        proxy.check()
+        time.sleep(0.01)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        25/12-2011, 
+        <a href="article-60.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

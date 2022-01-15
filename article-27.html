@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Polaroid Digital 320 Camera</h1>
+      <p>
+        While digging around in my collection of junk (consisting of different hardware and electronics gathered over time), I found an old digital camera with the label &#34;Polaroid Digital 320&#34;, presumably made sometime in 2001.<br />
+        <br />
+        I searched the web to see if there was any Linux driver for this camera. It seems that <a href="http://nathanstenzel.tripod.com/polaroid-digital-320.html">some people</a> have been trying to make a driver some time ago. The effort seems to have faded away, as there was little help to get from Polaroid (the camera maker) and Xirlink (the chip maker).<br />
+        <br />
+        I decided to try on my own to get the picture data out of the camera, and learn more about the <a href="http://en.wikipedia.org/wiki/Jpeg">JPEG</a> file format in the process. I was able to get further than the other people that have tried, because I was able to figure out more about the proprietary file format used by the camera, and how it differs from the official JPEG standard. (Details on these differences can be found in the README file in the source code.) This was possible because I made a JPEG decoder from scratch, and made adjustments to it everywhere to see what produced the best picture.<br />
+        <br />
+        However, the result is not perfect, since there is still information missing about the optimal quantization for the different components in the picture. I attempted to reverse engineer parts of the official <a href="http://en.wikipedia.org/wiki/TWAIN">TWAIN</a> driver from Polaroid, but with no success.<br />
+        <br />
+        The source code for the download and decoder tool can be downloaded <a href="supplies/polaroid-0.2.tar.gz">here</a>. The code is released under a MIT licence, so feel free to reuse the code wherever you want.<br />
+        <br />
+        The tool produces pictures in the portable PPM and PGM formats. You can use <a href="http://netpbm.sourceforge.net/">Netpbm</a> to convert them something else.<br />
+        <br />
+        Here is an example of a picture downloaded in three formats: color, grey scale and raw components (luminance, blue chrominance, red chrominance and another luminance component):<br />
+      </p>
+      <img class="border" src="images/dew-color.jpg" alt="Color." />
+      <p>
+      </p>
+      <img class="border" src="images/dew-grey.jpg" alt="Grey scale (luminance only)." />
+      <p>
+      </p>
+      <img class="border" src="images/dew-raw.jpg" alt="Raw components (Y1, Cb, Cr, Y2)." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        20/12-2008, 
+        <a href="article-27.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Byte Value Visualization</h1>
+      <p>
+        While doing cryptanalysis on some <a href="http://en.wikipedia.org/wiki/XOR_cipher">XOR-encrypted</a> files, I came up with the idea of visualizing byte values in these files in order to discover patterns. Having used the SDL library on previous projects, this was a good candidate to draw the graphics.<br />
+        <br />
+        Here is an output example, visualizing the source code of this application:<br />
+      </p>
+      <img class="border" src="images/byte-visu-text.png" alt="Visualization of a text file." />
+      <p>
+        It is easy to see that this is a plain text file, since there are mostly printable ASCII characters in the 0x20 to 0x7F area. You can also see the low-value newline characters (0x0A) clearly.<br />
+        <br />
+        Here is another example, visualizing the application in binary form after compilation:<br />
+      </p>
+      <img class="border" src="images/byte-visu-binary.png" alt="Visualization of a binary file." />
+      <p>
+        This is clearly not human-readable text, as there is a lot of NULL (0x00) bytes, and some bytes with very high values (0xFF).<br />
+        <br />
+        I believe it&#39;s a lot easier to spot patterns this way, instead of using a hex editor. The application reads data (byte values) from standard in and stops after 1024 bytes or EOF.<br />
+        <br />
+        But enough talk, here is the source code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;SDL/SDL.h&gt;
+
+#define MAX_DATA 1024
+
+int main(int argc, char *argv[])
+{
+  int c, n;
+  unsigned char data[MAX_DATA];
+  SDL_Surface *screen;
+  SDL_Rect rect;
+  SDL_Event event;
+
+  n = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+    data[n] = c;
+    n++;
+    if (n &gt;= MAX_DATA)
+      break;
+  }
+
+  if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    fprintf(stderr, &#34;Error: Unable to initalize SDL: %s&#92;n&#34;, SDL_GetError());
+    return 1;
+  }
+  atexit(SDL_Quit);
+
+  screen = SDL_SetVideoMode(n, 255, 16, SDL_DOUBLEBUF);
+  if (screen == NULL) {
+    fprintf(stderr, &#34;Error: Unable to set video mode: %s&#92;n&#34;, SDL_GetError());
+    return 1;
+  }
+
+  for (n = n - 1; n &gt;= 0; n--) {
+    rect.x = n;
+    rect.y = 255 - data[n];
+    rect.w = 1;
+    rect.h = data[n];
+    SDL_FillRect(screen, &amp;rect, 0xffffff);
+  }
+  SDL_Flip(screen);
+
+  while (1) {
+    if (SDL_PollEvent(&amp;event) == 1) {
+      if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_q)
+          break;
+      } else if (event.type == SDL_QUIT) {
+        break;
+      }
+    }
+    SDL_Delay(50);
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        24/01-2009, 
+        <a href="article-29.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

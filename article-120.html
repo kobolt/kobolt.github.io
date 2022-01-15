@@ -1,0 +1,580 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Simple File Selector in Curses</h1>
+      <p>
+        Here is a simple program that lets you select individual files from a tree view, and then the paths of the selected files are output to a file. The resulting file will typically be used as input for a completely different program.<br />
+        <br />
+        Here is a screenshot:<br />
+      </p>
+      <img class="border" src="images/file-selector.png" alt="Screenshot of curses-based file selector." />
+      <p>
+        <br />
+        Here is the code, which is based on the <a href="article-107.html">Directory Tree Diff Front End</a> that I presented earlier:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;dirent.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;curses.h&gt;
+
+typedef enum {
+  FILE_NODE_TYPE_ROOT,
+  FILE_NODE_TYPE_DIR,
+  FILE_NODE_TYPE_FILE,
+} file_node_type_t;
+
+typedef struct file_node_s {
+  int marked;
+  char *name;
+  file_node_type_t type;
+  struct file_node_s *parent;
+  unsigned int no_of_subnodes;
+  struct file_node_s **subnode;
+} file_node_t;
+
+static int curses_scroll_offset  = 0;
+static int curses_selected_entry = 0;
+
+static file_node_t *file_node_new(file_node_t *parent, char *name, file_node_type_t type)
+{
+  int len;
+  file_node_t *new;
+
+  new = (file_node_t *)malloc(sizeof(file_node_t));
+  if (new == NULL)
+    return NULL;
+
+  if (name == NULL) {
+    new-&gt;name = NULL;
+  } else {
+    len = strlen(name) + 1;
+    new-&gt;name = (char *)malloc(len);
+    strncpy(new-&gt;name, name, len);
+  }
+  new-&gt;type = type;
+  new-&gt;parent = parent;
+  new-&gt;no_of_subnodes = 0;
+  new-&gt;subnode = NULL;
+  new-&gt;marked = 0;
+  
+  return new;
+}
+
+static file_node_t *file_node_add(file_node_t *current, char *name, file_node_type_t type)
+{
+  file_node_t *new;
+
+  new = file_node_new(current, name, type);
+  if (new == NULL)
+    return NULL;
+
+  if (current-&gt;subnode == NULL) {
+    current-&gt;subnode = malloc(sizeof(file_node_t *));
+  } else {
+    current-&gt;subnode = realloc(current-&gt;subnode, sizeof(file_node_t *) * (current-&gt;no_of_subnodes + 1));
+  }
+
+  current-&gt;subnode[current-&gt;no_of_subnodes] = new;
+  current-&gt;no_of_subnodes++;
+
+  return new;
+}
+
+static void file_node_remove(file_node_t *node)
+{
+  int i;
+  free(node-&gt;name);
+  for (i = 0; i &lt; node-&gt;no_of_subnodes; i++) {
+    file_node_remove(node-&gt;subnode[i]);
+  }
+  if (node-&gt;subnode != NULL) {
+    free(node-&gt;subnode);
+  }
+  free(node);
+}
+
+static int file_node_depth(file_node_t *node)
+{
+  int depth;
+
+  depth = 0;
+  do {
+    if (node-&gt;type == FILE_NODE_TYPE_ROOT) {
+      break;
+    }
+    node = node-&gt;parent;
+    depth++;
+  } while (node != NULL);
+
+  return depth;
+}
+
+static int file_node_list_size(file_node_t *node)
+{
+  int i, size;
+
+  if (node-&gt;type == FILE_NODE_TYPE_ROOT) {
+    size = 0;
+  } else {
+    size = 1;
+  }
+
+  for (i = 0; i &lt; node-&gt;no_of_subnodes; i++) {
+    size += file_node_list_size(node-&gt;subnode[i]);
+  }
+
+  return size;
+}
+
+static char *file_node_path(file_node_t *node, char *path, int path_len)
+{
+  char temp[PATH_MAX];
+
+  strncpy(path, node-&gt;name, path_len);
+
+  node = node-&gt;parent;
+  while (node != NULL) {
+    if (node-&gt;type == FILE_NODE_TYPE_ROOT) {
+      break;
+    }
+    strncpy(temp, path, PATH_MAX);
+    snprintf(path, path_len, &#34;%s/%s&#34;, node-&gt;name, temp);
+    node = node-&gt;parent;
+  }
+
+  return path;
+}
+
+static int file_node_compare(const void *p1, const void *p2)
+{
+  file_node_t *p1p, *p2p;
+  p1p = *((file_node_t **)p1);
+  p2p = *((file_node_t **)p2);
+  return strcmp(((file_node_t *)p1p)-&gt;name, ((file_node_t *)p2p)-&gt;name);
+}
+
+static void file_node_sort(file_node_t *node)
+{
+  int i;
+  qsort(node-&gt;subnode, node-&gt;no_of_subnodes, sizeof(file_node_t *), file_node_compare);
+  for (i = 0; i &lt; node-&gt;no_of_subnodes; i++) {
+    file_node_sort(node-&gt;subnode[i]);
+  }
+}
+
+static void file_node_dump(file_node_t *node)
+{
+  int i, depth;
+
+  depth = file_node_depth(node);
+  while (depth-- &gt; 1)
+    printf(&#34;  &#34;);
+
+  if (node-&gt;type == FILE_NODE_TYPE_ROOT)
+    printf(&#34;/&#34;);
+  else {
+    printf(&#34;%s&#34;, node-&gt;name);
+    if (node-&gt;type == FILE_NODE_TYPE_DIR)
+      printf(&#34;/&#34;);
+  }
+
+  printf(&#34;&#92;n&#34;);
+
+  for (i = 0; i &lt; node-&gt;no_of_subnodes; i++) {
+    file_node_dump(node-&gt;subnode[i]);
+  }
+}
+
+static void file_node_print_marked(file_node_t *node, char *root_dir, FILE *fh)
+{
+  int i;
+  char path[PATH_MAX];
+
+  if (node-&gt;marked) {
+    fprintf(fh, &#34;%s/%s&#92;n&#34;, root_dir, file_node_path(node, path, PATH_MAX));
+  }
+
+  for (i = 0; i &lt; node-&gt;no_of_subnodes; i++) {
+    file_node_print_marked(node-&gt;subnode[i], root_dir, fh);
+  }
+}
+
+static int file_node_scan(file_node_t *current, char *path)
+{
+  DIR *dh;
+  struct dirent *entry;
+  struct stat st;
+  char fullpath[PATH_MAX];
+  file_node_t *subnode;
+
+  dh = opendir(path);
+  if (dh == NULL) {
+    fprintf(stderr, &#34;Error: Unable to open directory: %s&#92;n&#34;, path);
+    return -1;
+  }
+
+  while ((entry = readdir(dh))) {
+    if (entry-&gt;d_name[0] == &#39;.&#39;)
+      continue; /* Ignore files with leading dot. */
+
+    snprintf(fullpath, PATH_MAX, &#34;%s/%s&#34;, path, entry-&gt;d_name);
+    if (stat(fullpath, &amp;st) == -1) {
+      fprintf(stderr, &#34;Warning: Unable to stat() path: %s&#92;n&#34;, fullpath);
+      continue;
+    }
+
+    if (S_ISDIR(st.st_mode)) {
+      subnode = file_node_add(current, entry-&gt;d_name, FILE_NODE_TYPE_DIR);
+      file_node_scan(subnode, fullpath);
+
+    } else if (S_ISREG(st.st_mode)) {
+      file_node_add(current, entry-&gt;d_name, FILE_NODE_TYPE_FILE);
+    }
+  }
+
+  closedir(dh);
+  return 0;
+}
+
+static file_node_t *file_node_get_by_node_no(file_node_t *node, int node_no, int *node_count)
+{
+  file_node_t *found;
+  int i;
+
+  if (node-&gt;type != FILE_NODE_TYPE_ROOT) {
+    *node_count = *node_count + 1;
+  }
+  
+  if (*node_count == node_no) {
+    return node; /* Match found, return self. */
+  }
+
+  for (i = 0; i &lt; node-&gt;no_of_subnodes; i++) {
+    found = file_node_get_by_node_no(node-&gt;subnode[i], node_no, node_count);
+    if (found != NULL) {
+      return found;
+    }
+  }
+
+  return NULL;
+}
+
+static void file_node_mark(file_node_t *node, int node_no)
+{
+  int node_count;
+  file_node_t *found;
+
+  node_count = 0;
+  found = file_node_get_by_node_no(node, node_no, &amp;node_count);
+  if (found == NULL)
+    return;
+
+  if (found-&gt;type != FILE_NODE_TYPE_FILE)
+    return; /* Only files, not directories, can be marked. */
+
+  if (found-&gt;marked == 0) {
+    found-&gt;marked = 1;
+  } else {
+    found-&gt;marked = 0;
+  }
+}
+
+static void curses_list_draw(file_node_t *node, int line_no, int node_no, int selected)
+{
+  int node_count, maxy, maxx, pos, depth;
+  file_node_t *found;
+
+  node_count = 0;
+  found = file_node_get_by_node_no(node, node_no, &amp;node_count);
+  if (found == NULL)
+    return;
+
+  getmaxyx(stdscr, maxy, maxx);
+
+  if (selected)
+    attron(A_REVERSE);
+
+  if (found-&gt;name == NULL) {
+    for (pos = 0; pos &lt; maxx - 2; pos++)
+      mvaddch(line_no, pos, &#39; &#39;);
+
+  } else {
+    pos = 0;
+
+    /* Depth indicator. */
+    depth = file_node_depth(found);
+    while (depth-- &gt; 1) {
+      mvaddch(line_no, pos++, &#39; &#39;);
+      mvaddch(line_no, pos++, &#39; &#39;);
+    }
+
+    /* File/directory name. */
+    if (found-&gt;marked)
+      attron(A_BOLD);
+    mvaddstr(line_no, pos, found-&gt;name);
+    pos += strlen(found-&gt;name);
+    if (found-&gt;marked)
+      attroff(A_BOLD);
+
+    /* Slash for directory. */
+    if (found-&gt;type == FILE_NODE_TYPE_DIR)
+      mvaddch(line_no, pos++, &#39;/&#39;);
+
+    /* Padding. */
+    for (; pos &lt; maxx - 2; pos++)
+      mvaddch(line_no, pos, &#39; &#39;);
+  }
+
+  if (selected)
+    attroff(A_REVERSE);
+}
+
+static void curses_update_screen(file_node_t *node)
+{
+  int n, i, maxy, maxx;
+  int scrollbar_size, scrollbar_pos;
+  int list_size;
+  
+  list_size = file_node_list_size(node);
+  
+  getmaxyx(stdscr, maxy, maxx);
+  erase();
+  
+  /* Draw text lines. */
+  for (n = 0; n &lt; maxy; n++) { 
+    if ((n + curses_scroll_offset) &gt;= list_size)
+      break;
+    
+    if (n == (curses_selected_entry - curses_scroll_offset)) {
+      curses_list_draw(node, n, n + curses_scroll_offset + 1, 1);
+    } else {
+      curses_list_draw(node, n, n + curses_scroll_offset + 1, 0);
+    }
+  }
+  
+  /* Draw scrollbar. */
+  if (list_size &lt;= maxy)
+    scrollbar_size = maxy;
+  else
+    scrollbar_size = maxy / (list_size / (double)maxy);
+  
+  scrollbar_pos = curses_selected_entry / (double)list_size * (maxy - scrollbar_size);
+  attron(A_REVERSE);
+  for (i = 0; i &lt;= scrollbar_size; i++)
+    mvaddch(i + scrollbar_pos, maxx - 1, &#39; &#39;);
+  attroff(A_REVERSE);
+  
+  mvvline(0, maxx - 2, 0, maxy);
+  
+  /* Place cursor at end of selected line. */ 
+  move(curses_selected_entry - curses_scroll_offset, maxx - 3);
+}
+
+static void curses_exit_handler(void)
+{
+  endwin();
+}
+
+static void curses_winch_handler(file_node_t *node)
+{
+  endwin(); /* To get new window limits. */
+  curses_update_screen(node);
+  flushinp();
+  keypad(stdscr, TRUE);
+}
+
+static void file_node_curses_loop(file_node_t *node)
+{
+  int c, maxy, maxx, list_size;
+
+  initscr();
+  atexit(curses_exit_handler);
+  noecho();
+  keypad(stdscr, TRUE);
+
+  while (1) {
+    list_size = file_node_list_size(node);
+    curses_update_screen(node);
+    getmaxyx(stdscr, maxy, maxx);
+    c = getch();
+
+    switch (c) {
+    case KEY_RESIZE:
+      curses_winch_handler(node);
+      break;
+
+    case KEY_UP:
+      curses_selected_entry--;
+      if (curses_selected_entry &lt; 0)
+        curses_selected_entry++;
+      if (curses_scroll_offset &gt; curses_selected_entry) {
+        curses_scroll_offset--;
+        if (curses_scroll_offset &lt; 0)
+          curses_scroll_offset = 0;
+      }
+      break;
+
+    case KEY_NPAGE:
+      curses_scroll_offset += maxy / 2;
+      while (maxy + curses_scroll_offset &gt; list_size)
+        curses_scroll_offset--;
+      if (curses_scroll_offset &lt; 0)
+        curses_scroll_offset = 0;
+      if (curses_selected_entry &lt; curses_scroll_offset)
+        curses_selected_entry = curses_scroll_offset;
+      break;
+
+    case KEY_PPAGE:
+      curses_scroll_offset -= maxy / 2;
+      if (curses_scroll_offset &lt; 0)
+        curses_scroll_offset = 0;
+      if (curses_selected_entry &gt; maxy + curses_scroll_offset - 1)
+        curses_selected_entry = maxy + curses_scroll_offset - 1;
+      break;
+
+    case &#39; &#39;:
+    case KEY_IC:
+      file_node_mark(node, curses_selected_entry + 1);
+      /* Move cursor to next line automatically. */
+    case KEY_ENTER:
+    case &#39;&#92;n&#39;:
+    case &#39;&#92;r&#39;:
+    case KEY_DOWN:
+      curses_selected_entry++;
+      if (curses_selected_entry &gt;= list_size)
+        curses_selected_entry--;
+      if (curses_selected_entry &gt; maxy - 1) {
+        curses_scroll_offset++;
+        if (curses_scroll_offset &gt; curses_selected_entry - maxy + 1)
+          curses_scroll_offset--;
+      }
+      break;
+
+    case &#39;&#92;e&#39;: /* Escape */
+    case &#39;Q&#39;:
+    case &#39;q&#39;:
+      return;
+    }
+  }
+}
+
+int main(int argc, char *argv[])
+{
+  file_node_t *root;
+  char *root_dir;
+  FILE *fh;
+
+  if (argc &lt; 2) {
+     fprintf(stderr, &#34;Usage: %s &lt;output file&gt; [directory]&#92;n&#34;, argv[0]);
+     return 1;
+  }
+
+  fh = fopen(argv[1], &#34;wx&#34;);
+  if (fh == NULL) {
+     fprintf(stderr, &#34;Error: Cannot open file, or it exists already: %s&#92;n&#34;, argv[1]);
+     return 1;
+  }
+
+  if (argc &gt; 2) {
+    root_dir = argv[2];
+  } else {
+    root_dir = &#34;.&#34;;
+  }
+
+  root = file_node_new(NULL, NULL, FILE_NODE_TYPE_ROOT);
+  if (root == NULL) {
+    fclose(fh);
+    return 1;
+  }
+
+  if (file_node_scan(root, root_dir) != 0) {
+    file_node_remove(root);
+    fclose(fh);
+    return 1;
+  }
+
+  file_node_sort(root);
+
+  if (isatty(STDOUT_FILENO)) {
+    file_node_curses_loop(root);
+    file_node_print_marked(root, root_dir, fh);
+  } else {
+    /* Mostly for debugging. */
+    file_node_dump(root);
+  }
+
+  file_node_remove(root);
+  fclose(fh);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        22/06-2017, 
+        <a href="article-120.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

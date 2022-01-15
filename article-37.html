@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Amilo L7300 Tweaks</h1>
+      <p>
+        I have a Fujitsu Siemens Amilo L7300 laptop with <a href="http://www.slackware.com/">Slackware Linux</a> (kernel version 2.6.27) installed on it. As usual with laptop hardware, there are quirks and other special things, mostly because of the complex <a href="http://en.wikipedia.org/wiki/ACPI">ACPI</a> system.<br />
+        <br />
+        In the /etc/rc.d/rc.local script that runs at start-up, I have put some commands that helps with some of the issues with this particular laptop. Hopefully this information can be of use for others also.<br />
+        <br />
+        One issue is that the fans are turned on at power on, but they are never turned off. Normally they should be activated on demand when temperature rises and then deactivated as the temperature drops. They need to be turned on, then off and then on again manually to fix them.<br />
+        <br />
+        Another issue is an annoying bug with the keyboard and touch-pad. Around 10% of the times the system has booted, they do not work at all, no reaction. The root cause seems to be the i8042 controller, but luckily it can be &#34;reset&#34;.<br />
+        <br />
+        Finally there is custom keyboard button (with a fan or atomic symbol on it) that is not recognised by the kernel. There is a command to map it, so that it can be used in X afterwards.<br />
+        <br />
+        Here is parts of the rc.local script:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+
+echo &#34;Reset ACPI fan status.&#34;
+echo 3 &gt;&gt; /proc/acpi/fan/FN1/state
+echo 3 &gt;&gt; /proc/acpi/fan/FN2/state
+sleep 1
+echo 0 &gt;&gt; /proc/acpi/fan/FN1/state
+echo 0 &gt;&gt; /proc/acpi/fan/FN2/state
+sleep 1
+echo 3 &gt;&gt; /proc/acpi/fan/FN1/state
+echo 3 &gt;&gt; /proc/acpi/fan/FN2/state
+
+echo &#34;Reset i8042 keyboard and touch-pad.&#34;
+echo -n &#34;i8042&#34; &gt; /sys/bus/platform/drivers/i8042/unbind 
+sleep 1
+echo -n &#34;i8042&#34; &gt; /sys/bus/platform/drivers/i8042/bind 
+
+echo &#34;Assign keycode for extra key on keyboard.&#34;
+/usr/bin/setkeycodes 6d 120
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        01/09-2009, 
+        <a href="article-37.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

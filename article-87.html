@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Static PDCurses with MinGW</h1>
+      <p>
+        Statically linking a curses program on Windows is not as easy as it sounds. The main problem is that the PDCurses distributions that you&#39;ll find on <a href="http://pdcurses.sourceforge.net/">sourceforge.net</a> only contains the dynamic (DLL) library, not the static library. To get the static library, the only option seems to be to build PDCurses yourself from source.<br />
+        <br />
+        I will try to explain. Before starting, make sure that you have installed <a href="http://www.mingw.org/">MinGW</a> and remembered to include the &#34;make&#34; program as well. Then proceed to download the PDCurses source and unpack it. Open a Windows command window and build it like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+PATH=C:&#92;MinGW&#92;bin;C:&#92;MinGW&#92;msys&#92;1.0&#92;bin
+cd PDCurses-3.4&#92;win32&#92;
+make -f mingwin32.mak
+          </pre>
+        </div>
+      <p>
+        (I had to set the PATH manually, or else I kept getting problems with a missing reference to libgmp-10.dll.)<br />
+        <br />
+        The quick and dirty way to now link your curses program is to just copy the resulting pdcurses.a file (from the win32 directory) and the curses.h file (from the root PDCurses directory) to where you got your source and compile like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+gcc -o program program.c -I. pdcurses.a
+          </pre>
+        </div>
+      <p>
+        <br />
+        You can verify that the program is indeed statically linked by using objdump like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+objdump -p program.exe
+          </pre>
+        </div>
+      <p>
+        There should NOT be any reference to a PDCurses.dll file. If there is, well, then the program is still dynamically linked.<br />
+        <br />
+        Sure a statically linked program is much larger, but it&#39;s much easier to distribute, since I doubt many people have the PDCurses.dll file on their Windows computers.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        01/01-2014, 
+        <a href="article-87.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

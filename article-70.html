@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>SGI Indigo2 Network Boot</h1>
+      <p>
+        I have gotten hold of an old Silicon Graphics <a href="http://en.wikipedia.org/wiki/SGI_Indigo%C2%B2_and_Challenge_M">Indigo2</a>, a beautiful piece of machinery. While attempting to recover the root password, the harddisk failed. But by some extreme luck, I managed to create a copy of the root filesystem before this happened. By using an <a href="http://techpubs.sgi.com/library/manuals/0000/007-0855-080/pdf/007-0855-080.pdf">SGI manual</a> and lots of trial and error, I finally managed to boot IRIX and run the entire thing over the network from some Linux boxes. I have written down everything required to configure this in a LaTeX typesetted PDF document <a href="supplies/indigo2.pdf">here</a>.<br />
+        <br />
+        Here&#39;s a photo of the desktop of IRIX 5.3, the UNIX used by SGI:<br />
+      </p>
+      <img class="border" src="images/indigo2-desktop.jpg" alt="SGI Indigo2 Desktop Photo." />
+      <p>
+        <br />
+        And in case you are wondering, here is a dump of the &#34;hinv&#34; command, showing the hardware specs:<br />
+      </p>
+        <div class="box">
+          <pre>
+Iris Audio Processor: version A2 revision 1.1.0
+1 200 MHZ IP22 Processor
+FPU: MIPS R4010 Floating Point Chip Revision: 0.0
+CPU: MIPS R4400 Processor Chip Revision: 6.0
+On-board serial ports: 2
+On-board bi-directional parallel port
+Data cache size: 16 Kbytes
+Instruction cache size: 16 Kbytes
+Secondary unified instruction/data cache size: 1 Mbyte
+Main memory size: 192 Mbytes
+EISA bus: adapter 0
+Integral Ethernet: ec0, version 1
+Integral SCSI controller 1: Version WD33C93B, revision D
+Integral SCSI controller 0: Version WD33C93B, revision D
+Disk drive / removable media: unit 2 on SCSI controller 0
+Graphics board: GU1-Extreme
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        08/09-2012, 
+        <a href="article-70.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

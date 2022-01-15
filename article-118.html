@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Recursive String Search Bugfix</h1>
+      <p>
+        Remember <a href="article-91.html">Recursive String Search Improved</a>?<br />
+        It actually contains a very subtle bug, which I discovered after a search I made did not make sense. Something that should have been found wasn&#39;t.<br />
+        <br />
+        As an example, it turns out that searching for &#34;obar&#34; did not locate the string &#34;Foobar&#34;. The current algorithm would find the &#34;o&#34; in the string first, then the other &#34;o&#34;, but since this is not what was searched for, the search was stopped. It did not backtrack in the original string, which it should have, and this is what has been fixed.<br />
+        <br />
+        Only a single line of code was added:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;dirent.h&gt;
+
+#define FILTER_DELIMITER &#34;;&#34;
+#define FILTER_MAX 10
+
+static char *filters[FILTER_MAX];
+static int no_of_filters = 0;
+
+static void display_help(char *progname)
+{
+  fprintf(stderr, &#34;Usage: %s &lt;options&gt; &lt;string&gt;&#92;n&#34;, progname);
+  fprintf(stderr, &#34;Options:&#92;n&#34;
+     &#34;  -h          Display this help and exit.&#92;n&#34;
+     &#34;  -n          Print filename on each search match line.&#92;n&#34;
+     &#34;  -d DIR      Search DIR instead of current directory.&#92;n&#34;
+     &#34;  -f FILTER   Apply FILTER on filename extension when searching.&#92;n&#34;
+     &#34;                Delimited by &#39;;&#39;, e.g. &#39;.c;.cpp;.h;.hpp&#39;&#92;n&#34;
+     &#34;&#92;n&#34;);
+}
+
+static void build_filter(char *filter)
+{
+  no_of_filters = 0;
+
+  filters[0] = strtok(filter, FILTER_DELIMITER);
+  if (filters[0] == NULL)
+    return;
+
+  for (no_of_filters = 1; no_of_filters &lt; FILTER_MAX; no_of_filters++) {
+    filters[no_of_filters] = strtok(NULL, FILTER_DELIMITER);
+    if (filters[no_of_filters] == NULL)
+      break;
+  }
+}
+
+static int matches_filter(char *name, int name_len)
+{
+  int i, n1, n2, match, filter_len;
+
+  if (no_of_filters == 0)
+    return 1; /* No filters, always matches. */
+
+  for (i = 0; i &lt; no_of_filters; i++) {
+    filter_len = strlen(filters[i]);
+    if (filter_len &gt; name_len)
+      return 0; /* Filter cannot be longer than name! */
+
+    match = 0;
+    n2 = name_len - 1;
+    for (n1 = filter_len - 1; n1 &gt;= 0; n1--, n2--) {
+      if (toupper(filters[i][n1]) != toupper(name[n2]))
+        break;
+      match++;
+    }
+
+    if (filter_len == match)
+      return 1; /* Whole filter matched. */
+  }
+
+  return 0; /* No matches. */
+}
+
+static void recurse(char *path, char *string, int string_len, int show_mode)
+{
+  static char line[1024]; /* Allocate in BSS. */
+  char full_path[PATH_MAX];
+  int n, match, name_shown, line_no;
+  struct dirent *entry;
+  struct stat st;
+  DIR *dh;
+  FILE *fh;
+
+  dh = opendir(path);
+  if (dh == NULL) {
+    fprintf(stderr, &#34;Warning: Unable to open directory: %s&#92;n&#34;, path);
+    return;
+  }
+
+  while ((entry = readdir(dh))) {
+    if (entry-&gt;d_name[0] == &#39;.&#39;)
+      continue; /* Ignore files with leading dot. */
+
+#ifdef WINNT
+    snprintf(full_path, PATH_MAX, &#34;%s&#92;&#92;%s&#34;, path, entry-&gt;d_name);
+#else
+    snprintf(full_path, PATH_MAX, &#34;%s/%s&#34;, path, entry-&gt;d_name);
+#endif
+
+    stat(full_path, &amp;st);
+    if (S_ISDIR(st.st_mode)) {
+      /* Traverse. */
+      recurse(full_path, string, string_len, show_mode);
+
+    } else if (S_ISREG(st.st_mode)) {
+      /* Search. */
+      if (! matches_filter(full_path, strlen(full_path)))
+        continue;
+
+      fh = fopen(full_path, &#34;r&#34;);
+      if (fh == NULL) {
+        fprintf(stderr, &#34;Warning: Unable to open file: %s&#92;n&#34;, full_path);
+        continue;
+      }
+
+      name_shown = line_no = 0;
+      while (fgets(line, 1024, fh) != NULL) {
+        line_no++;
+        match = 0;
+        for (n = 0; line[n] != &#39;&#92;0&#39;; n++) {
+          if (toupper(line[n]) == toupper(string[match])) {
+            match++;
+            if (match &gt;= string_len) {
+              if (show_mode == 0) {
+                if (! name_shown) {
+                  printf(&#34;%s&#92;n&#34;, full_path);
+                  name_shown = 1;
+                }
+                printf(&#34;%d:%s&#34;, line_no, line);
+              } else {
+                printf(&#34;%s:%d:%s&#34;, full_path, line_no, line);
+              }
+              break;
+            }
+          } else {
+            n -= match; /* Backtrack */
+            match = 0;
+          }
+        }
+      }
+      fclose(fh);
+    }
+  }
+
+  closedir(dh);
+  return;
+}
+
+int main(int argc, char *argv[])
+{
+  int c;
+  int show_mode = 0;
+  char *search_dir = NULL;
+
+  while ((c = getopt(argc, argv, &#34;hnd:f:&#34;)) != -1) {
+    switch (c) {
+    case &#39;h&#39;:
+      display_help(argv[0]);
+      exit(EXIT_SUCCESS);
+
+    case &#39;n&#39;:
+      show_mode = 1;
+      break;
+
+    case &#39;d&#39;:
+      search_dir = optarg;
+      break;
+
+    case &#39;f&#39;:
+      build_filter(optarg);
+      break;
+    
+    case &#39;?&#39;:
+    default:
+      display_help(argv[0]);
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  if (search_dir == NULL) {
+    search_dir = &#34;.&#34;; /* Current directory. */
+  }
+
+  if (optind &gt;= argc) {
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  recurse(search_dir, argv[optind], strlen(argv[optind]), show_mode);
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is also a <a href="supplies/search3.exe">binary</a> for Win32 (compiled with MinGW).<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        03/04-2017, 
+        <a href="article-118.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

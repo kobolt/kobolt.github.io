@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Block Edit</h1>
+      <p>
+        After having trouble finding a program I needed for a special task (To be honest, I did not search very thorough.), I decided to create it myself. The result is &#34;Block Edit&#34;, as it is called in lack of a more descriptive (and complicated?) name.<br />
+        <br />
+        It is basically a special purpose text editor. Instead of working on lines (like most normal text editors) this program sees the text as one large block/rectangle. All editing happens &#34;in place&#34; and no text is shifted in any direction. It&#39;s task area is limited I think, and the only things I can imagine it being used for is ASCII art/graphics or specially formatted data files for certain applications.<br />
+        <br />
+        Here is a screenshot of the program in action:<br />
+      </p>
+      <img class="border" src="images/block-edit.png" alt="Block Edit screenshot" />
+      <p>
+        <br />
+        You will need the <a href="http://www.gnu.org/software/ncurses/">ncurses</a> library in order to compile it and the source can be found <a href="supplies/block-edit-0.1.tar.gz">here</a>. There is no Windows binary to get this time since curses programs require special treatment on that OS.<br />
+        <br />
+        I must warn that you use this program at your own risk and take backup of the files you are trying to edit. Files will be heavily mangled when loaded (in case they do not have static line widths, or have strange characters) and may not look like you expect after saving them back to disk.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        08/10-2007, 
+        <a href="article-6.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

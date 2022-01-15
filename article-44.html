@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Base64 Decoder and Encoder</h1>
+      <p>
+        I looked through my old code collection and found the source code for these two small tools that will encode and decode <a href="http://en.wikipedia.org/wiki/Base64">Base64</a> files, in the MIME compatible format.<br />
+        <br />
+        Here is the decoder code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+enum
+{
+  MIME_62 = &#39;+&#39;,
+  MIME_63 = &#39;/&#39;,
+  MIME_PADDING = &#39;=&#39;,
+  MIME_ERROR_NUMBER = 64, /* Not valid base64 number. */
+};
+
+/* mime_to_base64: Convert MIME compatible ASCII character to number. */
+int mime_to_base64(int n)
+{
+  if (n &gt;= 0x60) /* Lowercase letters */
+    return n - 0x47;
+  else if (n &gt;= 0x40) /* Uppercase letters */
+    return n - 0x41;
+  else if (n &gt;= 0x30) /* Numbers */
+    return n + 0x4;
+  else if (n == MIME_62)
+    return 62;
+  else if (n == MIME_63)
+    return 63;
+  else
+    return MIME_ERROR_NUMBER; /* Unkown (Skip) */
+}
+
+/* main: Input and output filter. */
+int main(void)
+{
+  int c, n, i;
+  unsigned char ascii[3];  /* 24-bit buffer */
+  unsigned char base64[4]; /* 4 characters */
+
+  n = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+    if ((base64[n] = mime_to_base64(c)) == MIME_ERROR_NUMBER)
+      continue; /* Unkown character (e.g. newline), skip it. */
+    if (c == MIME_PADDING) /* No need to get more data. */
+      break;
+    if (n == 3) { /* Buffer full, time to output. */
+      ascii[0] = base64[0] &lt;&lt; 2;
+      ascii[0] += (base64[1] &amp; 0x30) &gt;&gt; 4;   /* 110000 */
+      ascii[1] = (base64[1] &amp; 0xf) &lt;&lt; 4;     /* 001111 */
+      ascii[1] += ((base64[2] &amp; 0x3c) &gt;&gt; 2); /* 111100 */
+      ascii[2] = ((base64[2] &amp; 0x3) &lt;&lt; 6);   /* 000011 */
+      ascii[2] += base64[3]; 
+
+      for (i = 0; i &lt; 3; i++) {
+        fputc(ascii[i], stdout);
+      }
+      n = 0;
+    } else
+      n++;
+  }
+
+  /* Check for remaining data in buffer. */
+  if (n == 2) { /* Two paddings, one character missing. */
+    ascii[0] = base64[0] &lt;&lt; 2;
+    ascii[0] += (base64[1] &amp; 0x30) &gt;&gt; 4;
+    fputc(ascii[0], stdout);
+  } else if (n == 3) { /* One padding, two characters missing. */
+    ascii[0] = base64[0] &lt;&lt; 2;
+    ascii[0] += (base64[1] &amp; 0x30) &gt;&gt; 4;
+    ascii[1] = (base64[1] &amp; 0xf) &lt;&lt; 4;
+    ascii[1] += ((base64[2] &amp; 0x3c) &gt;&gt; 2);
+    fputc(ascii[0], stdout);
+    fputc(ascii[1], stdout);
+  }
+  
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        And here is the encoder code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+enum
+{
+  MIME_62 = &#39;+&#39;,
+  MIME_63 = &#39;/&#39;,
+  MIME_PADDING = &#39;=&#39;,
+};
+
+/* base64_to_mime: Convert number to MIME compatible ASCII character. */
+int base64_to_mime(int n)
+{
+  if (n == 63)
+    return MIME_63;
+  else if (n == 62)
+    return MIME_62;
+  else if (n &gt; 51) /* Numbers */
+    return n - 0x4;
+  else if (n &gt; 25) /* Lowercase letters */
+    return n + 0x47;
+  else /* Uppercase letters */
+    return n + 0x41;
+}
+
+/* main: Input and output filter. */
+int main(void)
+{
+  int c, n, i;
+  unsigned char ascii[3];  /* 24-bit buffer */
+  unsigned char base64[4]; /* 4 characters */
+
+  n = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+    ascii[n] = c;
+    if (n == 2) { /* Buffer full, time to output. */
+      base64[0] = ascii[0] &gt;&gt; 2;
+      base64[1] = (ascii[1] &gt;&gt; 4) &amp; 0xf;     /* 00001111 */
+      base64[1] += ((ascii[0] &amp; 0x3) &lt;&lt; 4);  /* 00000011 */
+      base64[2] = (ascii[1] &lt;&lt; 2) &amp; 0x3c;    /* 00111100 */
+      base64[2] += ((ascii[2] &amp; 0xc0) &gt;&gt; 6); /* 11000000 */
+      base64[3] = ascii[2] &amp; 0x3f;           /* 00111111 */
+
+      for (i = 0; i &lt; 4; i++) {
+        fputc(base64_to_mime(base64[i]), stdout);
+      }
+      n = 0;
+    } else
+      n++;
+  }
+
+  /* Check for remaining data in buffer. */
+  if (n == 1) {
+      base64[0] = ascii[0] &gt;&gt; 2;
+      base64[1] = (ascii[0] &amp; 0x3) &lt;&lt; 4;
+      fputc(base64_to_mime(base64[0]), stdout);
+      fputc(base64_to_mime(base64[1]), stdout);
+      fputc(MIME_PADDING, stdout);
+      fputc(MIME_PADDING, stdout);
+  } else if (n == 2) {
+      base64[0] = ascii[0] &gt;&gt; 2;
+      base64[1] = (ascii[1] &gt;&gt; 4) &amp; 0xf;
+      base64[1] += ((ascii[0] &amp; 0x3) &lt;&lt; 4);
+      base64[2] = (ascii[1] &lt;&lt; 2) &amp; 0x3c;
+      fputc(base64_to_mime(base64[0]), stdout);
+      fputc(base64_to_mime(base64[1]), stdout);
+      fputc(base64_to_mime(base64[2]), stdout);
+      fputc(MIME_PADDING, stdout);
+  }
+  
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        14/05-2010, 
+        <a href="article-44.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>True Filename Listing</h1>
+      <p>
+        Here is a special tool I made to view the true names of files. A filename with characters other than ASCII (or ISO-8859) just shows up as question marks if you use the regular &#34;ls&#34; command. This is an alternative command that displays the filenames using a hex encoding, if the output is a TTY (terminal). If the output is redirected to a file, the true character values will be dumped.<br />
+        <br />
+        Here is the source code, enjoy:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;dirent.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;string.h&gt;
+
+static void list(char *dirname)
+{
+  DIR *dir;
+  struct dirent *file;
+  int i, len, longest;
+
+  dir = opendir(dirname);
+  if (dir == NULL)
+    return;
+
+  longest = 0;
+  while ((file = readdir(dir)) != NULL) {
+    len = strlen(file-&gt;d_name);
+    if (len &gt; longest)
+      longest = len;
+  }
+
+  rewinddir(dir);
+
+  while ((file = readdir(dir)) != NULL) {
+    if (isatty(STDOUT_FILENO)) {
+      /* Printable name */
+      for (i = 0; file-&gt;d_name[i] != &#39;&#92;0&#39;; i++) {
+        if (isprint(file-&gt;d_name[i])) {
+          printf(&#34;%c&#34;, file-&gt;d_name[i]);
+        } else {
+          printf(&#34;?&#34;);
+        }
+      }
+
+      /* Padding */
+      while (i &lt; longest) {
+        printf(&#34; &#34;);
+        i++;
+      }
+      printf(&#34;   &#34;);
+
+      /* Hex name */
+      for (i = 0; file-&gt;d_name[i] != &#39;&#92;0&#39;; i++) {
+        printf(&#34;%02x&#34;, (unsigned char)file-&gt;d_name[i]);
+      }
+      printf(&#34;&#92;n&#34;);
+
+    } else {
+      /* Raw output */
+      for (i = 0; file-&gt;d_name[i] != &#39;&#92;0&#39;; i++) {
+        printf(&#34;%c&#34;, file-&gt;d_name[i]);
+      }
+      printf(&#34;&#92;n&#34;);
+
+    }
+  }
+
+  closedir(dir);
+}
+
+int main(int argc, char *argv[])
+{
+  int i;
+  struct stat st;
+
+  if (argc &gt; 1) {
+    for (i = 1; i &lt; argc; i++) {
+      if (stat(argv[i], &amp;st) == 0) {
+        if (S_ISDIR(st.st_mode)) {
+          if (i &gt; 1)
+            printf(&#34;&#92;n&#34;);
+          printf(&#34;%s:&#92;n&#34;, argv[i]);
+          list(argv[i]);
+        }
+      }
+    }
+  } else {
+    list(&#34;.&#34;);
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        02/04-2014, 
+        <a href="article-90.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

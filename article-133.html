@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>File Batch Splitter</h1>
+      <p>
+        This is a Python script that takes a directory with a lot of files and splits the files among subfolder batches of a certain size. I&#39;ve hard-coded the size of a standard CD (~700MB) into the script since this is a very typical use case.<br />
+        <br />
+        Have a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import os
+
+class Batch(object):
+    def __init__(self):
+        self._size = 0
+        self._files = list()
+
+    def size_get(self):
+        return self._size
+
+    def files_get(self):
+        return self._files
+
+    def add(self, path):
+        self._files.append(path)
+        self._size += os.stat(path).st_size
+
+class BatchManager(object):
+    def __init__(self, max_size):
+        self._max_size = max_size
+        self._batches = list()
+
+    def create(self, directory):
+        batch = Batch()
+        for filename in sorted(os.listdir(directory)):
+            path = os.path.join(directory, filename)
+            if os.path.isfile(path):
+                if (batch.size_get() + os.stat(path).st_size) &gt; self._max_size:
+                    self._batches.append(batch)
+                    batch = Batch()
+                batch.add(path)
+        self._batches.append(batch)
+
+    def split(self, directory):
+        for batch_no, batch in enumerate(self._batches):
+            print &#34;&#92;nBatch #%03d, Size: %d&#34; % (batch_no + 1, batch.size_get())
+            for file_no, src_path in enumerate(batch.files_get()):
+                print &#34;%03d:%03d: %s&#34; % (batch_no + 1, file_no + 1, src_path)
+                batch_dir = &#34;%03d&#34; % (batch_no + 1)
+                dst_dir = os.path.join(os.path.dirname(src_path), batch_dir)
+                dst_path = os.path.join(os.path.dirname(src_path), batch_dir, os.path.basename(src_path))
+                if not os.path.isdir(dst_dir):
+                    os.mkdir(dst_dir)
+                os.rename(src_path, dst_path)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+    if len(sys.argv) &lt; 2:
+        print &#34;Usage: %s &lt;directory&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+
+    directory = sys.argv[1]
+
+    bm = BatchManager(737280000) # Bytes on 80 min CD-ROM Mode 1
+    bm.create(directory)
+    bm.split(directory)
+
+    sys.exit(0)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        16/07-2018, 
+        <a href="article-133.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>SSD1306 PBM Viewer</h1>
+      <p>
+        I recently bought a <a href="http://www.solomon-systech.com/en/product/display-ic/oled-driver-controller/ssd1306/">SSD1306</a> miniature OLED display. This communicates through <a href="https://en.wikipedia.org/wiki/I%C2%B2C">I2C</a> and can be connected to various boards, like the <a href="https://www.raspberrypi.org/products/raspberry-pi-3-model-b/">Raspberry Pi 3</a> which I have used.<br />
+        <br />
+        As an initial experiment, I have made a Python script that will load a 2-color <a href="https://en.wikipedia.org/wiki/Netpbm_format">PBM</a> image file and display it on the OLED. The image has to be in binary (P4) format and exactly 128x64 which is the same as the resolution. I have re-used the same initialization commands as mentioned <a href="https://www.mikrocontroller.net/topic/390980">here</a> to get up and running quickly.<br />
+        <br />
+        Enjoy:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+import smbus
+
+class SSD1306(object):
+    def __init__(self, bus=1, address=0x3c):
+        self._address = address
+        self._bus = smbus.SMBus(bus)
+
+        self._command(0xae) # Display off.
+
+        self._command(0xa8) # Multiplex ratio...
+        self._command(0x3f) # ...63
+        self._command(0xd3) # Display offset...
+        self._command(0x00) # ...0
+        self._command(0x40) # Display start line at 0.
+        self._command(0xa1) # Segment Re-map with column 127 mapped to SEG0.
+        self._command(0xc8) # Remapped mode, scan from COM[N-1] to COM0.
+        self._command(0xda) # COM pins hardware configuration...
+        self._command(0x32) # ...Alternative and Left/Right
+        self._command(0xa4) # Entire display ON.
+        self._command(0xa6) # Inverse display mode.
+        self._command(0xd5) # Display clock...
+        self._command(0x80) # ...No clock divide ratio and max frequency.
+        self._command(0x8d) # Charge pump...
+        self._command(0x14) # ...Enabled.
+        self._command(0x20) # Memory addressing mode...
+        self._command(0x20) # ...Horizontal.
+
+        self._command(0xaf) # Display on.
+    
+    def _command(self, command_byte):
+        self._bus.write_byte_data(self._address, 0x00, command_byte)
+
+    def _data(self, data_byte):
+        self._bus.write_byte_data(self._address, 0x40, data_byte)
+
+    def reset_cursor(self):
+        self._command(0x21) # Column address...
+        self._command(0x00) # ...start at 0...
+        self._command(0x7f) # ...end at 127.
+        self._command(0x22) # Page address...
+        self._command(0x00) # ...start at 0...
+        self._command(0x07) # ...end at 7.
+
+    def pbm(self, filename):
+        fh = open(filename, &#34;r&#34;)
+        if not fh.readline().startswith(&#34;P4&#34;):
+            raise Exception(&#34;Not a binary PBM image!&#34;)
+        header = fh.readline()
+        while header.startswith(&#34;#&#34;):
+            header = fh.readline() # Ignore comments.
+        if not header.startswith(&#34;128 64&#34;):
+            raise Exception(&#34;Dimensions must be 128x64!&#34;)
+        data = fh.read()
+        fh.close()
+
+        if len(data) != 1024:
+            raise Exception(&#34;Size of data is not 1024 bytes!&#34;)
+
+        self.reset_cursor()
+        for row_offset in [0, 128, 256, 384, 512, 640, 768, 896]:
+            for column in range(0, 128):
+                byte  = ((ord(data[row_offset + (column / 8)      ]) &gt;&gt; (7 - (column % 8))) &amp; 1) &lt;&lt; 1
+                byte += ((ord(data[row_offset + (column / 8) + 16 ]) &gt;&gt; (7 - (column % 8))) &amp; 1) &lt;&lt; 0
+                byte += ((ord(data[row_offset + (column / 8) + 32 ]) &gt;&gt; (7 - (column % 8))) &amp; 1) &lt;&lt; 3
+                byte += ((ord(data[row_offset + (column / 8) + 48 ]) &gt;&gt; (7 - (column % 8))) &amp; 1) &lt;&lt; 2
+                byte += ((ord(data[row_offset + (column / 8) + 64 ]) &gt;&gt; (7 - (column % 8))) &amp; 1) &lt;&lt; 5
+                byte += ((ord(data[row_offset + (column / 8) + 80 ]) &gt;&gt; (7 - (column % 8))) &amp; 1) &lt;&lt; 4
+                byte += ((ord(data[row_offset + (column / 8) + 96 ]) &gt;&gt; (7 - (column % 8))) &amp; 1) &lt;&lt; 7
+                byte += ((ord(data[row_offset + (column / 8) + 112]) &gt;&gt; (7 - (column % 8))) &amp; 1) &lt;&lt; 6
+                self._data(byte ^ 0xff)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) &lt; 2:
+        print &#34;Usage: %s &lt;128x64 binary PBM image&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+
+    display = SSD1306()
+    display.pbm(sys.argv[1])
+          </pre>
+        </div>
+      <p>
+        <br />
+        And here is how it looks with an image loaded:<br />
+      </p>
+      <img class="border" src="images/ssd1306.jpg" alt="SSD1306 in action." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        21/07-2019, 
+        <a href="article-146.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

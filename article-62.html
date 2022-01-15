@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Slackware on a USB-stick</h1>
+      <p>
+        I present here the steps I used to get <a href="http://www.slackware.com/">Slackware Linux</a> installed on a USB-stick. These are the steps that worked for me, and I cannot guarantee that they will work for everyone, but it will give some pointers that may be helpful anyway. Also, I assume the reader has some familiarity with Linux already, so the steps described may be somewhat high-level. The motivation behind this was to get Slackware running on a laptop without touching the contents of the original hard drive in it.<br />
+        <br />
+        Also note that this particular procedure ties the USB-stick to a specific machine, or at least a specific device layout. It is necessary to know (beforehand) what device identifier will be assigned for the root partition on the particular machine where the USB-stick will be used. In my case this was /dev/sdb1, so this will be used in description below.<br />
+        <br />
+        I divided the procedure into three major steps with some sub-steps each, here we go:<br />
+        <br />
+        1. Install Slackware the usual way, but with the USB-stick as the root file system.<br />
+        1.1. Boot a host machine with the original Slackware DVD.<br />
+        1.2. Insert the USB-stick into the host machine and use fdisk to create a large single Linux (0x83) partition on it.<br />
+        1.3. Run the Slackware setup program and choose the newly created USB-stick partition as the target, with an ext2 file system.<br />
+        1.4. Near the end of the setup process, skip the step involving installation of the LILO boot loader!<br />
+        <br />
+        2. Install the special &#34;extlinux&#34; boot loader on the USB-stick.<br />
+        2.1. Insert the USB-stick into a host machine running the necessary Linux software, and mount it. (In my case this was /dev/sdc1 mounted on /mnt/usb.)<br />
+        2.2. Modify /etc/fstab on the USB-stick and make sure that the root filesystem uses the correct partition device on the target machine. (e.g. /dev/sdb1)<br />
+        2.3. Create the file /boot/extlinux.conf on the USB-stick and input contents similar to this:<br />
+      </p>
+        <div class="box">
+          <pre>
+default Linux
+prompt 1
+timeout 100
+label Linux
+  kernel vmlinuz
+  append root=/dev/sdb1 rootdelay=10 vga=normal vt.default_utf8=0
+          </pre>
+        </div>
+      <p>
+        The crucial configuration here is the &#34;rootdelay&#34; parameter to the kernel!<br />
+        2.4. Install the boot loader on the USB-stick with the &#34;extlinux&#34; command like this example: &#34;extlinux -i /mnt/usb/boot&#34;. (Replace /mnt/usb with correct mount point if necessary.)<br />
+        2.5. Unmount the USB-stick and overwrite the master boot record on it with a command like this: &#34;cat /usr/lib/syslinux/mbr.bin &gt; /dev/sdc&#34;. (Replace /dev/sdc with correct device if necessary.)<br />
+        <br />
+        3. Boot the target machine with the USB-stick.<br />
+        3.1. For some reason I got a lot of &#34;ext2_lookup&#34; error messages while booting, and I am not really sure what these where caused by. But they can be fixed by running &#34;e2fsck -y -v /dev/sdb1&#34; in system recovery mode on the target machine.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        12/02-2012, 
+        <a href="article-62.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

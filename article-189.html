@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>XT-IDE Loaded from Fake VBR</h1>
+      <p>
+        Here is a trick I have used to get my Commodore PC 50-II to boot DOS off a unsupported <a href="https://en.wikipedia.org/wiki/CompactFlash">Compact Flash (CF)</a> card. The BIOS on this machine is dated between 1987-1989 and only has a set of hard-coded hard disk types with specific <a href="https://en.wikipedia.org/wiki/Cylinder-head-sector">C/H/S</a> values. A common way to get around such limitations is to use the excellent <a href="https://www.xtideuniversalbios.org/">XT-IDE BIOS</a>, which is usually put in a separate <a href="https://en.wikipedia.org/wiki/Option_ROM">option ROM</a>. Instead of using a EPROM I wanted to find a way to load it using software instead.<br />
+        <br />
+        My software trick uses a fake <a href="https://en.wikipedia.org/wiki/Volume_boot_record">volume boot record (VBR)</a> to load XT-IDE into RAM. This approach is similar to <a href="https://github.com/rvalles/optromloader">optromloader</a> which loads ROMs from floppies.<br />
+        <br />
+        Since the BIOS on this machine has support for hard disks, it will always be able to load the <a href="https://en.wikipedia.org/wiki/Master_boot_record">master boot record (MBR)</a> located at the first sector 0/0/1, regardless of C/H/S settings. The VBR (for DOS) is usually stored at the first sector of the second head 0/1/1. Most of the hard disk types available in this BIOS has the &#34;Sector per Track&#34; set to 17, and this is what I will use. The CF card I use has real C/H/S values 1003/16/32. This means that when the MBR initially loads the VBR through the original <a href="https://en.wikipedia.org/wiki/INT_13H">BIOS int 13h</a> routines it will actually get sector 18 from the CF card, and this is where to store the fake VBR that loads XT-IDE. When the boot sequence is re-initiated after this the MBR will get reloaded, but this time it will use the int 13h routines provided by XT-IDE and get the real DOS VBR from sector 33.<br />
+        <br />
+        Here is a diagram that shows the layout of the start of the CF card:<br />
+      </p>
+        <div class="box">
+          <pre>
+ Content   Sector (Byte Offset)
++--------+ 1 (0)
+|  MBR   |
++--------+ 2 (512)
+|        |
+| XT-IDE |
+|  ROM   |
+|        |
++--------+ 18 (8704)
+|  Fake  |
+|  VBR   |
++--------+ 19 (9216)
+|        |
+| Unused |
+| Space  |
+|        |
++--------+ 33 (16384)
+|  Real  |
+|  VBR   |
++--------+ 34 (16896)
+|        |
+|        |
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is the assembly source code for the fake VBR that loads the XT-IDE ROM:<br />
+      </p>
+        <div class="box">
+          <pre>
+org 0x7C00
+bits 16
+cpu 8086
+
+section .text
+start:
+  ; Setup stack area for boot loader code.
+  cli
+  xor ax, ax
+  mov ss, ax
+  mov sp, 0x7C00
+  push ax
+  pop ds
+  sti
+
+  ; Initial values for BIOS disk operations.
+  mov bx, 0x9E00 ; Destination segment.
+  mov es, bx
+  xor bx, bx     ; Destination offset.
+  mov cx, 0x0002 ; Sector 2, Cylinder 0.
+  mov dx, 0x0080 ; First harddisk, Head 0.
+
+read_again:
+  ; Call BIOS to reset disk system.
+  xor ax, ax
+  int 0x13
+
+  ; Push registers to stack before doing BIOS video service.
+  push bx
+  push cx
+  push dx
+
+  ; Display last BIOS disk operation status.
+  mov dl, cl ; Column = Sector number.
+  sub dl, 2
+  mov dh, 1 ; Row 1
+  mov bx, 0x000F
+  mov ah, 0x02 ; Set cursor position.
+  int 0x10
+  mov cx, 1
+  mov ah, 0x09
+  mov al, [int13_status]
+  add al, 0x30 ; Convert to ASCII numerical or higher.
+  and al, 0x7F ; Make sure it is a valid ASCII value.
+  int 0x10
+
+  ; Pop registers from stack after doing BIOS video service.
+  pop dx
+  pop cx
+  pop bx
+
+  ; Call BIOS to read 1 sector.
+  mov ax, 0x0201
+  int 0x13
+  mov [int13_status], ah
+  jb read_again
+
+  ; Increment destination memory and sector number.
+  add bh, 2
+  inc cl
+  cmp cl, 18 ; Stop at 16 sectors (8KB).
+  jne read_again
+
+  ; Call BIOS to get memory size.
+  int 0x12
+  sub ax, 8       ; Subtract 8K blocks...
+  mov [0x413], ax ; ...and store new memory size in BDA at 0x40:0x0013
+
+  call 0x9E00:0003 ; Call the option ROM.
+  int 0x19 ; Call BIOS to initiate boot process (again).
+
+int13_status:
+  db 0
+          </pre>
+        </div>
+      <p>
+        <br />
+        To put this at the correct location on the CF card a utility coded in C is provided:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(int argc, char *argv[])
+{
+  FILE *fh_vbr    = NULL;
+  FILE *fh_optrom = NULL;
+  FILE *fh_disk   = NULL;
+  int c, n, vbr_sector;
+
+  if (argc != 5) {
+    printf(&#34;Usage: %s &lt;vbr&gt; &lt;optrom&gt; &lt;disk&gt; &lt;vbr-sector&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  fh_vbr = fopen(argv[1], &#34;rb&#34;);
+  if (NULL == fh_vbr) {
+    printf(&#34;Error: Unable to open &#39;%s&#39;&#92;n&#34;, argv[1]);
+    goto end;
+  }
+
+  fh_optrom = fopen(argv[2], &#34;rb&#34;);
+  if (NULL == fh_optrom) {
+    printf(&#34;Error: Unable to open &#39;%s&#39;&#92;n&#34;, argv[2]);
+    goto end;
+  }
+
+  fh_disk = fopen(argv[3], &#34;r+b&#34;);
+  if (NULL == fh_disk) {
+    printf(&#34;Error: Unable to open &#39;%s&#39;&#92;n&#34;, argv[3]);
+    goto end;
+  }
+
+  vbr_sector = atoi(argv[4]);
+  if (0 == vbr_sector) {
+    printf(&#34;Error: Invalid VBR sector: %s&#92;n&#34;, argv[4]);
+    goto end;
+  }
+
+  /* Write option ROM, after MBR on sector 2 (1-indexed) onwards. */
+  fseek(fh_disk, 512, SEEK_SET);
+  while ((c = fgetc(fh_optrom)) != EOF) {
+    fputc(c, fh_disk);
+  }
+
+  /* Write fake VBR on selected sector (1-indexed). */
+  n = 0;
+  fseek(fh_disk, 512 * (vbr_sector - 1), SEEK_SET);
+  while ((c = fgetc(fh_vbr)) != EOF) {
+    fputc(c, fh_disk);
+    n++;
+  }
+
+  /* Pad rest of the fake VBR area with zeroes... */
+  for (; n &lt; 0x1FE; n++) {
+    fputc(&#39;&#92;x00&#39;, fh_disk);
+  }
+  /* ...and finish with the correct signature. */
+  fputc(&#39;&#92;x55&#39;, fh_disk);
+  fputc(&#39;&#92;xAA&#39;, fh_disk);
+
+end:
+  if (NULL != fh_vbr)    fclose(fh_vbr);
+  if (NULL != fh_optrom) fclose(fh_optrom);
+  if (NULL != fh_disk)   fclose(fh_disk);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Both can be assembled/compiled with this Makefile:<br />
+      </p>
+        <div class="box">
+          <pre>
+all: vbr.bin modify-disk
+
+vbr.bin: vbr.asm
+	nasm vbr.asm -fbin -o vbr.bin
+
+modify-disk: modify-disk.c
+	gcc -o modify-disk -Wall -Wextra modify-disk.c
+
+.PHONY: clean
+clean:
+	rm -f vbr.bin modify-disk
+          </pre>
+        </div>
+      <p>
+        <br />
+        These tools are meant to be used with a XT-IDE ROM of 8KB in size. I should also mention that I did not get this machine to boot with the 386 version, this always resulted in &#34;Boot sector not found&#34; errors. Instead I have used the &#34;ide_at.bin&#34; version.<br />
+        <br />
+        Once assembled and compiled the tools are typically used as such, where /dev/sdX is the CF card:<br />
+      </p>
+        <div class="box">
+          <pre>
+./modify-disk vbr.bin ide_at.bin /dev/sdX 18
+          </pre>
+        </div>
+      <p>
+        <br />
+        A &#34;screenshot&#34; of what it should look like when booting:<br />
+      </p>
+      <img class="border" src="images/commodore_pc50-II_xt-ide.jpg" alt="XT-IDE loaded on Commodore PC 50-II" />
+      <p>
+        Take note of the 0s near the top, which represents status codes, in this case OK, from sector reads.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        08/01-2022, 
+        <a href="article-189.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

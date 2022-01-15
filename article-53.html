@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CRLF to LF Converter</h1>
+      <p>
+        This is a really simple program, but it&#39;s always missing on the Windows platform, where it is needed the most. Because of this, I will include both the source code and a Windows binary here for easy access.<br />
+        <br />
+        Notice that the program does not use standard in/out; this has to do with the strange Windows behaviour on binary files. Instead, the files must be opened directly using &#34;binary mode&#34;.<br />
+        <br />
+        Here&#39;s the <a href="supplies/crlf2lf.exe">binary</a> (compiled with MinGW) and here&#39;s the source:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+
+int main(int argc, char *argv[])
+{
+  int c, last;
+  FILE *in, *out;
+
+  if (argc != 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;infile&gt; &lt;outfile&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  in = fopen(argv[1], &#34;rb&#34;);
+  if (in == NULL) {
+    fprintf(stderr, &#34;Error: Cannot open input file.&#92;n&#34;);
+    return 1;
+  }
+
+  out = fopen(argv[2], &#34;wb&#34;);
+  if (out == NULL) {
+    fprintf(stderr, &#34;Error: Cannot open output file.&#92;n&#34;);
+    fclose(in);
+    return 1;
+  }
+
+  last = -1;
+  while ((c = fgetc(in)) != EOF) {
+    if (c == &#39;&#92;n&#39; &amp;&amp; last == &#39;&#92;r&#39;) {
+      fputc(c, out);
+      last = -1;
+    } else {
+      if (last != -1)
+        fputc(last, out);
+      last = c;
+    }
+  }
+  if (last != -1)
+    fputc(last, out);
+
+  fclose(in);
+  fclose(out);
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        07/05-2011, 
+        <a href="article-53.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

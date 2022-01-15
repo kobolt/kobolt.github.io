@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Compaq Deskpro XL 5133 with Red Hat 5.2</h1>
+      <p>
+        I decided to install the classic Red Hat Linux 5.2 distribution on my classic Compaq Deskpro XL 5133 machine. The 5.2 version is one of the more well known from the late 90&#39;s, and several others have used this to experience the past. It is using the 2.0.36 version of the Linux kernel.<br />
+        <br />
+        Before any of the SW installation could take place, the on-board battery had to be changed to be able to keep the system configuration intact. Luckily the battery is a Lithium type, so it doesn&#39;t leak, but it was soldered in place. I changed it with a CR2032 battery holder, which works fine.<br />
+      </p>
+      <img class="border" src="images/xl5133-cr2032.jpg" alt="CR2032 battery holder replacement" />
+      <p>
+        <br />
+        After configuring the system with the special Compaq floppy disks (there is no BIOS setup menu!) I was able to install Red Hat 5.2 using the CD-ROM without any trouble. The machine has a Matrox Millennium VGA card which works fine in X Windows and a on-board AMD PCnet32 Ethernet controller working out of the box.<br />
+        <br />
+        The troublesome part was getting the audio to work, which is classified as &#34;Compaq Deskpro XL Business Audio&#34;, but is in reality a &#34;Microsoft Sound System&#34; compatible chip of the AD1847 type:<br />
+      </p>
+      <img class="border" src="images/xl5133-ad1847.jpg" alt="AD1847JP SoundPort Chip" />
+      <p>
+        <br />
+        When playing any audio, it would stutter and the following error would appear:<br />
+      </p>
+        <div class="box">
+          <pre>
+Sound: DMA (output) timed out - IRQ/DRQ config error?
+          </pre>
+        </div>
+      <p>
+        I tried all kinds of different IRQ and DMA settings, but to no avail. To troubleshoot further I setup a <a href="https://qemu.org">QEMU</a> emulated environment also with Red Hat 5.2 to be able to quickly recompile the ad1848.o module device driver.<br />
+        <br />
+        I figured out that in vanilla Linux 2.0.36 the sound drivers are not modularized, and Red Hat had actually applied a patch to modularize them. So this exact setup had to be re-recreated. The original sources can be found <a href="http://archive.download.redhat.com/pub/redhat/linux/5.2/en/os/i386/SRPMS/">here</a> as &#34;kernel-2.0.36-0.7.src.rpm&#34;. But these still needs to be patched, where I did the following:<br />
+      </p>
+        <div class="box">
+          <pre>
+tar -xvzf linux-2.0.35.tar.gz
+gunzip 2.0.36-pre-patch-14.gz
+gunzip sound.diff.gz
+patch -p0 &lt; 2.0.36-pre-patch-14
+patch -p0 &lt; sound.diff
+mv linux linux-2.0.36
+patch -p0 &lt; kernel-2.0.36-sound-new.patch
+cp kernel-2.0.36-i386.config linux-2.0.36/.config
+          </pre>
+        </div>
+      <p>
+        Yes, the original sources is actually Linux 2.0.35, but with a patch to bump it up to 2.0.36!<br />
+        <br />
+        After enabling debugging flags, I eventually found out that this stock driver is detecting the audio chip wrongly as a &#34;OPTi 82C930&#34; chip, which in turn causes the IRQ status to be read from the wrong register!<br />
+        <br />
+        Here is my own patch to fix this problem and enabling the debug:<br />
+      </p>
+        <div class="box">
+          <pre>
+--- ad1848.c.orig    2020-08-30 12:42:45.362175159 +0200
++++ ad1848.c    2020-08-30 12:42:52.142175232 +0200
+@@ -37,6 +37,9 @@
+ 
+ #include &#34;soundmodule.h&#34;
+ 
++#define DEBUGXL
++#define DDB
++
+ #define DEB(x)
+ #define DEB1(x)
+ #include &#34;sound_config.h&#34;
+@@ -1532,10 +1535,19 @@
+     {
+         if ((tmp1 = ad_read(devc, i)) != (tmp2 = ad_read(devc, i + 16)))
+         {
+-            DDB(printk(&#34;ad1848 detect step F(%d/%x/%x) - OPTi chip???&#92;n&#34;, i, tmp1, tmp2));
+-            if (!ad1847_flag)
+-                optiC930 = 1;
+-            break;
++            if (deskpro_xl)
++            {
++                DDB(printk(&#34;Deskpro XL, so assuming AD1847&#92;n&#34;));
++                ad1847_flag = 1;
++                break;
++            }
++            else
++            {
++                DDB(printk(&#34;ad1848 detect step F(%d/%x/%x) - OPTi chip???&#92;n&#34;, i, tmp1, tmp2));
++                if (!ad1847_flag)
++                    optiC930 = 1;
++                break;
++            }
+         }
+     }
+ 
+@@ -1688,7 +1700,10 @@
+                         }
+                         else
+                         {
+-                            devc-&gt;model = MD_4231;
++                            if (! deskpro_xl)
++                            {
++                                devc-&gt;model = MD_4231;
++                            }
+                         }
+                 }
+             }
+@@ -1708,6 +1723,7 @@
+     if (devc-&gt;model == MD_1848 &amp;&amp; ad1847_flag)
+         devc-&gt;chip_name = &#34;AD1847&#34;;
+ 
++    DDB(printk(&#34;ad1848_detect() - &#39;%s&#39; (%d)&#92;n&#34;, devc-&gt;chip_name, devc-&gt;model));
+ 
+     return 1;
+ }
+          </pre>
+        </div>
+      <p>
+        Or you can download my recompiled version <a href="supplies/ad1848.o">here</a>.<br />
+        <br />
+        The /etc/conf.modules section ended up being like this for the driver:<br />
+      </p>
+        <div class="box">
+          <pre>
+alias sound ad1848
+alias midi opl3
+options opl3 io=0x388
+options ad1848 io=0x530 irq=9 dma=1,0 type=2 deskpro_xl=1
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <img class="border" src="images/xl5133-logo.jpg" alt="Compaq Deskpro XL 5133" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        01/11-2020, 
+        <a href="article-167.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

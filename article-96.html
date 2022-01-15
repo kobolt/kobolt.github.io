@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>XSPF Integrity Check</h1>
+      <p>
+        This is a Python script to check the integrity of <a href="http://www.xspf.org/">XSPF playlist files</a>. By integrity check, I mean checking if the files that the playlists references actually do exist.<br />
+        <br />
+        You may notice that I use a regular expression with a lambda expression to decode the URL encoding instead of using the standard urllib.unquote() routine. There is a good reason for this, namely that urllib.unquote() returns a &#34;unicode&#34; formatted string instead of a regular &#34;str&#34; Python string. I happen to use <a href="http://en.wikipedia.org/wiki/ISO-8859-1">Latin-1</a> encoding on my filenames, and in order to properly decode these, the built-in decode() function must be used, but that one only works on regular &#34;str&#34; strings!<br />
+        <br />
+        Anyway, here&#39;s my script:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import xml.dom.minidom
+import re
+import os.path
+
+def xspf_parse(playlist_filename, handler):
+    xml_data = xml.dom.minidom.parse(playlist_filename)
+    for playlist in xml_data.getElementsByTagName(&#34;playlist&#34;):
+        for tracklist in playlist.getElementsByTagName(&#34;trackList&#34;):
+            for track in tracklist.getElementsByTagName(&#34;track&#34;):
+                for location in track.getElementsByTagName(&#34;location&#34;):
+                    data = re.sub(&#34;%([0-9a-fA-F]{2})&#34;, &#92;
+                        lambda x: chr(int(x.group(1), 16)), &#92;
+                        location.firstChild.data.encode(&#34;utf-8&#34;))
+                    track_filename = data.decode(&#34;utf-8&#34;).replace(&#34;file://&#34;, &#34;&#34;)
+                    handler(playlist_filename, track_filename)
+
+def file_check(playlist_filename, track_filename):
+    if not os.path.isfile(track_filename):
+        print playlist_filename, &#34;--&gt;&#34;, track_filename
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) &lt; 2:
+        print &#34;Usage: %s &lt;xspf file&gt; ... &lt;xspf file&gt;&#34; % (sys.argv[0])
+        sys.exit(1)
+
+    for filename in sys.argv[1:]:
+        xspf_parse(filename, file_check)
+
+    sys.exit(0)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        11/12-2014, 
+        <a href="article-96.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Monitoring File Open in a Directory</h1>
+      <p>
+        Here is part of an experiment I have been working on. I did not find any use for this (yet), but the method is worth considering. The following program uses the Linux kernel&#39;s <a href="https://en.wikipedia.org/wiki/Inotify">&#34;inotify&#34;</a> mechanism to print a message whenever a file is opened in a specific directory.<br />
+        <br />
+        Have a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;dirent.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/inotify.h&gt;
+#include &lt;sys/resource.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+#define WATCH_FILES_MAX 256
+
+typedef struct watch_s {
+  int wd;
+  char file[PATH_MAX];
+} watch_t;
+
+static watch_t watch[WATCH_FILES_MAX];
+static int watch_n = 0;
+static int ifd;
+
+static int watch_files(char *dir)
+{
+  struct dirent *entry;
+  struct stat st;
+  DIR *dh;
+  char path[PATH_MAX];
+
+  ifd = inotify_init();
+  if (ifd == -1) {
+    fprintf(stderr, &#34;inotify_init() failed: %s&#92;n&#34;, strerror(errno));
+    return -1;
+  }
+
+  dh = opendir(dir);
+  if (dh == NULL) {
+    fprintf(stderr, &#34;opendir(%s) failed: %s&#92;n&#34;, dir, strerror(errno));
+    return -1;
+  }
+
+  watch_n = 0;
+  while ((entry = readdir(dh))) {
+    if (entry-&gt;d_name[0] == &#39;.&#39;)
+      continue;
+
+    snprintf(path, PATH_MAX, &#34;%s/%s&#34;, dir, entry-&gt;d_name);
+
+    if (stat(path, &amp;st) == -1) {
+      fprintf(stderr, &#34;stat(%s) failed: %s&#92;n&#34;, path, strerror(errno));
+      closedir(dh);
+      return -1;
+    }
+
+    if (S_ISREG(st.st_mode)) {
+      watch[watch_n].wd = inotify_add_watch(ifd, path, IN_OPEN);
+      if (watch[watch_n].wd == -1) {
+        fprintf(stderr, &#34;inotify_add_watch(%s) failed: %s&#92;n&#34;, path, strerror(errno));
+        closedir(dh);
+        return -1;
+      }
+
+      strncpy(watch[watch_n].file, entry-&gt;d_name, PATH_MAX);
+      fprintf(stderr, &#34;Watching: %s&#92;n&#34;, entry-&gt;d_name);
+
+      watch_n++;
+      if (watch_n &gt;= WATCH_FILES_MAX) {
+        fprintf(stderr, &#34;Max files reached, skipping the rest!&#92;n&#34;);
+        break;
+      }
+    }
+  }
+
+  closedir(dh);
+  return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  struct inotify_event iev;
+  time_t now;
+  int i;
+
+  if (argc != 2) {
+    fprintf(stderr, &#34;Usage: %s &lt;watch directory&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  if (watch_files(argv[1]) != 0) {
+    return 1;
+  }
+
+  setlinebuf(stdout);
+
+  while (1) {
+    if (read(ifd, &amp;iev, sizeof(struct inotify_event)) &gt; 0) {
+      for (i = 0; i &lt; watch_n; i++) {
+        if (iev.wd == watch[i].wd) {
+          time(&amp;now);
+          fprintf(stdout, &#34;%s @ %s&#34;, watch[i].file, ctime(&amp;now));
+        }
+      }
+    }
+  }
+
+  /* NOTE: No file descriptors explicitly closed. */
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        09/01-2016, 
+        <a href="article-106.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

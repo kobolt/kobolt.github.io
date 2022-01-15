@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Arduino Z80 CPU Tester</h1>
+      <p>
+        Here is a way to test Z80 CPUs that I created. I got the idea after seeing something about an Arduino being used as some sort of logic analyzer. For this I have used the <a href="https://store.arduino.cc/products/arduino-mega-2560-rev3">Arduino Mega 2560</a> since this has a lot of digital I/O pins available.<br />
+        <br />
+        It is a simple Arduino sketch, that uses the built-in USB CDC serial interface to communicate. It will respond to certain commands and on every cycle dump the status of the pins, which will look something like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+  |------&#92;_/------|
+0 | A11       A10 | 0
+0 | A12        A9 | 0
+0 | A13        A8 | 0
+0 | A14        A7 | 0
+0 | A15        A6 | 0
+1 | CLK        A5 | 0
+0 | D4         A4 | 0
+1 | D3         A3 | 0
+0 | D5         A2 | 1
+0 | D6         A1 | 0
+- | +5V        A0 | 1
+1 | D2        GND | -
+0 | D7      ~RFSH | -
+1 | D0        ~M1 | -
+1 | D1     ~RESET | 1
+- | ~INT   ~BUSRQ | -
+- | ~NMI    ~WAIT | -
+- | ~HALT  ~BUSAK | -
+- | ~MREQ     ~WR | 1
+- | ~IORQ     ~RD | 1
+  |---------------|
+Address: 0x5 Data: 0xF
+          </pre>
+        </div>
+      <p>
+        <br />
+        The commands available in this version is &#39;c&#39; to toogle the CLK clock pin, &#39;r&#39; to toggle the RESET pin and 0 through 7 to toggle the data bit pins. It is possible to easily expand on this, but these are the minimum pins required to make the sketch program useful. A simple test that can be done with the Z80 is to put 0xC3 on the data bit pins, and then just toggle the clock over and over. This will cause it to read the opcodes 0xC3 0xC3 0xC3, meaning an absolute jump to address 0xC3C3 which will get reflected back on the address pins.<br />
+        <br />
+        There is no circuit diagram, instead use the #define in the Arduino sketch to determine the connections. In addition to the signals defined there, +5V and GND is also needed of course, gotten from the Arduino as well.<br />
+        <br />
+        Here is the sketch:<br />
+      </p>
+        <div class="box">
+          <pre>
+#define PIN_A0     11
+#define PIN_A1     12
+#define PIN_A2     10
+#define PIN_A3     61
+#define PIN_A4     60
+#define PIN_A5     59
+#define PIN_A6     58
+#define PIN_A7     57
+#define PIN_A8     56
+#define PIN_A9     55
+#define PIN_A10    54
+#define PIN_A11    62
+#define PIN_A12    63
+#define PIN_A13    64
+#define PIN_A14    65
+#define PIN_A15    66
+#define PIN_D0     17
+#define PIN_D1     16
+#define PIN_D2     19
+#define PIN_D3     69
+#define PIN_D4     68
+#define PIN_D5     21
+#define PIN_D6     20
+#define PIN_D7     18
+#define PIN_CLK    67
+#define PIN_RESET  8 
+#define PIN_WR     4 
+#define PIN_RD     3 
+
+void setup() {
+  Serial.begin(115200);
+  
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  pinMode(PIN_A0, INPUT);
+  pinMode(PIN_A1, INPUT);
+  pinMode(PIN_A2, INPUT);
+  pinMode(PIN_A3, INPUT);
+  pinMode(PIN_A4, INPUT);
+  pinMode(PIN_A5, INPUT);
+  pinMode(PIN_A6, INPUT);
+  pinMode(PIN_A7, INPUT);
+  pinMode(PIN_A8, INPUT);
+  pinMode(PIN_A9, INPUT);
+  pinMode(PIN_A10, INPUT);
+  pinMode(PIN_A11, INPUT);
+  pinMode(PIN_A12, INPUT);
+  pinMode(PIN_A13, INPUT);
+  pinMode(PIN_A14, INPUT);
+  pinMode(PIN_A15, INPUT);
+  pinMode(PIN_D0, OUTPUT);
+  pinMode(PIN_D1, OUTPUT);
+  pinMode(PIN_D2, OUTPUT);
+  pinMode(PIN_D3, OUTPUT);
+  pinMode(PIN_D4, OUTPUT);
+  pinMode(PIN_D5, OUTPUT);
+  pinMode(PIN_D6, OUTPUT);
+  pinMode(PIN_D7, OUTPUT);
+  pinMode(PIN_CLK, OUTPUT);
+  pinMode(PIN_RESET, OUTPUT);
+  pinMode(PIN_WR, INPUT);
+  pinMode(PIN_RD, INPUT);
+}
+
+void dump() {
+  uint16_t bus;
+
+  Serial.println(&#34;  |------&#92;&#92;_/------|  &#34;);
+
+  Serial.print(digitalRead(PIN_A11), DEC);
+  Serial.print(&#34; | A11       A10 | &#34;);
+  Serial.println(digitalRead(PIN_A10), DEC);
+
+  Serial.print(digitalRead(PIN_A12), DEC);
+  Serial.print(&#34; | A12        A9 | &#34;);
+  Serial.println(digitalRead(PIN_A9), DEC);
+
+  Serial.print(digitalRead(PIN_A13), DEC);
+  Serial.print(&#34; | A13        A8 | &#34;);
+  Serial.println(digitalRead(PIN_A8), DEC);
+
+  Serial.print(digitalRead(PIN_A14), DEC);
+  Serial.print(&#34; | A14        A7 | &#34;);
+  Serial.println(digitalRead(PIN_A7), DEC);
+
+  Serial.print(digitalRead(PIN_A15), DEC);
+  Serial.print(&#34; | A15        A6 | &#34;);
+  Serial.println(digitalRead(PIN_A6), DEC);
+
+  Serial.print(digitalRead(PIN_CLK), DEC);
+  Serial.print(&#34; | CLK        A5 | &#34;);
+  Serial.println(digitalRead(PIN_A5), DEC);
+
+  Serial.print(digitalRead(PIN_D4), DEC);
+  Serial.print(&#34; | D4         A4 | &#34;);
+  Serial.println(digitalRead(PIN_A4), DEC);
+
+  Serial.print(digitalRead(PIN_D3), DEC);
+  Serial.print(&#34; | D3         A3 | &#34;);
+  Serial.println(digitalRead(PIN_A3), DEC);
+
+  Serial.print(digitalRead(PIN_D5), DEC);
+  Serial.print(&#34; | D5         A2 | &#34;);
+  Serial.println(digitalRead(PIN_A2), DEC);
+
+  Serial.print(digitalRead(PIN_D6), DEC);
+  Serial.print(&#34; | D6         A1 | &#34;);
+  Serial.println(digitalRead(PIN_A1), DEC);
+
+  Serial.print(&#34;- | +5V        A0 | &#34;);
+  Serial.println(digitalRead(PIN_A0), DEC);
+
+  Serial.print(digitalRead(PIN_D2), DEC);
+  Serial.println(&#34; | D2        GND | -&#34;);
+
+  Serial.print(digitalRead(PIN_D7), DEC);
+  Serial.println(&#34; | D7      ~RFSH | -&#34;);
+
+  Serial.print(digitalRead(PIN_D0), DEC);
+  Serial.println(&#34; | D0        ~M1 | -&#34;);
+
+  Serial.print(digitalRead(PIN_D1), DEC);
+  Serial.print(&#34; | D1     ~RESET | &#34;);
+  Serial.println(digitalRead(PIN_RESET), DEC);
+
+  Serial.println(&#34;- | ~INT   ~BUSRQ | -&#34;);
+  Serial.println(&#34;- | ~NMI    ~WAIT | -&#34;);
+  Serial.println(&#34;- | ~HALT  ~BUSAK | -&#34;);
+
+  Serial.print(&#34;- | ~MREQ     ~WR | &#34;);
+  Serial.println(digitalRead(PIN_WR), DEC);
+
+  Serial.print(&#34;- | ~IORQ     ~RD | &#34;);
+  Serial.println(digitalRead(PIN_RD), DEC);
+
+  Serial.println(&#34;  |---------------|  &#34;);
+
+  bus = digitalRead(PIN_A15);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A14);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A13);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A12);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A11);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A10);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A9);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A8);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A7);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A6);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A5);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A4);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A3);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A2);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A1);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_A0);
+  Serial.print(&#34;Address: 0x&#34;);
+  Serial.print(bus, HEX);
+  Serial.print(&#34; &#34;);
+
+  bus = digitalRead(PIN_D7);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_D6);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_D5);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_D4);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_D3);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_D2);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_D1);
+  bus &lt;&lt;= 1;
+  bus += digitalRead(PIN_D0);
+  Serial.print(&#34;Data: 0x&#34;);
+  Serial.println(bus, HEX);
+}
+
+void loop() {
+  if (Serial.available() &gt; 0) {
+    switch (Serial.read()) {
+    case &#39;r&#39;:
+      digitalWrite(PIN_RESET, digitalRead(PIN_RESET) ? 0 : 1);
+      break;
+
+    case &#39;c&#39;:
+      digitalWrite(PIN_CLK, digitalRead(PIN_CLK) ? 0 : 1);
+      break;
+
+    case &#39;0&#39;:
+      digitalWrite(PIN_D0, digitalRead(PIN_D0) ? 0 : 1);
+      break;
+
+    case &#39;1&#39;:
+      digitalWrite(PIN_D1, digitalRead(PIN_D1) ? 0 : 1);
+      break;
+
+    case &#39;2&#39;:
+      digitalWrite(PIN_D2, digitalRead(PIN_D2) ? 0 : 1);
+      break;
+
+    case &#39;3&#39;:
+      digitalWrite(PIN_D3, digitalRead(PIN_D3) ? 0 : 1);
+      break;
+
+    case &#39;4&#39;:
+      digitalWrite(PIN_D4, digitalRead(PIN_D4) ? 0 : 1);
+      break;
+
+    case &#39;5&#39;:
+      digitalWrite(PIN_D5, digitalRead(PIN_D5) ? 0 : 1);
+      break;
+
+    case &#39;6&#39;:
+      digitalWrite(PIN_D6, digitalRead(PIN_D6) ? 0 : 1);
+      break;
+
+    case &#39;7&#39;:
+      digitalWrite(PIN_D7, digitalRead(PIN_D7) ? 0 : 1);
+      break;
+      
+    default:
+      break;
+    }
+    dump();
+  }
+
+  digitalWrite(LED_BUILTIN, digitalRead(LED_BUILTIN) ? 0 : 1);
+  delay(100);
+}
+          </pre>
+        </div>
+      <p>
+        The LED blinking is used as a indicator to see that the sketch program is actually running.<br />
+        <br />
+        Here is a photo of the setup:<br />
+      </p>
+      <img class="border" src="images/arduino_z80_tester.jpg" alt="Arduino Z80 Tester" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        27/11-2021, 
+        <a href="article-187.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

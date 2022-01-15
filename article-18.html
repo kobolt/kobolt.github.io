@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>File Shuffler</h1>
+      <p>
+        This is a small Perl script to shuffle files. By that, I mean take a directory of files and put a unique random number before (as a prefix to) each file. When the files in the directory are listed alphabetically afterwards, they will actually be listed randomly.<br />
+        <br />
+        I had need of this because the MP3 player function in my car stereo plays the files it find on the CD alphabetically. I wanted to randomize/shuffle the songs, and the workaround was to use this script on the files before burning the CD.<br />
+        <br />
+        Here is the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/perl -w
+use strict;
+use List::Util qw/shuffle/;
+
+my $directory = shift
+  or die &#34;Usage: $0 &lt;directory&gt;&#92;n&#34;;
+
+chdir $directory
+  or die &#34;Error: Could not change to directory.&#92;n&#34;;
+
+my @files = glob &#34;*&#34;;
+
+# Find digits in amount of files.
+my $digits = 0;
+for (split //, scalar(@files)) {
+  $digits++;
+}
+
+for my $number (&amp;shuffle(1..scalar(@files))) {
+  my $file = shift @files;
+  my $new = sprintf &#34;%0${digits}d--%s&#34;, $number, $file;
+  rename $file, $new;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        18/05-2008, 
+        <a href="article-18.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Directory Tree Diff</h1>
+      <p>
+        Another month, another tool. Here is a small program that recursively compares two directory trees and prints the changes. Specifically; missing files/directories, additional files/directories and changed files are listed with a different color and prefix, like this screenshot example shows:<br />
+      </p>
+      <img class="border" src="images/difftree.png" alt="Screenshot of difftree." />
+      <p>
+        <br />
+        Files are compared by first checking the size, then a byte by byte comparison.<br />
+        <br />
+        Here&#39;s the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;dirent.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;limits.h&gt;
+
+static void diff_print(int level, char symbol, char *name, int is_dir)
+{
+  while (level-- &gt; 0)
+    printf(&#34;  &#34;);
+
+#ifdef WINNT
+  printf(&#34;%c%s&#34;, symbol, name);
+#else
+  switch (symbol) {
+  case &#39;=&#39;:
+    printf(&#34;%c%s&#34;, symbol, name);
+    break;
+  case &#39;*&#39;:
+    printf(&#34;%c&#92;e[1;31m%s&#92;e[0m&#34;, symbol, name);
+    break;
+  case &#39;+&#39;:
+    printf(&#34;%c&#92;e[1;34m%s&#92;e[0m&#34;, symbol, name);
+    break;
+  case &#39;-&#39;:
+    printf(&#34;%c&#92;e[1;35m%s&#92;e[0m&#34;, symbol, name);
+    break;
+  }
+#endif
+
+  if (is_dir)
+    printf(&#34;/&#34;);
+
+  printf(&#34;&#92;n&#34;);
+}
+
+static int diff_file(char *path1, char *path2)
+{
+  FILE *fh1, *fh2;
+  int c1, c2;
+
+  fh1 = fopen(path1, &#34;rb&#34;);
+  if (fh1 == NULL) {
+    fprintf(stderr, &#34;Warning: Unable to open file: %s&#92;n&#34;, path1);
+    return 0;
+  }
+
+  fh2 = fopen(path2, &#34;rb&#34;);
+  if (fh2 == NULL) {
+    fprintf(stderr, &#34;Warning: Unable to open file: %s&#92;n&#34;, path2);
+    return 0;
+  }
+
+  while ((c1 = fgetc(fh1)) != EOF) {
+    c2 = fgetc(fh2);
+    if (c1 != c2) {
+      fclose(fh1);
+      fclose(fh2);
+      return 1;
+    }
+  }
+
+  fclose(fh1);
+  fclose(fh2);
+  return 0;
+}
+
+static void diff_dir(char *path1, char *path2, int level)
+{
+  DIR *dh;
+  struct dirent *entry;
+  struct stat st1, st2;
+  char fullpath1[PATH_MAX], fullpath2[PATH_MAX];
+
+  dh = opendir(path1);
+  if (dh == NULL) {
+    fprintf(stderr, &#34;Warning: Unable to open directory: %s&#92;n&#34;, path1);
+    return;
+  }
+
+  while ((entry = readdir(dh))) {
+    if (entry-&gt;d_name[0] == &#39;.&#39;)
+      continue; /* Ignore files with leading dot. */
+
+#ifdef WINNT
+    snprintf(fullpath1, PATH_MAX, &#34;%s&#92;&#92;%s&#34;, path1, entry-&gt;d_name);
+    snprintf(fullpath2, PATH_MAX, &#34;%s&#92;&#92;%s&#34;, path2, entry-&gt;d_name);
+#else
+    snprintf(fullpath1, PATH_MAX, &#34;%s/%s&#34;, path1, entry-&gt;d_name);
+    snprintf(fullpath2, PATH_MAX, &#34;%s/%s&#34;, path2, entry-&gt;d_name);
+#endif
+
+    if (stat(fullpath1, &amp;st1) == -1) {
+      fprintf(stderr, &#34;Warning: Unable to stat() path: %s&#92;n&#34;, fullpath1);
+      continue;
+    }
+
+    if (S_ISDIR(st1.st_mode)) {
+      if (stat(fullpath2, &amp;st2) == -1) {
+        diff_print(level, &#39;+&#39;, entry-&gt;d_name, 1);
+      } else {
+        if (S_ISDIR(st2.st_mode)) {
+          diff_print(level, &#39;=&#39;, entry-&gt;d_name, 1);
+          diff_dir(fullpath1, fullpath2, level + 1);
+        } else {
+          diff_print(level, &#39;+&#39;, entry-&gt;d_name, 1);
+        }
+      }
+      
+    } else if (S_ISREG(st1.st_mode)) {
+      if (stat(fullpath2, &amp;st2) == -1) {
+        diff_print(level, &#39;+&#39;, entry-&gt;d_name, 0);
+      } else {
+        if (S_ISREG(st2.st_mode)) {
+          if (st1.st_size == st2.st_size) {
+            if (diff_file(fullpath1, fullpath2)) {
+              diff_print(level, &#39;*&#39;, entry-&gt;d_name, 0);
+            } else {
+              diff_print(level, &#39;=&#39;, entry-&gt;d_name, 0);
+            }
+          } else {
+            diff_print(level, &#39;*&#39;, entry-&gt;d_name, 0);
+          }
+        } else {
+          diff_print(level, &#39;+&#39;, entry-&gt;d_name, 0);
+        }
+      }
+    }
+  }
+  closedir(dh);
+
+  dh = opendir(path2);
+  if (dh == NULL) {
+    fprintf(stderr, &#34;Warning: Unable to open directory: %s&#92;n&#34;, path2);
+    return;
+  }
+
+  while ((entry = readdir(dh))) {
+    if (entry-&gt;d_name[0] == &#39;.&#39;)
+      continue; /* Ignore files with leading dot. */
+
+#ifdef WINNT
+    snprintf(fullpath1, PATH_MAX, &#34;%s&#92;&#92;%s&#34;, path1, entry-&gt;d_name);
+    snprintf(fullpath2, PATH_MAX, &#34;%s&#92;&#92;%s&#34;, path2, entry-&gt;d_name);
+#else
+    snprintf(fullpath1, PATH_MAX, &#34;%s/%s&#34;, path1, entry-&gt;d_name);
+    snprintf(fullpath2, PATH_MAX, &#34;%s/%s&#34;, path2, entry-&gt;d_name);
+#endif
+
+    if (stat(fullpath2, &amp;st2) == -1) {
+      fprintf(stderr, &#34;Warning: Unable to stat() path: %s&#92;n&#34;, fullpath2);
+      continue;
+    }
+
+    if (S_ISDIR(st2.st_mode)) {
+      if (stat(fullpath1, &amp;st1) == -1) {
+        diff_print(level, &#39;-&#39;, entry-&gt;d_name, 1);
+      } else {
+        if (! S_ISDIR(st1.st_mode)) {
+          diff_print(level, &#39;-&#39;, entry-&gt;d_name, 1);
+        }
+      }
+      
+    } else if (S_ISREG(st2.st_mode)) {
+      if (stat(fullpath1, &amp;st1) == -1) {
+        diff_print(level, &#39;-&#39;, entry-&gt;d_name, 0);
+      } else {
+        if (! S_ISREG(st1.st_mode)) {
+          diff_print(level, &#39;-&#39;, entry-&gt;d_name, 0);
+        }
+      }
+    }
+  }
+  closedir(dh);
+
+  return;
+}
+
+int main(int argc, char *argv[])
+{
+  if (argc &lt; 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;directory 1&gt; &lt;directory 2&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  diff_dir(argv[1], argv[2], 0);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        I have also compiled a <a href="supplies/difftree.exe">Windows binary</a> binary for convenience, but note that this does not support colorized output!<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/05-2013, 
+        <a href="article-79.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

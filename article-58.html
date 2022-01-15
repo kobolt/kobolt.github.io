@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Recursive String Search</h1>
+      <p>
+        Here is another one of those simple programs that are missing on the Windows platform; a functioning string search tool! The program&#39;s scheme is somewhat similar to using the UNIX grep command&#39;s combination of the &#39;-n&#39; &#39;-i&#39; and &#39;-r&#39; switches. It will search in a directory and it&#39;s sub-directories for a fixed case-insensitive string and display the name of each file, the line number and the line itself where that string is found.<br />
+        <br />
+        Here&#39;s is a link to the <a href="supplies/search.exe">binary</a> for Win32 (compiled with MinGW) and here&#39;s the source code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;dirent.h&gt;
+
+static char line[1024];
+
+static void recurse(char *path, char *string, int len)
+{
+  char full_path[PATH_MAX];
+  int n, match, name_shown, line_no;
+  struct dirent *entry;
+  struct stat st;
+  DIR *dh;
+  FILE *fh;
+
+  dh = opendir(path);
+  if (dh == NULL) {
+    fprintf(stderr, &#34;Warning: Unable to open directory: %s&#92;n&#34;, path);
+    return;
+  }
+
+  while ((entry = readdir(dh))) {
+    if (entry-&gt;d_name[0] == &#39;.&#39;)
+      continue; /* Ignore files with leading dot. */
+
+#ifdef WINNT
+    snprintf(full_path, PATH_MAX, &#34;%s&#92;&#92;%s&#34;, path, entry-&gt;d_name);
+#else
+    snprintf(full_path, PATH_MAX, &#34;%s/%s&#34;, path, entry-&gt;d_name);
+#endif
+
+    stat(full_path, &amp;st);
+    if (S_ISDIR(st.st_mode)) {
+      /* Traverse. */
+      recurse(full_path, string, len);
+    } else if (S_ISREG(st.st_mode)) {
+      /* Search. */
+      fh = fopen(full_path, &#34;r&#34;);
+      if (fh == NULL) {
+        fprintf(stderr, &#34;Warning: Unable to open file: %s&#92;n&#34;, full_path);
+        continue;
+      }
+      name_shown = line_no = 0;
+      while (fgets(line, 1024, fh) != NULL) {
+        line_no++;
+        match = 0;
+        for (n = 0; line[n] != &#39;&#92;0&#39;; n++) {
+          if (toupper(line[n]) == toupper(string[match])) {
+            match++;
+            if (match &gt;= len) {
+              if (! name_shown) {
+                printf(&#34;%s&#92;n&#34;, full_path);
+                name_shown = 1;
+              }
+              printf(&#34;%d:%s&#34;, line_no, line);
+              break;
+            }
+          } else {
+            match = 0;
+          }
+        }
+      }
+      fclose(fh);
+    }
+  }
+
+  closedir(dh);
+  return;
+}
+
+int main(int argc, char *argv[])
+{
+
+  if (argc != 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;directory&gt; &lt;string&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  recurse(argv[1], argv[2], strlen(argv[2]));
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/10-2011, 
+        <a href="article-58.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Toshiba Satellite Pro 410CDT Tweaks</h1>
+      <p>
+        I got hold of an old Toshiba Satellite Pro 410CDT laptop with a Pentium 90MHz processor, which I have cleaned up and refurbished. Since I already got tons of Linux boxes I figured to use this a <a href="https://www.youtube.com/watch?v=k2v7k-wAm2E">&#34;DOS Gaming Laptop&#34;</a> instead. It has a Sound Blaster compatible ESS688 sound chipset and a Adlib compatible FM synthesizer, making this perfect for that use.<br />
+        <br />
+        Important notice! The internal batteries in this had already started to shown signs of leakage, the typical turquoise spots:<br />
+      </p>
+      <img class="border" src="images/toshiba_410cdt_batteries.jpg" alt="Toshiba 410CDT Batteries" />
+      <p>
+        I immediately removed the batteries and cleaned up the spots with vinegar. It will now complain about lost CMOS settings every time, but I can live with that for now.<br />
+        <br />
+        Another challenge is that this laptop has no floppy drive, since that is swappable with a CD-ROM drive that I (only) got instead. To be able to install DOS I used <a href="https://www.qemu.org/">QEMU</a> to install it on a virtual drive, then removed the original hard drive from the laptop and DD&#39;d over the virtual drive to it.<br />
+        <br />
+        I knew the hard drive was 815394816 bytes, meaning 1592568 512-byte sectors, so a virtual drive can be made like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+dd if=/dev/zero of=Toshiba_DOS.dd bs=512 count=1592568
+          </pre>
+        </div>
+      <p>
+        <br />
+        QEMU is launched like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+qemu-system-i386 -drive format=raw,file=Toshiba.dd -cpu pentium -m 32 -monitor stdio -fda DOS_Floppy_1.dd
+          </pre>
+        </div>
+      <p>
+        <br />
+        One can then use the QEMU monitor to change and eject virtual floppies like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+change floppy0 DOS_Floppy_2.dd
+change floppy0 DOS_Floppy_3.dd
+eject floppy0
+          </pre>
+        </div>
+      <p>
+        <br />
+        Afterwards it is also possible to loopback mount he virtual hard drive to put more stuff on there, like tools and games. Since the first partition starts at sector 63, an offset of 32256 bytes must be used:<br />
+      </p>
+        <div class="box">
+          <pre>
+sudo mount -o loop,offset=32256 Toshiba_DOS.dd /mnt/loop/
+          </pre>
+        </div>
+      <p>
+        <br />
+        I used one of those USB-to-IDE adapter and the virtual hard drive is typically DD&#39;d back just like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+dd if=Toshiba_DOS.dd of=/dev/sdd bs=512 status=progress
+          </pre>
+        </div>
+      <p>
+        <br />
+        Finally, for reference, here is the &#34;AUTOEXEC.BAT&#34; file I ended up using for the laptop:<br />
+      </p>
+        <div class="box">
+          <pre>
+C:&#92;DOS&#92;SMARTDRV.EXE /X
+@ECHO OFF
+PROMPT $p$g
+PATH C:&#92;DOS;C:&#92;VI;C:&#92;MSKERMIT;C:&#92;PKZIP
+SET TEMP=C:&#92;DOS
+MODE CON CODEPAGE PREPARE=((850) C:&#92;DOS&#92;EGA.CPI)
+MODE CON CODEPAGE SELECT=850
+LOADHIGH=C:&#92;DOS&#92;KEYB NO,,C:&#92;DOS&#92;KEYBOARD.SYS
+LOADHIGH=C:&#92;DOS&#92;DOSKEY.COM
+LOADHIGH=C:&#92;DRIVERS&#92;MOUSE.COM
+LOADHIGH=C:&#92;DRIVERS&#92;MSCDEX.EXE /D:MSCD001 /L:D
+C:&#92;ESSUTIL&#92;ESSVOL.EXE /V:8 /L:8 /W:8 /M:0 /C:8 /S:8
+SET BLASTER=A220 I7 D1 T6 P330 H5
+          </pre>
+        </div>
+      <p>
+        <br />
+        And the &#34;CONFIG.SYS&#34; file:<br />
+      </p>
+        <div class="box">
+          <pre>
+DEVICE=C:&#92;DOS&#92;HIMEM.SYS
+DEVICE=C:&#92;DOS&#92;EMM386.EXE NOEMS
+DOS=HIGH,UMB
+COUNTRY=047,,C:&#92;DOS&#92;COUNTRY.SYS
+DEVICEHIGH=C:&#92;DOS&#92;SETVER.EXE
+DEVICEHIGH=C:&#92;DOS&#92;DISPLAY.SYS CON=(EGA,,1)
+FILES=50
+BUFFERS=10,0
+DEVICEHIGH=C:&#92;DRIVERS&#92;OAKCDROM.SYS /D:MSCD001
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        15/11-2020, 
+        <a href="article-168.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

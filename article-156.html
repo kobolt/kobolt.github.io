@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Reverse SSH Tunnel Listener</h1>
+      <p>
+        The <a href="article-135.html">Reverse SSH Tunnel Launcher</a> script I posted a while ago has some limitations. The worst part is that the tunnel is only open for 5 minutes, leaving too little time to get any work done. This is kind of by design, to prevent having these connections open and &#34;live&#34; when not in use.<br />
+        <br />
+        The solution to this limitation is another small script, this time just hacked together as a Bourne shell script. Take a look:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+
+while /bin/true; do
+  if /bin/netstat -tln | fgrep 127.0.0.1:1337 &gt; /dev/null; then
+    ssh localhost -p 1337 screen -d -m ssh -v -R 1338:localhost:22 -N -p 22 192.168.0.1
+    echo &#34;New tunnel established!&#34;
+    exit
+  fi
+  sleep 10
+done
+          </pre>
+        </div>
+      <p>
+        <br />
+        This script will loop forever and wait for a socket to appear on the port (1337) opened by the original launcher. Once this happens, a new tunnel is created (on port 1338) in parallel which will persist forever through a screen session.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        02/02-2020, 
+        <a href="article-156.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

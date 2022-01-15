@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Joystick Mouse on GR-SAKURA</h1>
+      <p>
+        Here is another project based on the <a href="http://gadget.renesas.com/en/product/sakura.html">GR-SAKURA</a> board. It translates joystick movement into mouse movement, so it can be used on a PC. This is done reading three analog inputs from the joystick and forwarding data over an UART using the simple <a href="http://www.lucidtechnologies.info/mouse.htm">Microsoft Serial Mouse</a> format.<br />
+        <br />
+        The software is based heavily on the <a href="http://sakae-tsushin.co.jp/eng_page/pdf/joy/e_30JH.pdf">30JH joystick</a> that I happen to have. This is a 3-axis joystick, and the last axis is used to simulate the button presses.<br />
+        <br />
+        This command in Linux can be used to get it connected:<br />
+      </p>
+        <div class="box">
+          <pre>
+sudo inputattach -bare /dev/ttyUSB0
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here&#39;s a photo of the setup:<br />
+      </p>
+      <img class="border" src="images/sakura-mouse-joystick.jpg" alt="GR-SAKURA wth Joystick" />
+      <p>
+        <br />
+        Here is the main part of the code, which implements the serial mouse protocol:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &#34;uart.h&#34;
+#include &#34;adc.h&#34;
+
+/* Raw ADC reference values: */
+#define JOYSTICK_POS_MAX 2464
+#define JOYSTICK_POS_MIN 2080 /* JOYSTICK_POS_MAX - (128 * 3) */
+#define JOYSTICK_CENTER  2048
+#define JOYSTICK_NEG_MIN 2016 /* JOYSTICK_NEG_MAX + (128 * 3) */
+#define JOYSTICK_NEG_MAX 1632
+
+static unsigned char prev_buttons = 0;
+
+static unsigned char convert_adc_to_move_value(short value)
+{
+  /* Scaling and manual conversion to two&#39;s complement. */
+  if (value &gt; JOYSTICK_POS_MIN) {
+    if (value &gt; JOYSTICK_POS_MAX) {
+      value = JOYSTICK_POS_MAX;
+    }
+    return (value - (JOYSTICK_POS_MIN + 1)) / 3;
+
+  } else if (value &lt; JOYSTICK_NEG_MIN) {
+    if (value &lt; JOYSTICK_NEG_MAX) {
+      value = JOYSTICK_NEG_MAX;
+    }
+    return ((value - (JOYSTICK_NEG_MAX + 1)) / 3) + 128;
+
+  } else {
+    return 0; /* Filtered. */
+  }
+}
+
+static unsigned char convert_adc_to_button_value(short value)
+{
+  if (value &gt; JOYSTICK_POS_MIN) {
+    return 0b10; /* Left button pressed. */
+
+  } else if (value &lt; JOYSTICK_NEG_MIN) {
+    return 0b01; /* Right button pressed. */
+
+  } else {
+    return 0b00; /* No buttons pressed. */
+  }
+}
+
+static short invert_adc_value(short value)
+{
+  if (value &gt; JOYSTICK_CENTER) {
+    return JOYSTICK_CENTER - (value - JOYSTICK_CENTER);
+  } else {
+    return JOYSTICK_CENTER + (JOYSTICK_CENTER - value);
+  } 
+}
+
+static int mouse_format(short x_move_adc, short y_move_adc,
+                        short button_adc, unsigned char *data)
+{
+  unsigned char x_move, y_move, buttons;
+
+  x_move = convert_adc_to_move_value(x_move_adc);
+  y_move = convert_adc_to_move_value(invert_adc_value(y_move_adc));
+  buttons = convert_adc_to_button_value(button_adc);
+
+  data[0] = 0b11000000;
+  data[1] = 0b10000000;
+  data[2] = 0b10000000;
+
+  data[0] |= (buttons &lt;&lt; 4);
+  data[0] |= ((y_move &gt;&gt; 4) &amp; 0b00001100);
+  data[0] |= ((x_move &gt;&gt; 6) &amp; 0b00000011);
+  data[1] |= (x_move &amp; 0b00111111);
+  data[2] |= (y_move &amp; 0b00111111);
+
+  if (y_move &gt; 0 || x_move &gt; 0 || buttons != prev_buttons) {
+    prev_buttons = buttons;
+    return 1; /* Activity */
+  } else {
+    return 0; /* No activity */
+  }
+}
+
+void mouse_loop(void)
+{
+  unsigned char data[3];
+
+  while(1) {
+    asm(&#34;wait&#34;);
+    if (mouse_format(adc_get(0), adc_get(1), adc_get(2), data)) {
+      uart0_send(data, 3);
+    }
+  }
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Get the complete code under the MIT License <a href="supplies/sakura-mouse-0.1.tar.gz">here</a>, which requires the RX GCC toolchain to compile.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        12/12-2018, 
+        <a href="article-138.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

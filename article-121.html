@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Slackware 14.2 on a USB-stick</h1>
+      <p>
+        It&#39;s exactly <a href="article-1.html">10 years</a> since the first post on this website.<br />
+        <br />
+        Anyway, I discovered that installing Slackware on a USB-stick wasn&#39;t as easy as it was <a href="article-62.html">last time in 2012</a>, and those instructions are no longer valid for newer versions like 14.2. The main problem is that the kernel no longer contains built-in support for USB mass storage and the extended file systems.<br />
+        <br />
+        Here are the updated steps:<br />
+        <br />
+        1. Boot a host machine with the original Slackware DVD.<br />
+        <br />
+        2. Insert the USB-stick into the host machine and use fdisk to create a large single Linux (0x83) partition on it.<br />
+        <br />
+        3. Run the Slackware setup program and choose the newly created USB-stick partition as the target, with an ext4 file system.<br />
+        <br />
+        4. Near the end of the setup process, skip the step involving installation of the LILO boot loader!<br />
+        <br />
+        5. Unplug the USB-stick and put it into another fully functional Slackware 14.2 box.<br />
+        <br />
+        6. Mount and chroot into the USB-stick filesystem. (In my case this was at /dev/sdc1 mounted on /mnt/sdc1):<br />
+      </p>
+        <div class="box">
+          <pre>
+mount /mnt/sdc1
+mount -o bind /proc /mnt/sdc1/proc
+mount -o bind /sys /mnt/sdc1/sys
+mount -o bind /dev /mnt/sdc1/dev
+chroot /mnt/sdc1
+          </pre>
+        </div>
+      <p>
+        <br />
+        6. Configure and update the Linux kernel, by following these steps:<br />
+      </p>
+        <div class="box">
+          <pre>
+cd /usr/src/linux
+make menuconfig # Do the necessary changes as described below.
+make
+make modules
+make modules_install
+make install # Will fail on LILO install, but just ignore this since kernel image is still copied to /boot.
+          </pre>
+        </div>
+      <p>
+        In menuconfig, make sure to change these from module to built-in:<br />
+        * xHCI HCD (USB 3.0) support<br />
+        * EHCI HCD (USB 2.0) support<br />
+        * USB Mass Storage support<br />
+        * Second extended fs support<br />
+        * The Extended 3 (ext3) filesystem<br />
+        * The Extended 4 (ext4) filesystem<br />
+        <br />
+        7. Modify /etc/fstab on the USB-stick and make sure that the root file system uses the correct partition device on the target machine. (e.g. /dev/sdb1)<br />
+        <br />
+        8. Create the file /boot/extlinux.conf on the USB-stick and input contents similar to this:<br />
+      </p>
+        <div class="box">
+          <pre>
+default Linux
+prompt 1
+timeout 100
+label Linux
+  kernel vmlinuz
+  append root=/dev/sdb1 rootwait vga=normal vt.default_utf8=0
+          </pre>
+        </div>
+      <p>
+        <br />
+        8. Exit the chroot environment:<br />
+      </p>
+        <div class="box">
+          <pre>
+exit
+umount /mnt/sdc1/proc
+umount /mnt/sdc1/sys
+umount /mnt/sdc1/dev
+          </pre>
+        </div>
+      <p>
+        <br />
+        9. Install the boot loader on the USB-stick with the &#34;extlinux&#34; command like this: &#34;extlinux -i /mnt/sdc1/boot&#34;. (Replace /mnt/sdc1 with correct mount point if necessary.)<br />
+        <br />
+        10. Unmount the USB-stick and overwrite the master boot record on it with a command like this: &#34;cat /usr/share/syslinux/mbr.bin &gt; /dev/sdc&#34;. (Replace /dev/sdc with correct device if necessary.)<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        28/07-2017, 
+        <a href="article-121.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

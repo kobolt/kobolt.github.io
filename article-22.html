@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Temperature Monitor in Perl/Tk</h1>
+      <p>
+        This is a simple script that fetches the current temperature for a geographical location and displays it. It is similar to the <a href="article-20.html">alarm clock</a> script I made earlier.<br />
+        <br />
+        I attempted to see if I could get the weather information from <a href="http://www.storm.no/">Storm Weather Center</a>, but I was disappointed to see that they want money to provide this information. It is even more disappointing that they actually threaten to sue anyone who gets their information without approval.<br />
+        <br />
+        Luckily, we have <a href="http://weather.com">weather.com</a> that provides weather information for free, if it is for personal use. This information can be fetched with RSS, if you know the weather.com specific location code.<br />
+        <br />
+        Note that you need the Perk/Tk module and the <a href="http://search.cpan.org/dist/XML-RSS-Parser/">XML-RSS-Parser</a> module to use the script.<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/perl -w
+use strict;
+use LWP::Simple;
+use XML::RSS::Parser;
+use Tk;
+
+# Location code examples: NOXX0035 (Stavanger), NOXX0029 (Oslo).
+# Find more at: http://www.weather.com/weather/rss/subscription
+
+my ($update_rate, $location);
+$location    = shift @ARGV or die &#34;Usage: $0 &lt;location code&gt; [update rate]&#92;n&#34;;
+$update_rate = shift @ARGV or $update_rate = 15; # Default is 15 minutes.
+
+my $url = &#34;http://rss.weather.com/weather/rss/local/&#34;. $location . 
+          &#34;?cm_ven=LWO&amp;cm_cat=rss&amp;par=LWO_rss&#34;;
+
+my $parser = XML::RSS::Parser-&gt;new;
+my $window = new Tk::MainWindow;
+$window-&gt;repeat($update_rate * 1000 * 60, &#92;&amp;get_temperature);
+my $label = $window-&gt;Label(-foreground =&gt; &#34;black&#34;,
+                           -background =&gt; &#34;white&#34;,
+                           -font =&gt; &#39;Helvetica 36 bold&#39;)-&gt;pack();
+
+$label-&gt;configure(-text =&gt; &#34;Regex error!&#34;); # If regex fails, this is displayed.
+&amp;get_temperature;
+Tk::MainLoop;
+
+sub get_temperature {
+  my $data = get($url);
+  unless (defined $data) {
+    $label-&gt;configure(-text =&gt; &#34;No contact!&#34;);
+    return;
+  }
+
+  my $feed = $parser-&gt;parse_string($data);
+  unless (defined $feed) {
+    $label-&gt;configure(-text =&gt; &#34;Parse error!&#34;);
+    return;
+  }
+
+  for ($feed-&gt;query(&#34;/channel/item&#34;)) {
+    my $node = $_-&gt;query(&#34;title&#34;);
+    if ($node-&gt;text_content =~ m/current/i) {
+      $node = $_-&gt;query(&#34;description&#34;);
+      if ($node-&gt;text_content =~ m/(&#92;d+)&#92;s*&amp;deg/) {
+        my $deg = (($1 - 32) / 9) * 5; # Fahrenheit to Celsius.
+        $label-&gt;configure(-text =&gt; sprintf(&#34;%.1f&#92;x{B0}C&#34;, $deg));
+      }
+    }
+  }
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        10/08-2008, 
+        <a href="article-22.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

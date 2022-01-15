@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>4096 Byte Sector Mount</h1>
+      <p>
+        Using a large hard disk of over 2TB on a USB enclosure, and then attempting to use the same disk on a regular Serial ATA interface may not work at all. The issue lies in the USB enclosure using some trick to convert 512 byte sectors to 4096 byte sectors when displaying the disk to the OS. I present here the solution to mount and read such a disk with Linux.<br />
+        <br />
+        I have used a 4TB disk with a small partition to experiment.<br />
+        When the disk is connected to the USB enclosure, Linux reports it with 4096-byte logical blocks:<br />
+      </p>
+        <div class="box">
+          <pre>
+usb 2-1.2: new high speed USB device using ehci_hcd and address 4
+usb 2-1.2: New USB device found, idVendor=174c, idProduct=5106
+usb 2-1.2: New USB device strings: Mfr=2, Product=3, SerialNumber=1
+usb 2-1.2: Product: USB to ATA/ATAPI bridge
+usb 2-1.2: Manufacturer: Asmedia
+usb 2-1.2: SerialNumber: 30700000000000000A22
+scsi9 : usb-storage 2-1.2:1.0
+scsi 9:0:0:0: Direct-Access     WDC WD40 EZRZ-00WN9B0     80.0 PQ: 0 ANSI: 0
+sd 9:0:0:0: Attached scsi generic sg6 type 0
+sd 9:0:0:0: [sdf] 976754646 4096-byte logical blocks: (4.00 TB/3.63 TiB)
+sd 9:0:0:0: [sdf] Write Protect is off
+sd 9:0:0:0: [sdf] Mode Sense: 23 00 00 00
+sd 9:0:0:0: [sdf] Assuming drive cache: write through
+          </pre>
+        </div>
+      <p>
+        <br />
+        But when connected on the SATA interface, Linux reports it with 512-byte logical blocks:<br />
+      </p>
+        <div class="box">
+          <pre>
+ata6.00: ATA-9: WDC WD40EZRZ-00WN9B0, 80.00A80, max UDMA/133
+ata6.00: 7814037168 sectors, multi 0: LBA48 NCQ (depth 0/32)
+ata6.00: configured for UDMA/100
+ata6: EH complete
+scsi 5:0:0:0: Direct-Access     ATA      WDC WD40EZRZ-00W 0A80 PQ: 0 ANSI: 5
+sd 5:0:0:0: [sdd] 7814037168 512-byte logical blocks: (4.00 TB/3.64 TiB)
+sd 5:0:0:0: [sdd] 4096-byte physical blocks
+sd 5:0:0:0: [sdd] Write Protect is off
+sd 5:0:0:0: [sdd] Mode Sense: 00 3a 00 00
+sd 5:0:0:0: [sdd] Write cache: enabled, read cache: enabled, doesn&#39;t support DPO or FUA
+          </pre>
+        </div>
+      <p>
+        <br />
+        Attempting to mount the partition directly will fail because of the sector (block) mismatch:<br />
+      </p>
+        <div class="box">
+          <pre>
+# mount /dev/sdd1 /mnt/sdd1
+mount: /dev/sdd1 is write-protected, mounting read-only
+NTFS signature is missing.
+Failed to mount &#39;/dev/sdd1&#39;: Invalid argument
+The device &#39;/dev/sdd1&#39; doesn&#39;t seem to have a valid NTFS.
+Maybe the wrong device is used? Or the whole disk instead of a
+partition (e.g. /dev/sda, not /dev/sda1)? Or the other way around?
+          </pre>
+        </div>
+      <p>
+        <br />
+        To get around this, we need to use a loopback device, but first some calculations must be done, based on the start and end sectors of the partition. This data can be gotten with e.g. fdisk:<br />
+      </p>
+        <div class="box">
+          <pre>
+# fdisk -l /dev/sdd
+Disk /dev/sdd: 3.7 TiB, 4000787030016 bytes, 7814037168 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 4096 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+Disklabel type: dos
+Disk identifier: 0x52205024
+
+Device     Boot Start   End Sectors  Size Id Type
+/dev/sdd1         256 25855   25600 12.5M 83 Linux
+          </pre>
+        </div>
+      <p>
+        <br />
+        Using 4096 byte sectors, we get the start sector at byte: 4096 * 256 = 1048576<br />
+        And a byte size of: 4096 * 25600 = 104857600<br />
+        <br />
+        Using these numbers, the partition can be mounted like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+losetup --verbose --offset 1048576 --sizelimit 104857600 /dev/loop0 /dev/sdd
+mount /dev/loop0 /mnt/loop
+          </pre>
+        </div>
+      <p>
+        <br />
+        And after use, unmounted like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+umount /mnt/loop
+losetup -d /dev/loop0
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        17/05-2017, 
+        <a href="article-119.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

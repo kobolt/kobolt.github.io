@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Steam on Slackware 14.2</h1>
+      <p>
+        Slackware <a href="http://www.slackware.com/announce/14.2.php">14.2</a> was recently released, so I decided to attempt a <a href="http://store.steampowered.com/">Steam</a> installation on it, which succeeded in the end.<br />
+        <br />
+        Here are the steps I followed:<br />
+        1) Download and install the 64-bit version of Slackware 14.2. You can get it here: <a href="http://www.slackware.com/getslack/torrents.php">http://www.slackware.com/getslack/torrents.php</a><br />
+        2) Setup &#34;multilib&#34;, so the system is able to run 32-bit programs. Use this guide: <a href="http://www.slackware.com/~alien/multilib/">http://www.slackware.com/~alien/multilib/</a>.<br />
+        3) Install OpenAL, which is a dependency for Steam. I recommend to use SlackBuilds: <a href="https://slackbuilds.org/repository/14.2/libraries/OpenAL/">https://slackbuilds.org/repository/14.2/libraries/OpenAL/</a><br />
+        4) Install Steam. Also easy with SlackBuilds: <a href="https://slackbuilds.org/repository/14.2/games/steam/">https://slackbuilds.org/repository/14.2/games/steam/</a><br />
+        5) Install a proprietary graphics driver, for better OpenGL performance.<br />
+        <br />
+        It is important to install a 64-bit base system because some of the games on Steam are in fact only 64-bit. However, Steam itself and certain other games are only 32-bit, hence the need for multilib. I use an nVidia graphics card, and this had to be installed AFTER multilib had been set up, so I recommend doing the same.<br />
+        <br />
+        I have done only minor testing so far, but I am still a bit sceptical about the OpenAL dependency. It seems that some games bundle their own OpenAL libraries, so they aren&#39;t always needed. It is also possible that a 32-bit version of the OpenAL library needs to be installed for certain stuff to work.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        07/07-2016, 
+        <a href="article-111.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

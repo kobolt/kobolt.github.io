@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Libvirt for KVM Guest</h1>
+      <p>
+        Referring to the <a href="article-115.html">Buildroot-based KVM Guest</a> earlier, here is a way to set it up using <a href="https://libvirt.org/">libvirt: The virtualization API</a>. Using libvirt instead of just QEMU gives additional flexibility, like easier pinning of physical CPUs to VCPUs and so on.<br />
+        <br />
+        This setup also assumes that the root filesystem is already laid out in /tmp/kvm_guest, to be shared using the 9P protocol. Due to the fact that many files in the root filesystem are owned by root, the whole virtualization also needs to be run as root, or else the host will not allow access to the shared files.<br />
+        <br />
+        Here is the XML configuration file for libvirt, some paths and the UUID may need to be changed. I named it &#34;kvm_guest.xml&#34;:<br />
+      </p>
+        <div class="box">
+          <pre>
+&lt;domain type=&#39;kvm&#39; xmlns:qemu=&#39;http://libvirt.org/schemas/domain/qemu/1.0&#39;&gt;
+  &lt;name&gt;kvm_guest&lt;/name&gt;
+  &lt;uuid&gt;00000000-0000-0000-0000-000000000000&lt;/uuid&gt;
+  &lt;memory unit=&#39;KiB&#39;&gt;131072&lt;/memory&gt;
+  &lt;currentMemory unit=&#39;KiB&#39;&gt;131072&lt;/currentMemory&gt;
+  &lt;vcpu placement=&#39;static&#39;&gt;1&lt;/vcpu&gt;
+  &lt;os&gt;
+    &lt;type arch=&#39;x86_64&#39; machine=&#39;pc-i440fx-2.6&#39;&gt;hvm&lt;/type&gt;
+    &lt;kernel&gt;/tmp/buildroot/kvmguest/output/images/bzImage&lt;/kernel&gt;
+    &lt;cmdline&gt;root=/dev/root rw rootfstype=9p rootflags=trans=virtio console=hvc0&lt;/cmdline&gt;
+  &lt;/os&gt;
+  &lt;features&gt;
+    &lt;acpi/&gt;
+  &lt;/features&gt;
+  &lt;cpu mode=&#39;custom&#39; match=&#39;exact&#39;&gt;
+    &lt;model fallback=&#39;allow&#39;&gt;kvm64&lt;/model&gt;
+  &lt;/cpu&gt;
+  &lt;clock offset=&#39;utc&#39;/&gt;
+  &lt;on_poweroff&gt;destroy&lt;/on_poweroff&gt;
+  &lt;on_reboot&gt;restart&lt;/on_reboot&gt;
+  &lt;on_crash&gt;destroy&lt;/on_crash&gt;
+  &lt;devices&gt;
+    &lt;emulator&gt;/usr/bin/qemu-system-x86_64&lt;/emulator&gt;
+    &lt;controller type=&#39;pci&#39; index=&#39;0&#39; model=&#39;pci-root&#39;/&gt;
+    &lt;memballoon model=&#39;none&#39;/&gt;
+    &lt;console type=&#39;pty&#39;&gt;
+      &lt;target type=&#39;virtio&#39; port=&#39;0&#39;/&gt;
+    &lt;/console&gt;
+    &lt;interface type=&#39;ethernet&#39;&gt;
+      &lt;mac address=&#39;00:00:de:ad:be:ef&#39;/&gt;
+      &lt;target dev=&#39;tap0&#39;/&gt;
+      &lt;model type=&#39;virtio&#39;/&gt;
+      &lt;address type=&#39;pci&#39; domain=&#39;0x0000&#39; bus=&#39;0x00&#39; slot=&#39;0x02&#39; function=&#39;0x0&#39;/&gt;
+    &lt;/interface&gt;
+  &lt;/devices&gt;
+  &lt;qemu:commandline&gt;
+    &lt;qemu:arg value=&#39;-chardev&#39;/&gt;
+    &lt;qemu:arg value=&#39;stdio,id=char0&#39;/&gt;
+    &lt;qemu:arg value=&#39;-device&#39;/&gt;
+    &lt;qemu:arg value=&#39;virtio-serial&#39;/&gt;
+    &lt;qemu:arg value=&#39;-device&#39;/&gt;
+    &lt;qemu:arg value=&#39;virtconsole,chardev=char0&#39;/&gt;
+    &lt;qemu:arg value=&#39;-fsdev&#39;/&gt;
+    &lt;qemu:arg value=&#39;local,id=fs0,path=/tmp/kvm_guest,security_model=none&#39;/&gt;
+    &lt;qemu:arg value=&#39;-device&#39;/&gt;
+    &lt;qemu:arg value=&#39;virtio-9p-pci,fsdev=fs0,mount_tag=/dev/root&#39;/&gt;
+  &lt;/qemu:commandline&gt;
+&lt;/domain&gt;
+          </pre>
+        </div>
+      <p>
+        <br />
+        It can then be started and accessed like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+sudo /etc/rc.d/rc.libvirt start
+sudo virsh create kvm_guest.xml
+sudo virsh console kvm_guest
+          </pre>
+        </div>
+      <p>
+        <br />
+        The rc.libvirt script is possibly Slackware specific, your system may have a different way to start the libvirt daemons.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        04/03-2017, 
+        <a href="article-117.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

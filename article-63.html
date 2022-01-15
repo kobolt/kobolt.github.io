@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Boot Record Dump</h1>
+      <p>
+        Here is a tool I wrote to dump information from boot records, the information normally stored in the first sector (boot sector) on a disk or partition. It attempts to automatically figure out if the record is a <a href="http://en.wikipedia.org/wiki/Master_Boot_Record">Master Boot Record</a> (MBR) or a <a href="http://en.wikipedia.org/wiki/Volume_boot_record">Volume Boot Record</a> (VBR).<br />
+        <br />
+        The boot record (file) can be extracted with the Unix &#34;dd&#34; tool, like so: &#39;dd bs=512 count=1 if=/dev/hda of=/tmp/br.dd&#39;.<br />
+        <br />
+        Here&#39;s an example of the information dumped from a MBR:<br />
+      </p>
+        <div class="box">
+          <pre>
+Master Boot Record (MBR)
+------------------------
+Serial: DCA41F6C
+Partition Table:
+ Boot Type   First LBA   First C:H:S    Last C:H:S    Size
+   *  0x04   0x0000003f  0000:001:01 -&gt; 0002:254:63  (23 MB)
+      0x05   0x0000bc43  0003:000:01 -&gt; 0123:254:63  (949 MB)
+      0x00   0x00000000  0000:000:00 -&gt; 0000:000:00  ---
+      0x00   0x00000000  0000:000:00 -&gt; 0000:000:00  ---
+Code:
+0x0000:  fa 33 c0 8e d0 bc 00 7c 8b f4 50 07 50 1f fb fc  |.3.....|..P.P...|
+0x0010:  bf 00 06 b9 00 01 f2 a5 ea 1d 06 00 00 be be 07  |................|
+0x0020:  b3 04 80 3c 80 74 0e 80 3c 00 75 1c 83 c6 10 fe  |...&lt;.t..&lt;.u.....|
+0x0030:  cb 75 ef cd 18 8b 14 8b 4c 02 8b ee 83 c6 10 fe  |.u......L.......|
+0x0040:  cb 74 1a 80 3c 00 74 f4 be 8b 06 ac 3c 00 74 0b  |.t..&lt;.t.....&lt;.t.|
+0x0050:  56 bb 07 00 b4 0e cd 10 5e eb f0 eb fe bf 05 00  |V.......^.......|
+0x0060:  bb 00 7c b8 01 02 57 cd 13 5f 73 0c 33 c0 cd 13  |..|...W.._s.3...|
+0x0070:  4f 75 ed be a3 06 eb d3 be c2 06 bf fe 7d 81 3d  |Ou...........}.=|
+0x0080:  55 aa 75 c7 8b f5 ea 00 7c 00 00 49 6e 76 61 6c  |U.u.....|..Inval|
+0x0090:  69 64 20 70 61 72 74 69 74 69 6f 6e 20 74 61 62  |id partition tab|
+0x00a0:  6c 65 00 45 72 72 6f 72 20 6c 6f 61 64 69 6e 67  |le.Error loading|
+0x00b0:  20 6f 70 65 72 61 74 69 6e 67 20 73 79 73 74 65  | operating syste|
+0x00c0:  6d 00 4d 69 73 73 69 6e 67 20 6f 70 65 72 61 74  |m.Missing operat|
+0x00d0:  69 6e 67 20 73 79 73 74 65 6d 00 00 00 00 00 00  |ing system......|
+0x00e0:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x00f0:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0100:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0110:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0120:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0130:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0140:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0150:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0160:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0170:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0180:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x0190:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x01a0:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|
+0x01b0:  00 00 00 00 00 00 00 00                          |................|
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here&#39;s an example of the information dumped from a VBR:<br />
+      </p>
+        <div class="box">
+          <pre>
+Volume Boot Record (VBR)
+------------------------
+Jump Code            : 0xeb 0x3c 0x90 (jmp short 0x3E)
+OEM ID               : &#39;MSWIN4.1&#39;
+Volume Label         : &#39;USER       &#39;
+System ID            : &#39;FAT16   &#39;
+Bytes per Sector     : 512
+Sectors per Cluster  : 64
+Sectors per FAT      : 242
+Sectors per Track    : 63
+No of FATs           : 2
+Reserved Sectors     : 1
+Hidden Sectors       : 63
+Small Sectors        : 0
+Large Sectors        : 3951237
+Root Entries         : 512
+Heads                : 64
+Current Head         : 0
+Media Descriptor     : 0xF8 (Fixed Disk)
+Physical Drive Number: 0x80
+Signature            : 0x29
+ID                   : E5165E0B
+Boot Code:
+0x0030:                                            33 c9  |..............3.|
+0x0040:  8e d1 bc fc 7b 16 07 bd 78 00 c5 76 00 1e 56 16  |....{...x..v..V.|
+0x0050:  55 bf 22 05 89 7e 00 89 4e 02 b1 0b fc f3 a4 06  |U.&#34;..~..N.......|
+0x0060:  1f bd 00 7c c6 45 fe 0f 38 4e 24 7d 20 8b c1 99  |...|.E..8N$} ...|
+0x0070:  e8 7e 01 83 eb 3a 66 a1 1c 7c 66 3b 07 8a 57 fc  |.~...:f..|f;..W.|
+0x0080:  75 06 80 ca 02 88 56 02 80 c3 10 73 ed 33 c9 fe  |u.....V....s.3..|
+0x0090:  06 d8 7d 8a 46 10 98 f7 66 16 03 46 1c 13 56 1e  |..}.F...f..F..V.|
+0x00a0:  03 46 0e 13 d1 8b 76 11 60 89 46 fc 89 56 fe b8  |.F....v.`.F..V..|
+0x00b0:  20 00 f7 e6 8b 5e 0b 03 c3 48 f7 f3 01 46 fc 11  | ....^...H...F..|
+0x00c0:  4e fe 61 bf 00 07 e8 28 01 72 3e 38 2d 74 17 60  |N.a....(.r&gt;8-t.`|
+0x00d0:  b1 0b be d8 7d f3 a6 61 74 3d 4e 74 09 83 c7 20  |....}..at=Nt... |
+0x00e0:  3b fb 72 e7 eb dd fe 0e d8 7d 7b a7 be 7f 7d ac  |;.r......}{...}.|
+0x00f0:  98 03 f0 ac 98 40 74 0c 48 74 13 b4 0e bb 07 00  |.....@t.Ht......|
+0x0100:  cd 10 eb ef be 82 7d eb e6 be 80 7d eb e1 cd 16  |......}....}....|
+0x0110:  5e 1f 66 8f 04 cd 19 be 81 7d 8b 7d 1a 8d 45 fe  |^.f......}.}..E.|
+0x0120:  8a 4e 0d f7 e1 03 46 fc 13 56 fe b1 04 e8 c2 00  |.N....F..V......|
+0x0130:  72 d7 ea 00 02 70 00 52 50 06 53 6a 01 6a 10 91  |r....p.RP.Sj.j..|
+0x0140:  8b 46 18 a2 26 05 96 92 33 d2 f7 f6 91 f7 f6 42  |.F..&amp;...3......B|
+0x0150:  87 ca f7 76 1a 8a f2 8a e8 c0 cc 02 0a cc b8 01  |...v............|
+0x0160:  02 80 7e 02 0e 75 04 b4 42 8b f4 8a 56 24 cd 13  |..~..u..B...V$..|
+0x0170:  61 61 72 0a 40 75 01 42 03 5e 0b 49 75 77 c3 03  |aar.@u.B.^.Iuw..|
+0x0180:  18 01 27 0d 0a 49 6e 76 61 6c 69 64 20 73 79 73  |..&#39;..Invalid sys|
+0x0190:  74 65 6d 20 64 69 73 6b ff 0d 0a 44 69 73 6b 20  |tem disk...Disk |
+0x01a0:  49 2f 4f 20 65 72 72 6f 72 ff 0d 0a 52 65 70 6c  |I/O error...Repl|
+0x01b0:  61 63 65 20 74 68 65 20 64 69 73 6b 2c 20 61 6e  |ace the disk, an|
+0x01c0:  64 20 74 68 65 6e 20 70 72 65 73 73 20 61 6e 79  |d then press any|
+0x01d0:  20 6b 65 79 0d 0a 00 00 49 4f 20 20 20 20 20 20  | key....IO      |
+0x01e0:  53 59 53 4d 53 44 4f 53 20 20 20 53 59 53 7f 01  |SYSMSDOS   SYS..|
+0x01f0:  00 41 bb 00 07 60 66 6a 00 e9 3b ff 00 00        |.A...`fj..;.....|
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here&#39;s the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;arpa/inet.h&gt;
+
+typedef struct partition_record_s {
+  uint8_t bootable;
+  uint8_t start_head;
+  uint8_t start_cs_1;
+  uint8_t start_cs_2;
+  uint8_t type;
+  uint8_t end_head;
+  uint8_t end_cs_1;
+  uint8_t end_cs_2;
+  uint32_t start_lba;
+  uint32_t no_of_sectors;
+} partition_record_t;
+
+#pragma pack(1)
+typedef struct mbr_s {
+  uint8_t code[440];
+  uint32_t disk_signature;
+  uint16_t reserved;
+  partition_record_t partition[4];
+  uint16_t boot_record_signature;
+} mbr_t;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct vbr_s {
+  uint8_t jump_code[3];
+  char oem_id[8];
+  uint16_t bytes_per_sector;
+  uint8_t sectors_per_cluster;
+  uint16_t reserved_sectors;
+  uint8_t no_of_fats;
+  uint16_t root_entries;
+  uint16_t small_sectors;
+  uint8_t media_descriptor;
+  uint16_t sectors_per_fat;
+  uint16_t sectors_per_track;
+  uint16_t heads;
+  uint32_t hidden_sectors;
+  uint32_t large_sectors;
+  uint8_t physical_drive_number;
+  uint8_t current_head;
+  uint8_t signature;
+  uint32_t id;
+  char volume_label[11];
+  char system_id[8];
+  uint8_t boot_code[448];
+  uint16_t boot_record_signature;
+} vbr_t;
+#pragma pack()
+
+static void print_string(char *s, int len)
+{
+  int i;
+  for (i = 0; i &lt; len; i++) {
+    if (isprint(s[i]))
+      fputc(s[i], stdout);
+    else
+      fputc(&#39;.&#39;, stdout);
+  }
+}
+
+static void print_hex(uint8_t *data, int len, int offset_start)
+{
+  int i, col, row;
+  char buffer[16];
+
+  row = offset_start / 16;
+  col = offset_start % 16;
+
+  printf(&#34;0x%04x:  &#34;, row * 0x10);
+  i = 0;
+  while (col-- &gt; 0) {
+    printf(&#34;   &#34;);
+    buffer[i++] = 0x0;
+  }
+
+  col = offset_start % 16;
+  for (i = 0; i &lt; len; i++) {
+    printf(&#34;%02x &#34;, data[i]);
+    buffer[col] = data[i];
+    col++;
+    if (col == 16) {
+      row++;
+      col = 0;
+      printf(&#34; |&#34;);
+      print_string(buffer, 16);
+      printf(&#34;|&#92;n&#34;);
+      printf(&#34;0x%04x:  &#34;, row * 0x10);
+    }
+  }
+
+  for (i = col; i &lt; 16; i++) {
+    printf(&#34;   &#34;);
+    buffer[i] = 0x0;
+  }
+  printf(&#34; |&#34;);
+
+  if (col &gt; 0) {
+    print_string(buffer, 16);
+    printf(&#34;|&#92;n&#34;);
+  } else {
+    printf(&#34;&#92;n&#34;);
+  }
+}
+
+static void dump_mbr(mbr_t *mbr)
+{
+  int i;
+  int start_cylinder, start_sector, end_cylinder, end_sector;
+
+  printf(&#34;Serial: %08X&#92;n&#34;, htonl(mbr-&gt;disk_signature));
+
+  printf(&#34;Partition Table:&#92;n&#34;);
+  printf(&#34; Boot Type   First LBA   First C:H:S    Last C:H:S    Size&#92;n&#34;);
+  for (i = 0; i &lt; 4; i++) {
+    start_sector = mbr-&gt;partition[i].start_cs_1 &amp; 0x3F;
+    start_cylinder = mbr-&gt;partition[i].start_cs_2;
+    start_cylinder += (mbr-&gt;partition[i].start_cs_1 &amp; 0xC0) &lt;&lt; 2;
+
+    end_sector = mbr-&gt;partition[i].end_cs_1 &amp; 0x3F;
+    end_cylinder = mbr-&gt;partition[i].end_cs_2;
+    end_cylinder += (mbr-&gt;partition[i].end_cs_1 &amp; 0xC0) &lt;&lt; 2;
+
+    printf(&#34;   %c  &#34;, (mbr-&gt;partition[i].bootable == 0x80) ? &#39;*&#39; : &#39; &#39;);
+    printf(&#34;0x%02x   &#34;, mbr-&gt;partition[i].type);
+    printf(&#34;0x%08x  &#34;, mbr-&gt;partition[i].start_lba);
+    printf(&#34;%04d:%03d:%02d -&gt; &#34;,
+      start_cylinder,
+      mbr-&gt;partition[i].start_head,
+      start_sector);
+    printf(&#34;%04d:%03d:%02d  &#34;,
+      end_cylinder,
+      mbr-&gt;partition[i].end_head,
+      end_sector);
+
+    if (mbr-&gt;partition[i].no_of_sectors == 0) {
+      printf(&#34;---&#34;);
+    } else {
+      /* NOTE: Assumes standard sector size of 512 bytes. */
+      printf(&#34;(%d MB)&#34;, mbr-&gt;partition[i].no_of_sectors / 2048);
+    }
+
+    printf(&#34;&#92;n&#34;);
+  }
+
+  printf(&#34;Code:&#92;n&#34;);
+  print_hex(mbr-&gt;code, 440, 0x0);
+}
+
+static void dump_vbr(vbr_t *vbr)
+{
+  char *s;
+  
+  printf(&#34;Jump Code            : 0x%02x 0x%02x 0x%02x &#34;,
+    vbr-&gt;jump_code[0], vbr-&gt;jump_code[1], vbr-&gt;jump_code[2]);
+
+  if (vbr-&gt;jump_code[0] == 0xEB) {
+    printf(&#34;(jmp short 0x%02X)&#92;n&#34;, vbr-&gt;jump_code[1] + 2);
+  } else {
+    printf(&#34;(?)&#92;n&#34;);
+  }
+
+  printf(&#34;OEM ID               : &#39;&#34;);
+  print_string(vbr-&gt;oem_id, 8);
+  printf(&#34;&#39;&#92;n&#34;);
+
+  printf(&#34;Volume Label         : &#39;&#34;);
+  print_string(vbr-&gt;volume_label, 11);
+  printf(&#34;&#39;&#92;n&#34;);
+
+  printf(&#34;System ID            : &#39;&#34;);
+  print_string(vbr-&gt;system_id, 8);
+  printf(&#34;&#39;&#92;n&#34;);
+
+  printf(&#34;Bytes per Sector     : %d&#92;n&#34;, vbr-&gt;bytes_per_sector);
+  printf(&#34;Sectors per Cluster  : %d&#92;n&#34;, vbr-&gt;sectors_per_cluster);
+  printf(&#34;Sectors per FAT      : %d&#92;n&#34;, vbr-&gt;sectors_per_fat);
+  printf(&#34;Sectors per Track    : %d&#92;n&#34;, vbr-&gt;sectors_per_track);
+  printf(&#34;No of FATs           : %d&#92;n&#34;, vbr-&gt;no_of_fats);
+  printf(&#34;Reserved Sectors     : %d&#92;n&#34;, vbr-&gt;reserved_sectors);
+  printf(&#34;Hidden Sectors       : %d&#92;n&#34;, vbr-&gt;hidden_sectors);
+  printf(&#34;Small Sectors        : %d&#92;n&#34;, vbr-&gt;small_sectors);
+  printf(&#34;Large Sectors        : %d&#92;n&#34;, vbr-&gt;large_sectors);
+  printf(&#34;Root Entries         : %d&#92;n&#34;, vbr-&gt;root_entries);
+  printf(&#34;Heads                : %d&#92;n&#34;, vbr-&gt;heads);
+  printf(&#34;Current Head         : %d&#92;n&#34;, vbr-&gt;current_head);
+
+  switch (vbr-&gt;media_descriptor) {
+  case 0xF0:
+  case 0xF9:
+  case 0xFC:
+  case 0xFD:
+  case 0xFE:
+  case 0xFF:
+    s = &#34;Floppy Disk&#34;;
+    break;
+  case 0xF8:
+    s = &#34;Fixed Disk&#34;;
+    break;
+  default:
+    s = &#34;Unknown&#34;;
+    break;
+  }
+
+  printf(&#34;Media Descriptor     : 0x%02X (%s)&#92;n&#34;, vbr-&gt;media_descriptor, s);
+  printf(&#34;Physical Drive Number: 0x%02X&#92;n&#34;, vbr-&gt;physical_drive_number);
+  printf(&#34;Signature            : 0x%02X&#92;n&#34;, vbr-&gt;signature);
+  printf(&#34;ID                   : %08X&#92;n&#34;, htonl(vbr-&gt;id));
+
+  printf(&#34;Boot Code:&#92;n&#34;);
+  print_hex(vbr-&gt;boot_code, 448, 0x3E);
+}
+
+static int is_printable(char *s, int len)
+{
+  int i;
+  for (i = 0; i &lt; len; i++) {
+    if (! isprint(s[i]))
+      return 0;
+  }
+  return 1;
+}
+
+int main(int argc, char *argv[])
+{
+  FILE *fh;
+  int bytes;
+  uint8_t sector[512];
+
+  if (argc != 2) {
+    fprintf(stderr, &#34;Usage: %s &lt;boot record file&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  fh = fopen(argv[1], &#34;rb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;Error: Unable to open file for reading.&#92;n&#34;);
+    return 1;
+  }
+
+  bytes = fread(&amp;sector, sizeof(uint8_t), 512, fh);
+  fclose(fh);
+
+  if (bytes &lt; 512) {
+    fprintf(stderr, &#34;Error: File is less than 512 bytes.&#92;n&#34;);
+    return 1;
+  }
+
+  if (sector[510] != 0x55 || sector[511] != 0xAA) {
+    fprintf(stderr, &#34;Error: File is not a valid boot record.&#92;n&#34;);
+    return 1;
+  }
+
+  if (is_printable(((vbr_t *)&amp;sector)-&gt;oem_id, 8)) {
+    printf(&#34;Volume Boot Record (VBR)&#92;n&#34;);
+    printf(&#34;------------------------&#92;n&#34;);
+    dump_vbr((vbr_t *)&amp;sector);
+  } else {
+    printf(&#34;Master Boot Record (MBR)&#92;n&#34;);
+    printf(&#34;------------------------&#92;n&#34;);
+    dump_mbr((mbr_t *)&amp;sector);
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        04/03-2012, 
+        <a href="article-63.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

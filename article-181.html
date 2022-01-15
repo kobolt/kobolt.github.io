@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Tandon TM9362 Data Recovery</h1>
+      <p>
+        I have a Tandon TM9362 <a href="https://en.wikipedia.org/wiki/Hardcard">hardcard</a>. Such hardcards are notorious for failing, a common problem is that the heads and other mechanical parts get stuck over time. Despite this I managed to fully recover the data from it. The actual hard drive on the card is a Tandon TM362, which is a 21MB MFM drive.<br />
+        <br />
+      </p>
+      <img class="border" src="images/tandon-tm9362.jpg" alt="Tandon TM9362 and Bike Oil" />
+      <p>
+        <br />
+        The shaft of the motor controlling the heads on these drives are actually accessible, which makes things easer. I managed to turn the shaft manually with my fingers to loosen it. Afterwards I applied 2 drops of &#34;Bike Oil&#34;, which is similar to bearing oil, into the motor through the shaft and wiggled it some more. The card was then connected to a 486-class PC. Still, even with this oil applied it would not always power up on startup, but some more wiggling and power cycling made it spin up in the end.<br />
+        <br />
+        This card contains it&#39;s own BIOS routines for accessing the disk, so I removed the existing hard drive on the PC to prevent any interference. It booted up with MS-DOS 3.20 and timestamps from 1990, so it could have been over 30 years since it was last accessed. I think MS-DOS 3.20 has issues with newer 1.44M floppy disks, so I booted DOS 5.0 from a floppy instead, still with the hardcard connected of course.<br />
+        <br />
+        This PC has a 3Com 3C509 Ethernet card, so I loaded the <a href="http://crynwr.com/drivers/">Crynwr Packet Drivers</a> for this and configured <a href="http://www.brutman.com/mTCP/">mTCP</a> for TCP/IP networking. I setup the mTCP &#34;ftpsrv&#34; FTP server to host ALL files from the C: drive and used &#34;ncftpget&#34; from a Linux box to recursively download everything.<br />
+        <br />
+        An additional cool but not really necessary step is to get those files onto a virtual disk image that can be loaded in QEMU. This particular hardcard has a CHS configuration of 615 cylinders, 4 heads and 17 sectors (per cylinder). Multiplying this with the standard sector size of 512 gives 41820, so a blank disk image can be made by:<br />
+      </p>
+        <div class="box">
+          <pre>
+dd if=/dev/zero of=tandon.img bs=512 count=41820
+          </pre>
+        </div>
+      <p>
+        <br />
+        Importantly, in order for QEMU to properly forward the same CHS settings into the emulation, it needs to be specified on startup like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+qemu-system-i386 -drive file=tandon.img,format=raw,if=none,id=dr0 -device drive=dr0,driver=ide-hd,cyls=615,heads=4,secs=17 -boot c
+          </pre>
+        </div>
+      <p>
+        <br />
+        So actually get the files over I booted QEMU with the virtual disk image and another copy of a MS-DOS 3.20 floppy boot disk image that I found online. From the emulated DOS i ran the DOS &#34;fdisk&#34; and &#34;format c: /s&#34; to format the virtual disk in a compatible manner. Then I ran the Linux &#34;fdisk&#34; on the image and noticed the FAT partition was placed on sector 17 and onwards. Multiplying this by 512 gives 8704, so the partition on the virtual disk image can be loopback mounted like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+sudo mount -o loop,offset=8704 tandon.img /tmp/tandon
+          </pre>
+        </div>
+      <p>
+        <br />
+        Afterwards the recovered files can just be copied into the mounted loopback drive. The result is a bootable (in QEMU) virtual disk image with the correct MBR and VBR.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        07/08-2021, 
+        <a href="article-181.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

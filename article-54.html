@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>DVD Batch Copying</h1>
+      <p>
+        I needed to copy a lot of files from a lot of DVDs over to a local hard-drive. In order to help with this, I made a shell script to semi-automate the process. This script will eject the tray, wait for the user to press enter, then close the tray and start copying files. After it is done copying, the process loops, asking for the next DVD to be put in the tray.<br />
+        <br />
+        Here it is, hope you can make use of it:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/bash
+
+function abort {
+  echo &#34;Aborting...&#34;
+  eject -t /dev/cdrom
+  exit
+}
+
+trap abort SIGINT
+
+# Find first available directory.
+DVD_NO=1
+while [ -d &#34;./dvd_$DVD_NO&#34; ]; do
+  DVD_NO=`expr $DVD_NO + 1`
+done
+
+while /bin/true; do
+  eject /dev/cdrom
+
+  # Wait for user to press enter.
+  while /bin/true; do
+    echo -n &#34;Feed me! &#34;
+    read -n 1 CHAR
+    if [ &#34;$CHAR&#34; == &#34;&#34; ]; then
+      break
+    fi
+  done
+
+  eject -t /dev/cdrom
+  echo &#34;Reading DVD #$DVD_NO...&#34;
+  sleep 30
+  mkdir -v &#34;./dvd_$DVD_NO&#34; || exit 1
+  mount /mnt/cdrom || exit 2
+
+  cp -v -R /mnt/cdrom/* &#34;./dvd_$DVD_NO&#34;
+  find &#34;./dvd_$DVD_NO&#34; -type d -exec chmod 755 {} &#92;;
+  find &#34;./dvd_$DVD_NO&#34; -type f -exec chmod 644 {} &#92;;
+
+  sleep 3
+  umount /mnt/cdrom
+  sleep 3
+  DVD_NO=`expr $DVD_NO + 1`
+done
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        12/06-2011, 
+        <a href="article-54.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

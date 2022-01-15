@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>M.I.A. in Wine</h1>
+      <p>
+        <a href="https://www.mobygames.com/game/windows/mia-missing-in-action">M.I.A.: Missing In Action</a> is a relatively unknown game that came out for Windows back in 1998. I got the game back then in my childhood as part of some bundle with a new computer. I do remember the game being fun, but I had issues getting it to run later on because it will only install on Windows 98. Fast forward some 20 years, <a href="https://www.winehq.org/">Wine</a> has now become a better Windows than Windows on Linux in many aspects, especially running older games.<br />
+         I have been using Wine version 4.0.2 for these experiments.<br />
+        <br />
+        Using some tricks I finally got to run and play this on Linux! In order to get there I had do spend some time with both <a href="https://wiki.winehq.org/Winedbg">Winedbg</a> and <a href="http://www.ollydbg.de/">OllyDbg</a> debuggers to figure out what the game tried to do and failed on.<br />
+        <br />
+        The first problem was the detection of the CDs, which I figured out it does by calling GetVolumeInformationA() and looking at the volume label. This is fixed by creating a &#34;.windows-label&#34; file in the emulated CD drive with the correct label.<br />
+        <br />
+        The second problem was getting the CD audio to work correctly. Apart from having to fake this somehow, the game uses the ancient <a href="https://en.wikipedia.org/wiki/Media_Control_Interface">Media Control Interface</a> which still have some missing features (bugs?) in Wine at the time of writing. Maybe this will be fixed in an upcoming version, but I had no time to wait for that. The root of the problem is that Wine returns the code (as string) &#34;1088&#34; instead of the string &#34;audio&#34; when the game asks what type of track is on the CD. The quickest way to fix this is to simply patch the game binary to look for that other string.<br />
+        <br />
+        To actually play the CD audio without the CDs I figured out it was easiest to hack the Wine &#34;mcicda.dll&#34; library and make it call <a href="http://www.mplayerhq.hu">MPlayer</a> to play the tracks as .FLAC files. This is done in MPlayer&#39;s FIFO mode to avoid blocking anything.<br />
+        <br />
+        A third problem is that the in-game video cutscenes, using <a href="http://www.radgametools.com/smkmain.htm">Smacker Video Technology</a> still does not play correctly in Wine. The symptom is that the video may play for some seconds, but then just hangs. Since it&#39;s possible to bypass this by hitting Escape, I have simply ignored this for now.<br />
+        <br />
+        Anyway, the common steps to install and run are as follows:<br />
+        1) Create a new directory to store a Wine prefix for M.I.A.:<br />
+           mkdir -p ~/opt/mia<br />
+        2) Run winecfg on the prefix, in 32-bit mode, and set it has &#34;Windows 98&#34;:<br />
+           WINEARCH=win32 WINEPREFIX=~/opt/mia winecfg <br />
+        3) Create two directories for each M.I.A. CD in the prefix:<br />
+           mkdir ~/opt/mia/cd1<br />
+           mkdir ~/opt/mia/cd2<br />
+        4) Copy the CD contents into the respective directories.<br />
+           Either directly from the CDs or ISO images mounted as loopback devices.<br />
+        5) Create fake volume labels for each CD, as needed by the game:<br />
+           echo &#34;MIA_VOL1&#34; &gt; ~/opt/mia/cd1/.windows-label<br />
+           echo &#34;MIA_VOL2&#34; &gt; ~/opt/mia/cd2/.windows-label<br />
+        6) Create a symbolic link kalled &#34;drive_d&#34; pointing to &#34;cd1&#34;<br />
+           ln -s &#34;cd1&#34; ~/opt/mia/drive_d<br />
+        7) Run winecfg again to map D: to the newly created &#34;drive_d&#34; directory.<br />
+           Also set the type as &#34;CD-ROM&#34;.<br />
+           WINEARCH=win32 WINEPREFIX=~/opt/mia winecfg <br />
+        8) Allow low memory to be mapped, since it is needed by M.I.A. installer.<br />
+           sudo sysctl vm.mmap_min_addr=0<br />
+        9) Start the M.I.A. installation through Wine,<br />
+           WINEARCH=win32 WINEPREFIX=~/opt/mia wine ~/opt/mia/drive_d/mia.exe<br />
+        10) When prompted for installation of installation type...<br />
+            Select &#34;Leave ground textures on CD&#34;.<br />
+            This is needed because the installer has issues finding CD #2.<br />
+        11) Run the following script to easily start the game:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+export WINEPREFIX=~/opt/mia
+
+sudo sysctl vm.mmap_min_addr=0 # Wine needs to be allowed to map low memory.
+
+CD_NO=0
+while [ &#34;$CD_NO&#34; != &#34;1&#34; ] &amp;&amp; [ &#34;$CD_NO&#34; != &#34;2&#34; ]; do
+  read -p &#34;CD Number? (1 or 2) &#34; CD_NO
+done
+
+rm -f &#34;${WINEPREFIX}/drive_d&#34;
+ln -s &#34;cd$CD_NO&#34; &#34;${WINEPREFIX}/drive_d&#34;
+
+(cd &#34;${WINEPREFIX}/drive_c/MIA&#34; &amp;&amp; WINEARCH=win32 wine miarel.exe -avhpd)
+          </pre>
+        </div>
+      <p>
+        <br />
+        If you also want the in-game music, some additional steps are required:<br />
+        12) Assuming all tracks are ripped from the CD&#39;s in FLAC format.<br />
+            4 audio tracks from CD #1 named from &#34;track02.flac&#34; to &#34;track05.flac&#34;.<br />
+            5 audio tracks from CD #2 mamed from &#34;track02.flac&#34; to &#34;track06.flac&#34;.<br />
+            Copy .flac files into the root of each respective directory &#34;cd1&#34; and &#34;cd2&#34;.<br />
+        13) Patch the &#34;mcicda.dll&#34; file in ~/opt/mia/drive_c/windows/system32/<br />
+        14) Patch the &#34;miarel.exe&#34; file in ~/opt/mia/drive_c/MIA/<br />
+        15) Run the following modified script to start the game:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+export WINEPREFIX=~/opt/mia
+
+MPLAYER_FIFO=/tmp/mplayer.fifo # Do not change, hardcoded in patched mcicda.dll
+
+sudo sysctl vm.mmap_min_addr=0 # Wine needs to be allowed to map low memory.
+
+CD_NO=0
+while [ &#34;$CD_NO&#34; != &#34;1&#34; ] &amp;&amp; [ &#34;$CD_NO&#34; != &#34;2&#34; ]; do
+  read -p &#34;CD Number? (1 or 2) &#34; CD_NO
+done
+
+rm -f &#34;${WINEPREFIX}/drive_d&#34;
+ln -s &#34;cd$CD_NO&#34; &#34;${WINEPREFIX}/drive_d&#34;
+
+if [ ! -p &#34;$MPLAYER_FIFO&#34; ]; then
+  mkfifo &#34;$MPLAYER_FIFO&#34;
+fi
+
+cd &#34;${WINEPREFIX}/drive_d&#34;
+mplayer -idle -slave -input file=$MPLAYER_FIFO 1&amp;&gt;/dev/null &amp;
+MPLAYER_PID=$!
+cd -
+
+(cd &#34;${WINEPREFIX}/drive_c/MIA&#34; &amp;&amp; WINEARCH=win32 wine miarel.exe -avhpd)
+
+kill $MPLAYER_PID
+rm -f &#34;$MPLAYER_FIFO&#34;
+          </pre>
+        </div>
+      <p>
+        <br />
+        To patch &#34;miarel.exe&#34;, open it in a hex-editor and go to offset 0x1427c4. At this location the string &#34;audio&#34; should be present. Replace this with 0x31 0x30 0x38 0x38 0x00 which represents the string &#34;1088&#34; with an additional NULL terminator.<br />
+        <br />
+        Patching &#34;mcicda.dll&#34; is more complicated as it requires a rebuild of Wine. Get the Wine source code and apply the following source code patch to &#34;./dlls/mcicda/mcicda.c&#34;:<br />
+      </p>
+        <div class="box">
+          <pre>
+--- mcicda.c.orig	2020-05-13 17:55:02.433346437 +0200
++++ mcicda.c	2020-05-13 17:54:53.230346338 +0200
+@@ -25,6 +25,12 @@
+ #include &lt;stdio.h&gt;
+ #include &lt;string.h&gt;
+ 
++#include &lt;sys/types.h&gt;
++#include &lt;sys/stat.h&gt;
++#include &lt;fcntl.h&gt;
++#include &lt;unistd.h&gt;
++#include &lt;limits.h&gt;
++
+ #define WIN32_NO_STATUS
+ #include &#34;windef.h&#34;
+ #include &#34;winbase.h&#34;
+@@ -79,10 +85,72 @@
+ typedef HRESULT(WINAPI*LPDIRECTSOUNDCREATE)(LPCGUID,LPDIRECTSOUND*,LPUNKNOWN);
+ static LPDIRECTSOUNDCREATE pDirectSoundCreate;
+ 
++static void mplayer_command(const char *command)
++{
++    int fd, written;
++
++    fd = open(&#34;/tmp/mplayer.fifo&#34;, O_NONBLOCK | O_WRONLY);
++    if (fd == -1) {
++        TRACE(&#34;No pipe&#92;n&#34;);
++        return;
++    }
++
++    written = write(fd, command, strlen(command));
++    if (written &lt;= 0) {
++        TRACE(&#34;Write failed&#92;n&#34;);
++    }
++
++    close(fd);
++}
++
+ static BOOL device_io(HANDLE dev, DWORD code, void *inbuffer, DWORD insize, void *outbuffer, DWORD outsize, DWORD *retsize, OVERLAPPED *overlapped)
+ {
+     const char *str;
+-    BOOL ret = DeviceIoControl(dev, code, inbuffer, insize, outbuffer, outsize, retsize, overlapped);
++//    BOOL ret = DeviceIoControl(dev, code, inbuffer, insize, outbuffer, outsize, retsize, overlapped);
++
++    int i;
++    BOOL ret = TRUE;
++    CDROM_TOC *toc;
++
++    *retsize = 0;
++
++    switch (code) {
++    case IOCTL_CDROM_READ_TOC:
++        toc = (CDROM_TOC *)outbuffer;
++
++        toc-&gt;FirstTrack = 1;
++        toc-&gt;LastTrack = 6;
++
++        // Set up first track as data track.
++        toc-&gt;TrackData[0].TrackNumber = 1;
++        toc-&gt;TrackData[0].Control = 0x4;
++        toc-&gt;TrackData[0].Address[1] = 0;
++        toc-&gt;TrackData[0].Address[2] = 0;
++        toc-&gt;TrackData[0].Address[3] = 0;
++
++        // Set up remaining tracks as dummy audio tracks.
++        for (i = 1; i &lt; toc-&gt;LastTrack; i++) {
++            toc-&gt;TrackData[i].TrackNumber = i + 1;
++            toc-&gt;TrackData[i].Control = 0;
++            toc-&gt;TrackData[i].Address[1] = i;
++            toc-&gt;TrackData[i].Address[2] = 0;
++            toc-&gt;TrackData[i].Address[3] = 0;
++        }
++
++        *retsize = CDROM_TOC_SIZE;
++        break;
++
++    case IOCTL_CDROM_STOP_AUDIO:
++        mplayer_command(&#34;stop&#92;n&#34;);
++        break;
++
++    case IOCTL_CDROM_PAUSE_AUDIO:
++        mplayer_command(&#34;stop&#92;n&#34;);
++        break;
++
++    default:
++        break;
++    }
+ 
+ #define XX(x) case (x): str = #x; break
+     switch (code)
+@@ -906,6 +974,9 @@
+     SUB_Q_CHANNEL_DATA          data;
+     CDROM_TOC			toc;
+ 
++    int track_no;
++    char command[PATH_MAX];
++
+     TRACE(&#34;(%04X, %08X, %p);&#92;n&#34;, wDevID, dwFlags, lpParms);
+ 
+     if (lpParms == NULL)
+@@ -914,6 +985,20 @@
+     if (wmcda == NULL)
+ 	return MCIERR_INVALID_DEVICE_ID;
+ 
++    // HIJACK START
++
++    mplayer_command(&#34;stop&#92;n&#34;);
++
++    track_no = MCI_TMSF_TRACK(lpParms-&gt;dwFrom);
++    TRACE(&#34;Track no: %d&#92;n&#34;, track_no);
++
++    snprintf(command, PATH_MAX, &#34;loadfile track%02d.flac&#92;n&#34;, track_no);
++    mplayer_command(command);
++
++    return 0;
++
++    // HIJACK END
++
+     if (!MCICDA_ReadTOC(wmcda, &amp;toc, &amp;br))
+         return MCICDA_GetError(wmcda);
+          </pre>
+        </div>
+      <p>
+        To build the DLL file, it should be enough to run ./configure and make on the Wine source code. The resulting file will be named &#34;mcicda.dll.so&#34; but can be renamed to &#34;mcicda.dll&#34;.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        24/05-2020, 
+        <a href="article-160.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

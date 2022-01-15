@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Aspire One D250 Tweaks</h1>
+      <p>
+        I recently bought a new netbook, an Acer Aspire One D250 (HD version). Unfortunately, it was not possible to get it with Linux pre-installed, but I quickly re-formatted the hard-drive and installed <a href="http://www.slackware.com/announce/13.0.php">Slackware 13.0</a>. As usual with new hardware on Linux, some devices were not supported out of the box. After some tweaking however, I got it all up and running.<br />
+        <br />
+        There were problems with both the ethernet and the wireless network interfaces, and also with the built in microphone controlled by the sound-card. Here is the &#34;lspci -nn&#34; information of the affected hardware devices:<br />
+      </p>
+        <div class="box">
+          <pre>
+0:1b.0 Audio device [0403]: Intel Corporation 82801G (ICH7 Family) High Definition Audio Controller [8086:27d8] (rev 02)
+01:00.0 Network controller [0280]: Broadcom Corporation BCM4312 802.11b/g [14e4:4315] (rev 01)
+03:00.0 Ethernet controller [0200]: Attansic Technology Corp. Atheros AR8132 / L1c Gigabit Ethernet Adapter [1969:1062] (rev c0)
+          </pre>
+        </div>
+      <p>
+        <br />
+        The Wi-Fi interface can be fixed by installing the proprietary driver from Broadcom, instead of using the open source &#34;b43&#34; driver. (The b43 driver did not support this particular chip-set in the beginning of September when I installed everything, but this may have changed now.) I used the &#34;hybrid-portsrc-x86_32-v5_10_91_9.tar.gz&#34; driver with the &#34;5_10_91_9_patch_2_6_29_kernel.zip&#34; patch, and it has so far worked fine. I used the following steps to install it (some of the same information can also be found in the driver&#39;s readme file):<br />
+      </p>
+        <div class="box">
+          <pre>
+patch -p1 &lt; patch_2.6.29_kernels
+make -C /lib/modules/2.6.29.6-smp/build M=`pwd` clean
+make -C /lib/modules/2.6.29.6-smp/build M=`pwd`
+sudo cp wl.ko /lib/modules/2.6.29.6-smp/updates/drivers/net/wireless/
+sudo depmod
+reboot
+          </pre>
+        </div>
+      <p>
+        <br />
+        The ethernet interface suffers from strange bugs in the driver (atl1c) shipped with the default kernel (2.6.29.6). Sometimes the chip itself disappears from the PCI bus, and does not show up until a complete power on/off has been done. The &#34;ifconfig&#34; command also shows crazy RX and TX values for the interface. I had to blacklist the kernel driver (by adding a file with &#34;blacklist atl1c in the /etc/modprobe.d/ directory) and install the proprietary Atheros driver to fix it. I used the &#34;AR81Family-linux-v1.0.0.10.tar.gz&#34; file, which makes a new kernel module/driver named &#34;atl1e&#34;.<br />
+        <br />
+        The final thing I had issues with was the internal microphone, but it was fixed simply by updating the ALSA driver and library to version 1.0.21.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        03/10-2009, 
+        <a href="article-38.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>uIP support for GR-SAKURA</h1>
+      <p>
+        I have now managed to get the <a href="https://en.wikipedia.org/wiki/UIP_(micro_IP)">uIP TCP/IP network stack</a> running on the <a href="http://gadget.renesas.com/en/product/sakura.html">GR-SAKURA</a> board. I&#39;m using the Renesas <a href="https://en.wikipedia.org/wiki/PHY_(chip)">PHY</a> driver, but my own heavily modified (and simplified) implementation of the Ethernet driver.<br />
+        <br />
+        The Renesas Ethernet controller has a &#34;Zero Copy&#34; mechanism that uses DMA transfer on incoming and outgoing packets. This is nice and all, but it comes into conflict with the uIP architecture with a single buffer. So I ended up with the separate single uIP buffer and two separate ethernet buffers instead, doing CPU based (memcpy) copying between them. Even though this is not as efficient, it prevents the need for any modifications to the core uIP source code.<br />
+        <br />
+        One limitation with this initial implementation is that there is no handling of link up or down. The code expects the Ethernet plug to be plugged in at boot and remain connected.<br />
+        <br />
+        To start using it, get the code from <a href="supplies/sakura-uip-0.1.tar.gz">here</a> and unpack it in the uIP source folder. (The &#34;sakura&#34; directory should be alongside the &#34;unix&#34; directory.) Then run &#34;make&#34; inside the &#34;sakura&#34; directory to create the &#34;uip.bin&#34; binary that may be uploaded the GR-SAKURA board.<br />
+        <br />
+        I have also forked the original uIP repository and made the necessary changes <a href="https://github.com/kobolt/uip">on GitHub</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        01/01-2019, 
+        <a href="article-139.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

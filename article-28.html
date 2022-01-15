@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>MP3 Cutting Tool</h1>
+      <p>
+        It is not uncommon to have a (dumb) MP3-player that fast-forwards at a static speed, regardless of the file size/length. This is very annoying when you want to skip ahead in a pod-cast or audio-book file that lasts for over an hour. To overcome this problem, I decided to make a tool to split/cut <a href="http://en.wikipedia.org/wiki/MP3">MP3</a> files into smaller parts.<br />
+        <br />
+        In order to correctly cut MP3 files, you need to know exactly where the frame boundaries are, and perform the incisions there. This tool will find the boundaries and calculate where to cut, based on the number of parts the user has specified as input.<br />
+        <br />
+        Note that <a href="http://en.wikipedia.org/wiki/ID3">ID3 tags</a> will not be replicated in any way, so they will probably remain in only one of the produced parts.<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;limits.h&gt;
+
+
+
+static int bitrate_matrix[16][5] = {
+  {0,   0,   0,   0,   0},
+  {32,  32,  32,  32,  8},
+  {64,  48,  40,  48,  16},
+  {96,  56,  48,  56,  24},
+  {128, 64,  56,  64,  32},
+  {160, 80,  64,  80,  40},
+  {192, 96,  80,  96,  48},
+  {224, 112, 96,  112, 56},
+  {256, 128, 112, 128, 64},
+  {288, 160, 128, 144, 80},
+  {320, 192, 160, 160, 96},
+  {352, 224, 192, 176, 112},
+  {384, 256, 224, 192, 128},
+  {416, 320, 256, 224, 144},
+  {448, 384, 320, 256, 160},
+  {0,   0,   0,   0,   0}};
+
+static int sampling_matrix[4][3] = {
+  {44100, 22050, 11025},
+  {48000, 24000, 12000},
+  {32000, 16000, 8000},
+  {0,     0,     0}};
+
+
+
+static int decode_header(unsigned char *header)
+{
+  int version, layer, padding;
+  int bitrate_row, bitrate_col, sampling_row, sampling_col;
+
+  version = (header[1] &amp; 0x08) &gt;&gt; 3; /* MPEG version. */
+  layer = (header[1] &amp; 0x06) &gt;&gt; 1; /* MPEG layer. */
+
+  bitrate_row = (header[2] &amp; 0xf0) &gt;&gt; 4;
+  bitrate_col = -1;
+  if (version == 1) {
+    if (layer == 3)      /* I */
+      bitrate_col = 0;
+    else if (layer == 2) /* II */
+      bitrate_col = 1;
+    else if (layer == 1) /* III */
+      bitrate_col = 2;
+  } else { /* Version 2 */
+    if (layer == 3)      /* I */
+      bitrate_col = 3;
+    else if (layer == 2) /* II */
+      bitrate_col = 4;
+    else if (layer == 1) /* III */
+      bitrate_col = 4;
+  }
+
+  sampling_row = (header[2] &amp; 0x0c) &gt;&gt; 2;
+  sampling_col = (version == 0) ? 1 : 0;
+
+  padding = (header[2] &amp; 0x02) &gt;&gt; 1;
+
+  if (sampling_matrix[sampling_row][sampling_col] == 0)
+    return -1; /* Cannot divide by zero. */
+
+  if (layer == 3) /* I */
+    return (12 * (bitrate_matrix[bitrate_row][bitrate_col] * 1000) /
+      sampling_matrix[sampling_row][sampling_col] + (padding * 4)) * 4;
+  else if (layer == 2 || layer == 1) /* II or III */
+    return 144 * (bitrate_matrix[bitrate_row][bitrate_col] * 1000) /
+      sampling_matrix[sampling_row][sampling_col] + padding;
+  else
+    return -1;
+}
+
+
+
+static int read_frames(FILE *src, FILE *dst, int frame_limit)
+{
+  int c, n, frame_length, no_of_frames;
+  unsigned char quad[4];
+
+  quad[0] = quad[1] = quad[2] = quad[3] = &#39;&#92;0&#39;;
+
+  frame_length = n = no_of_frames = 0;
+  while ((c = fgetc(src)) != EOF) {
+    if (dst != NULL)
+      fputc(c, dst);
+  
+    if (frame_length &gt; 0) {
+      frame_length--;
+      n++;
+
+      /* While cutting the file, a frame limit is specified to stop reading. */
+      if (frame_limit &gt; 0) {
+        if (frame_length == 0 &amp;&amp; no_of_frames == frame_limit)
+          return no_of_frames; /* Return early, but filehandle must be left
+                                  intact by the caller to continue at the right
+                                  spot! */
+      }
+
+      /* Skip ahead in stream to avoid reading garbage. */
+      continue;
+    }
+
+    /* Have a potential header ready for each read. */
+    quad[0] = quad[1];
+    quad[1] = quad[2];
+    quad[2] = quad[3];
+    quad[3] = c;
+
+    /* Match frame sync. */
+    if ((quad[0] == 0xff) &amp;&amp; ((quad[1] &amp; 0xf0) == 0xf0)) {
+      no_of_frames++;
+      frame_length = decode_header(quad) - 4;
+      quad[0] = quad[1] = quad[2] = quad[3] = &#39;&#92;0&#39;;
+    }
+
+    n++;
+  }
+  
+  return no_of_frames;
+}
+
+
+
+int main(int argc, char *argv[])
+{
+  int i, no_of_frames, parts, limit;
+  FILE *src, *dst;
+  char filename[PATH_MAX]; /* POSIX limit. */
+
+  if (argc != 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;mp3-file&gt; &lt;no-of-parts&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  parts = atoi(argv[2]);
+  if (parts == 0) {
+    fprintf(stderr, &#34;Error: Invalid number of parts specified.&#92;n&#34;);
+    return 1;
+  }
+
+  src = fopen(argv[1], &#34;r&#34;);
+  if (src == NULL) {
+    fprintf(stderr, &#34;Error: Unable to open file for reading: %s&#92;n&#34;,
+      strerror(errno));
+    return 1;
+  }
+
+  no_of_frames = read_frames(src, NULL, 0);
+  if (parts &gt; no_of_frames) {
+    fprintf(stderr, &#34;Error: More parts than available frames specified.&#92;n&#34;);
+    fclose(src);
+    return 1;
+  }
+
+  rewind(src);
+
+  for (i = 1; i &lt;= parts; i++) {
+    snprintf(filename, sizeof(filename), &#34;%s.%02d&#34;, argv[1], i);
+
+    dst = fopen(filename, &#34;w&#34;);
+    if (dst == NULL) {
+      fprintf(stderr, &#34;Error: Unable to open file for writing: %s&#92;n&#34;,
+        strerror(errno));
+      fclose(src);
+      return 1;
+    }
+
+    if (i == parts)
+      limit = 0; /* Make sure all frames are read on the last part,
+                    rounding errors in the formula prevents this. */
+    else
+      limit = no_of_frames / parts;
+
+    fprintf(stderr, &#34;%02d: %s: %d&#92;n&#34;, i, filename, 
+      read_frames(src, dst, limit));
+
+    fclose(dst);
+  }
+
+  fclose(src);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        You will notice that the tool creates file names ending in 01, 02, etc. If this is a problem for you (or your MP3-player), simply issue a shell command like this (swaps the &#34;.mp3&#34; and the number):<br />
+      </p>
+        <div class="box">
+          <pre>
+for i in *.mp3*; do mv &#34;$i&#34; &#34;${i/.mp3/}.mp3&#34;; done
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        04/01-2009, 
+        <a href="article-28.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Filename Sanitizer</h1>
+      <p>
+        Here is a Python script to sanitize filenames that be transferred to a Windows file system. This script will recursively go through a directory and replace the bad characters with underscores. Not sure if this script knows about all the bad ones, but it worked in my case at least.<br />
+        <br />
+        Check it out:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import os
+import sys
+
+bad_characters = r&#39;?&lt;&gt;&#92;:*|&#34;&#39;
+replacement = &#39;_&#39;
+
+if len(sys.argv) &lt; 2:
+    print &#34;Usage: %s &lt;directory&gt; [yes]&#34; % (sys.argv[0])
+    sys.exit(1)
+
+do_it = False
+if len(sys.argv) &gt; 2:
+    if sys.argv[2] == &#39;yes&#39;:
+        do_it = True
+
+for directory, dirnames, filenames in os.walk(sys.argv[1], topdown=False):
+    for name in filenames + dirnames:
+        newname = name
+        for bad in bad_characters:
+            newname = newname.replace(bad, replacement)
+        if newname != name:
+            oldpath = os.path.join(directory, name)
+            newpath = os.path.join(directory, newname)
+            print &#34;%s -&gt; %s&#34; % (oldpath, newpath)
+            if do_it:
+                os.rename(oldpath, newpath)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        06/02-2015, 
+        <a href="article-98.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

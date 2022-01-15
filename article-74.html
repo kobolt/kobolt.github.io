@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Easy Kernel Upgrade</h1>
+      <p>
+        Here are the steps needed to compile a new Linux kernel (2.6.x or 3.x) on recent Slackware versions, based on the configuration of the old (running) kernel. Assuming a new kernel has been <a href="http://kernel.org">downloaded</a> and unpacked into /usr/src, proceed like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+# Become the super user:
+su
+
+# Move into the standard source(s) location:
+cd /usr/src
+
+# Remove old symlink:
+rm linux
+
+# Create new symlink:
+# (Replace X.X.XX with whatever was downloaded.)
+ln -s linux-X.X.XX linux
+
+# Move into new kernel:
+cd linux
+
+# Copy old kernel configuration from running kernel:
+cat /proc/config.gz | gunzip &gt; .config
+
+# Use old .config to make a new one:
+# (Just press enter on all the questions to use defaults.)
+make oldconfig
+
+# Compile the kernel:
+make
+
+# Compile the modules:
+make modules
+
+# Install the modules:
+# (Will be placed under /lib/modules/X.X.XX/)
+make modules_install
+
+# Install the kernel:
+# (Everything is done automatically, including update of LILO!)
+make install
+
+# Reboot to load the new kernel:
+reboot
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        26/12-2012, 
+        <a href="article-74.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

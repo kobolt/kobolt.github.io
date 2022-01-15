@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Recursive Binary String Search</h1>
+      <p>
+        This program is similar to the <a href="article-58.html">other one</a> I made a while back, except this one searches for matches against a binary (string) value instead. For ease of use, the binary string is specified using a hexadecimal string.<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;dirent.h&gt;
+
+static int hex_value(int c)
+{
+  if (c &gt;= 0x30 &amp;&amp; c &lt;= 0x39) /* &#39;0&#39; - &#39;9&#39; */
+    return c - 0x30;
+  else if (c &gt;= 0x41 &amp;&amp; c &lt;= 0x46) /* &#39;A&#39; - &#39;F&#39; */
+    return (c - 0x41) + 10;
+  else if (c &gt;= 0x61 &amp;&amp; c &lt;= 0x66) /* &#39;a&#39; - &#39;f&#39; */
+    return (c - 0x61) + 10;
+  else
+    return -1;
+}
+
+static int convert_from_hex(char *hex_string, 
+  unsigned char *bin_string, int bin_string_len)
+{
+  int n1, n2, high;
+
+  high = -1;
+  n1 = n2 = 0;
+  while (hex_string[n1] != &#39;&#92;0&#39;) {
+    if (hex_value(hex_string[n1]) &gt;= 0) {
+      if (high == -1) {
+        high = hex_string[n1];
+      } else {
+        bin_string[n2] = hex_value(high) * 16 + hex_value(hex_string[n1]);
+        if (n2 &gt;= bin_string_len)
+          break;
+        n2++;
+        high = -1;
+      }
+    }
+    n1++;
+  }
+
+  return n2;
+}
+
+static void search(char *path, unsigned char *bin_string, int len)
+{
+  int c, match, name_shown, address, match_address;
+  FILE *fh;
+
+  fh = fopen(path, &#34;rb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;Warning: Unable to open file: %s&#92;n&#34;, path);
+    return;
+  }
+
+  match = address = name_shown = match_address = 0;
+  while ((c = fgetc(fh)) != EOF) {
+    if (c == bin_string[match]) {
+      if (match_address == 0)
+        match_address = address;
+      match++;
+      if (match &gt;= len) {
+        if (! name_shown) {
+          printf(&#34;%s&#92;n&#34;, path);
+          name_shown = 1;
+        }
+        printf(&#34;0x%x&#92;n&#34;, match_address);
+        match = 0;
+        match_address = 0;
+      }
+    } else {
+      match = 0;
+      match_address = 0;
+    }
+    address++;
+  }
+  fclose(fh);
+}
+
+static void recurse(char *path, unsigned char *bin_string, int len)
+{
+  char full_path[PATH_MAX];
+  struct dirent *entry;
+  struct stat st;
+  DIR *dh;
+
+  dh = opendir(path);
+  if (dh == NULL) {
+    fprintf(stderr, &#34;Warning: Unable to open directory: %s&#92;n&#34;, path);
+    return;
+  }
+
+  while ((entry = readdir(dh))) {
+    if (entry-&gt;d_name[0] == &#39;.&#39;)
+      continue; /* Ignore files with leading dot. */
+
+#ifdef WINNT
+    snprintf(full_path, PATH_MAX, &#34;%s&#92;&#92;%s&#34;, path, entry-&gt;d_name);
+#else
+    snprintf(full_path, PATH_MAX, &#34;%s/%s&#34;, path, entry-&gt;d_name);
+#endif
+
+    stat(full_path, &amp;st);
+    if (S_ISDIR(st.st_mode)) {
+      recurse(full_path, bin_string, len);
+    } else if (S_ISREG(st.st_mode)) {
+      search(full_path, bin_string, len);
+    }
+  }
+
+  closedir(dh);
+  return;
+}
+
+int main(int argc, char *argv[])
+{
+  int len;
+  unsigned char *bin_string;
+  struct stat st;
+
+  if (argc != 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;directory or file&gt; &lt;hex string&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  len = strlen(argv[2]) / 2;
+  bin_string = malloc(sizeof(unsigned char) * len);
+  if (bin_string == NULL) {
+    fprintf(stderr, &#34;Error: Unable to malloc().&#92;n&#34;);
+    return 1;
+  }
+
+  len = convert_from_hex(argv[2], bin_string, len);
+  if (len == 0) {
+    fprintf(stderr, &#34;Error: Invalid input hex string.&#92;n&#34;);
+    return 1;
+  }
+
+  stat(argv[1], &amp;st);
+  if (S_ISDIR(st.st_mode)) {
+    recurse(argv[1], bin_string, len);
+  } else if (S_ISREG(st.st_mode)) {
+    search(argv[1], bin_string, len);
+  } else {
+    fprintf(stderr, &#34;Error: Not a directory or regular file.&#92;n&#34;);
+    free(bin_string);
+    return 1;
+  }
+
+  free(bin_string);
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        05/01-2013, 
+        <a href="article-75.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

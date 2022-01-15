@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Mastermind in Curses</h1>
+      <p>
+        I present yet another curses-based game. This time, it&#39;s a &#34;turn-based&#34; one, blocking/waiting for user input, instead of always going forward in an &#34;real-time&#34; oriented manner. It&#39;s based on an old popular <a href="http://en.wikipedia.org/wiki/Mastermind_%28board_game%29">board game</a>. And more; it&#39;s in color!<br />
+        <br />
+        The rules are simple; try to guess the hidden code in 10 or less attempts. Each time a guess is made, some hints are given that will indicate if a part of the code is correct and in the correct position (X), or part a of the code is correct, but in the wrong position (/).<br />
+        <br />
+        Here&#39;s a screenshot:<br />
+      </p>
+      <img class="border" src="images/curses-mastermind.png" alt="Screenshot of curses-based mastermind." />
+      <p>
+        <br />
+        Here&#39;s the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;time.h&gt;
+#include &lt;ncurses.h&gt;
+
+#define CODE_SLOTS 4
+#define GUESS_SLOTS 10
+
+typedef enum {
+  CODE_NONE    = 0,
+  CODE_ALPHA   = 1,
+  CODE_BRAVO   = 2,
+  CODE_CHARLIE = 3,
+  CODE_DELTA   = 4,
+  CODE_ECHO    = 5,
+  CODE_FOXTROT = 6,
+} code_t;
+
+typedef enum {
+  HINT_NONE = 0,
+  HINT_CODE_AND_POSITION,
+  HINT_CODE_ONLY,
+} hint_t;
+
+typedef struct guess_s {
+  code_t code[CODE_SLOTS];
+  hint_t hint[CODE_SLOTS];
+} guess_t;
+
+static const code_t code_to_char[] = {&#39;.&#39;, &#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39;, &#39;F&#39;};
+static const hint_t hint_to_char[] = {&#39; &#39;, &#39;X&#39;, &#39;/&#39;};
+
+static code_t hidden_code[CODE_SLOTS];
+static guess_t guess[GUESS_SLOTS];
+static int current_guess, current_slot;
+
+static int guess_is_completed()
+{
+  int i;
+  for (i = 0; i &lt; CODE_SLOTS; i++) {
+    if (guess[current_guess].code[i] == CODE_NONE)
+      return 0;
+  }
+  return 1;
+}
+
+static int guess_is_correct()
+{
+  int i;
+  for (i = 0; i &lt; CODE_SLOTS; i++) {
+    if (guess[current_guess].hint[i] != HINT_CODE_AND_POSITION)
+      return 0;
+  }
+  return 1;
+}
+
+static void display_init(void)
+{
+  initscr();
+  if (has_colors()) {
+    start_color();
+    init_pair(CODE_ALPHA,   COLOR_RED,     COLOR_BLACK);
+    init_pair(CODE_BRAVO,   COLOR_GREEN,   COLOR_BLACK);
+    init_pair(CODE_CHARLIE, COLOR_YELLOW,  COLOR_BLACK);
+    init_pair(CODE_DELTA,   COLOR_BLUE,    COLOR_BLACK);
+    init_pair(CODE_ECHO,    COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(CODE_FOXTROT, COLOR_CYAN,    COLOR_BLACK);
+  }
+  noecho();
+  keypad(stdscr, TRUE);
+}
+
+static void display_update(char *end_msg)
+{
+  int i, j;
+
+  erase();
+
+  /* Draw area with hidden code. */
+  mvaddstr(0, 0, &#34;+---+---+---+---+&#34;);
+  if (end_msg != NULL) {
+    mvaddstr(1, 0, &#34;|   |   |   |   |&#34;);
+    for (i = 0; i &lt; CODE_SLOTS; i++) {
+      move(1, 2 + (i * 4));
+      if (has_colors() &amp;&amp; hidden_code[i] != CODE_NONE)
+        attrset(A_BOLD | COLOR_PAIR(hidden_code[i]));
+      addch(code_to_char[hidden_code[i]]);
+      if (has_colors() &amp;&amp; hidden_code[i] != CODE_NONE)
+        attrset(A_NORMAL);
+    }
+    mvaddstr(1, 18, end_msg);
+  } else {
+    mvaddstr(1, 0, &#34;|###|###|###|###|&#34;);
+  }
+  mvaddstr(2, 0, &#34;+---+---+---+---+----+&#34;);
+
+  /* Draw area with user guesses. */
+  for (i = 0; i &lt; GUESS_SLOTS; i++) {
+    mvaddstr(3 + (i * 2), 0, &#34;|   |   |   |   |    |&#34;);
+
+    for (j = 0; j &lt; CODE_SLOTS; j++) {
+      move(3 + (i * 2), 2 + (j * 4));
+      if (has_colors() &amp;&amp; guess[i].code[j] != CODE_NONE)
+        attrset(A_BOLD | COLOR_PAIR(guess[i].code[j]));
+      addch(code_to_char[guess[i].code[j]]);
+      if (has_colors() &amp;&amp; guess[i].code[j] != CODE_NONE)
+        attrset(A_NORMAL);
+    }
+
+    for (j = 0; j &lt; CODE_SLOTS; j++) {
+      move(3 + (i * 2), 17 + j);
+      if (has_colors() &amp;&amp; guess[i].hint[j] != HINT_NONE)
+        attrset(A_BOLD);
+      addch(hint_to_char[guess[i].hint[j]]);
+      if (has_colors() &amp;&amp; guess[i].hint[j] != HINT_NONE)
+        attrset(A_NORMAL);
+    }
+
+    mvaddstr(4 + (i * 2), 0, &#34;+---+---+---+---+----+&#34;);
+  }
+
+  /* Place cursor on current slot to select. */
+  move(3 + (current_guess * 2), 2 + (current_slot * 4));
+
+  refresh();
+}
+
+static void evaluate_and_give_hints(void)
+{
+  int i, j, code_only = 0, code_and_pos = 0;
+  int guess_covered[CODE_SLOTS], hidden_covered[CODE_SLOTS];
+
+  /* Check for correct code and position. */
+  for (i = 0; i &lt; CODE_SLOTS; i++) {
+    if (guess[current_guess].code[i] == hidden_code[i]) {
+      code_and_pos++;
+      guess_covered[i] = 1;
+      hidden_covered[i] = 1;
+    } else {
+      guess_covered[i] = 0;
+      hidden_covered[i] = 0;
+    }
+  }
+
+  /* Check for any remaining correct codes. */
+  for (i = 0; i &lt; CODE_SLOTS; i++) {
+    if (guess_covered[i])
+      continue;
+    for (j = 0; j &lt; CODE_SLOTS; j++) {
+      if (hidden_covered[j])
+        continue;
+      if (guess[current_guess].code[i] == hidden_code[j]) {
+        hidden_covered[j] = 1;
+        code_only++;
+        break;
+      }
+    }
+  }
+
+  i = 0;
+  while (code_and_pos-- &gt; 0)
+    guess[current_guess].hint[i++] = HINT_CODE_AND_POSITION;
+  while (code_only-- &gt; 0)
+    guess[current_guess].hint[i++] = HINT_CODE_ONLY;
+}
+
+static void hidden_code_randomize(void)
+{
+  int i;
+  srandom(time(NULL));
+  for (i = 0; i &lt; CODE_SLOTS; i++)
+    hidden_code[i] = (random() % CODE_FOXTROT) + 1;
+}
+
+int main(void)
+{
+  int user_done, user_quit;
+
+  memset(guess, 0, sizeof(guess_t) * GUESS_SLOTS);
+  display_init();
+  hidden_code_randomize();
+
+  for (current_guess = GUESS_SLOTS - 1;
+       current_guess &gt;= 0;
+       current_guess--) {
+
+    /* Wait for user to make a valid guess. */
+    current_slot = user_done = user_quit = 0;
+    while ((! user_done) &amp;&amp; (! user_quit)) {
+      display_update(NULL);
+
+      switch (getch()) {
+      case KEY_LEFT:
+        current_slot--;
+        if (current_slot &lt; 0)
+          current_slot = 0;
+        break;
+
+      case KEY_RIGHT:
+        current_slot++;
+        if (current_slot &gt;= CODE_SLOTS)
+          current_slot = CODE_SLOTS - 1;
+        break;
+
+      case KEY_UP:
+        guess[current_guess].code[current_slot]++;
+        if (guess[current_guess].code[current_slot] &gt; CODE_FOXTROT)
+          guess[current_guess].code[current_slot] = CODE_ALPHA;
+        break;
+
+      case KEY_DOWN:
+        guess[current_guess].code[current_slot]--;
+        if (guess[current_guess].code[current_slot] == CODE_NONE ||
+            guess[current_guess].code[current_slot] &gt; CODE_FOXTROT)
+          guess[current_guess].code[current_slot] = CODE_FOXTROT;
+        break;
+
+      case KEY_ENTER:
+      case &#39;&#92;n&#39;:
+      case &#39; &#39;:
+        if (guess_is_completed())
+          user_done = 1;
+        break;
+
+      case &#39;q&#39;:
+      case &#39;Q&#39;:
+      case &#39;&#92;e&#39;:
+        user_quit = 1;
+        break;
+
+      default:
+        break;
+      }
+    }
+
+    if (user_quit)
+      break;
+
+    evaluate_and_give_hints();
+
+    if (guess_is_correct())
+      break;
+  }
+
+  if (guess_is_correct()) {
+    display_update(&#34;Congratulations!&#34;);
+  } else {
+    if (user_quit) {
+      display_update(&#34;Aborted.&#34;);
+    } else {
+      display_update(&#34;Too late!&#34;);
+    }
+  }
+
+  if (! user_quit)
+    getch(); /* Press any key... */
+
+  endwin();
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        03/09-2011, 
+        <a href="article-57.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

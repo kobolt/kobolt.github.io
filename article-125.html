@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>GR-KURUMI Shell</h1>
+      <p>
+        A follow-up on my previous articles about a <a href="article-122.html">GR-KURUMI Writer</a> and the <a href="article-123.html">GR-KURUMI Makefiles</a>. Here is a program written for the <a href="http://gadget.renesas.com/en/product/kemuri.html">GR-KURUMI</a> that provides a command shell interface against its LED and timer functions.<br />
+        <br />
+        The shell is spawned on UART #0, the same one used for flashing, since this is most convenient. The DTR signal must be disconnected in order to avoid the chip going into flashing mode though. The shell provides a simple <a href="https://en.wikipedia.org/wiki/BASIC">BASIC-style</a> scripting interface. Commands can be put into a script/program buffer, indexed by 0 to 99, which can be run continuously. <br />
+        <br />
+        Get the source code <a href="supplies/kurumi-shell-0.1.tar.gz">here</a> and check the article on Makefiles on how to get the tool chain up and running. Then use the article on the Writer to flash the chip.<br />
+        <br />
+        Here is a Python script that can be used to load script files remotely in an easy manner:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+
+import serial
+
+class Kurumi(object):
+    def __init__(self, port):
+        self.s = serial.Serial()
+        self.s.port = port
+        self.s.baudrate = 9600
+        self.s.bytesize = serial.EIGHTBITS
+        self.s.parity = serial.PARITY_NONE
+        self.s.stopbits = serial.STOPBITS_ONE
+        self.s.xonxoff = False
+        self.s.rtscts = False
+        self.s.dsrdtr = False
+
+        self.s.open()
+        self.s.flushInput()
+        self.s.flushOutput()
+    
+    def __del__(self):
+        self.s.close()
+
+    def _command(self, cmd):
+        print &#34;&gt;&#34;, cmd
+        for char in cmd:
+            self.s.write(char) # Write one character at a time...
+            self.s.read(1)     # ...and read the echo.
+        self.s.write(&#34;&#92;r&#34;) # Finish command...
+        self.s.read(10)    # ...and read the prompt.
+
+    def script(self, filename):
+        self._command(&#34;stop&#34;)
+        self._command(&#34;red off&#34;)
+        self._command(&#34;green off&#34;)
+        self._command(&#34;blue off&#34;)
+        self._command(&#34;clear&#34;)
+        with open(filename) as fh:
+            for line_no, line in enumerate(fh):
+                self._command(&#34;%s %s&#34; % (line_no, line.strip()))
+        self._command(&#34;run&#34;)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+    k = Kurumi(&#34;/dev/ttyUSB0&#34;)
+
+    if len(sys.argv) &gt; 1:
+        k.script(sys.argv[1])
+    else:
+        print &#34;Usage: %s &lt;script file&gt;&#34; % (sys.argv[0])
+          </pre>
+        </div>
+      <p>
+        <br />
+        A typical script file can look like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+red on
+sleep 50
+red off
+sleep 50
+green on
+blue on
+sleep 100
+green off
+sleep 100
+blue off
+sleep 500
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        25/11-2017, 
+        <a href="article-125.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Cracker for XOR-Encrypted Binary Files</h1>
+      <p>
+        There is weakness that may appear when XOR-encrypting binary files. Many kinds of binary files contains lots of NULL-characters, meaning the encryption key will inadvertently be revealed at these locations, due to the nature of the XOR operation.<br />
+        <br />
+        I hacked together a small program that uses <a href="http://en.wikipedia.org/wiki/Markov_chain">Markov chains</a> to look for repeats in printable characters. The result of the program is a string that may contain the encryption key, if the key is susceptible to this kind of &#34;attack&#34;.<br />
+        <br />
+        Take a look at the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define FILTER_FROM 0x20
+#define FILTER_TO 0x7e
+#define RANGE ((FILTER_TO - FILTER_FROM) + 1)
+
+/* For tuning. */
+#define PASS_LIMIT 64
+#define DIVIDE 1.1
+
+typedef struct markov_s {
+  int count;
+  char current;
+  char next;
+} markov_t;
+
+static markov_t chains[RANGE * RANGE];
+
+static int markov_cmp(const void *p1, const void *p2)
+{
+  if (((markov_t *)p1)-&gt;count &lt; ((markov_t *)p2)-&gt;count)
+    return 1;
+  else if (((markov_t *)p1)-&gt;count &gt; ((markov_t *)p2)-&gt;count)
+    return -1;
+  else
+    return 0;
+}
+
+static char markov_next(markov_t *chain, char current)
+{
+  int i;
+
+  for (i = 0; i &lt; (RANGE * RANGE); i++) {
+    if (chain[i].current == current) {
+      chain[i].count /= DIVIDE; /* Divide possibilty. */
+      return chain[i].next;
+    }
+  }
+  
+  return -1;
+}
+
+int main(void)
+{
+  int current, next, limit;
+
+  for (current = FILTER_FROM; current &lt;= FILTER_TO; current++) {
+    for (next = FILTER_FROM; next &lt;= FILTER_TO; next++) {
+      chains[((current - 0x20) * RANGE) + (next - 0x20)].count = 0;
+      chains[((current - 0x20) * RANGE) + (next - 0x20)].current = current;
+      chains[((current - 0x20) * RANGE) + (next - 0x20)].next = next;
+    }
+  }
+
+  while ((current = fgetc(stdin)) != EOF) {
+    if (current &gt;= 0x20 &amp;&amp; current &lt;= 0x7e)
+      break;
+  }
+  if (current == EOF)
+    return 1;
+
+  while ((next = fgetc(stdin)) != EOF) {
+    if (next &gt;= 0x20 &amp;&amp; next &lt;= 0x7e) {
+      chains[((current - 0x20) * RANGE) + (next - 0x20)].count++;
+      current = next;
+    }
+  }
+
+  qsort(chains, RANGE * RANGE, sizeof(markov_t), markov_cmp);
+
+  current = chains[0].current;
+  for (limit = 0; limit &lt; PASS_LIMIT; limit++) {
+    printf(&#34;%c&#34;, current);
+    current = markov_next(chains, current);
+    /* Sort again after division. */
+    qsort(chains, RANGE * RANGE, sizeof(markov_t), markov_cmp);
+    if (current == -1)
+      break;
+  }
+  printf(&#34;&#92;n&#34;);
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/12-2012, 
+        <a href="article-73.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

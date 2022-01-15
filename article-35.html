@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Colorized Character Dumper</h1>
+      <p>
+        I have noticed that when i use the hexdump tool, it is most often together with the -C option just to look at the characters. Hexdump is a bit limited, so I decided to make another tool specialized for character dumping. Instead of just printing a dot for non-printable characters, this tool will use a colorized printable character. Escape characters for instance, are represented in green. The tool also tries to use as much terminal real-estate as possible, so it will look at the current column width to expand itself.<br />
+        <br />
+        Here is how it looks when dumping a binary file. (Actually itself.):<br />
+      </p>
+      <img class="border" src="images/chardump.png" alt="Screenshot in an xterm." />
+      <p>
+        <br />
+        To keep it simple, I just used the standard <a href="http://en.wikipedia.org/wiki/ANSI_escape_code">ANSI</a> way of drawing colors. An alternative would have been to use (n)curses. Check out the code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;unistd.h&gt;
+
+static void fputc_color(int c, FILE *fh)
+{
+  /* Based on vim&#39;s &#34;unprintable&#34; definition instead of ctype&#39;s isprint(). */
+
+  if (c &lt; 0x20) /* Escape characters. */
+    fprintf(fh, &#34;&#92;e[32m%c&#92;e[0m&#34;, c + 0x40);
+  else if (c &lt; 0x7F) /* Standard ASCII characters. */
+    fputc(c, fh);
+  else if (c == 0x7F) /* The DEL character. */
+    fprintf(fh, &#34;&#92;e[32m%c&#92;e[0m&#34;, &#39;?&#39;);
+  else if (c &lt; 0xA1) /* Special unprintable characters and the NBSP. */
+    fprintf(fh, &#34;&#92;e[31m%c&#92;e[0m&#34;, c - 0x40);
+  else /* &#34;High&#34; (Latin-1) characters. */
+    fprintf(fh, &#34;&#92;e[33m%c&#92;e[0m&#34;, c);
+}
+
+static void dump_file(FILE *fh, int columns, int in_color)
+{
+  int c, n;
+
+  columns -= 12; /* Subtract the extra visualization. */
+  n = 0;
+  while ((c = fgetc(fh)) != EOF) {
+    if (n % columns == 0) {
+      if (n &gt; 0)
+        printf(&#34;|&#92;n&#34;);
+      printf(&#34;%08x |&#34;, n);
+    }
+
+    if (in_color) {
+      fputc_color(c, stdout);
+    } else {
+      if (isprint(c))
+        fputc(c, stdout);
+      else
+        fputc(&#39;.&#39;, stdout);
+    }
+
+    n++;
+  }
+
+  if (n % columns &lt; columns)
+    printf(&#34;|&#92;n&#34;);
+}
+
+static void display_banner(char *text, int columns)
+{
+  int i;
+
+  printf(&#34;--- %s &#34;, text);
+  for (i = (strlen(text) + 5); i &lt; columns; i++)
+    printf(&#34;-&#34;);
+  printf(&#34;&#92;n&#34;);
+}
+
+int main(int argc, char *argv[])
+{
+  int i, columns, in_color; 
+  char *p;
+  FILE *fh;
+
+  p = getenv(&#34;COLUMNS&#34;);
+  if (p == NULL)
+    columns = 80; /* Default, and most likely. */
+  else
+    columns = atoi(p);
+
+  in_color = 0; 
+  if (isatty(STDOUT_FILENO)) {
+    p = getenv(&#34;TERM&#34;);
+    if (p != NULL) {
+      if (strncmp(p, &#34;xterm&#34;, 5) == 0)
+        in_color = 1;
+    }
+  }
+
+  if (argc &gt; 1) {
+    for (i = 1; i &lt; argc; i++) {
+      fh = fopen(argv[i], &#34;r&#34;);
+      if (fh == NULL)
+        continue;
+      if (argc &gt; 2)
+        display_banner(argv[i], columns);
+      dump_file(fh, columns, in_color);
+      fclose(fh);
+    }
+  } else
+    dump_file(stdin, columns, in_color);
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        20/06-2009, 
+        <a href="article-35.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

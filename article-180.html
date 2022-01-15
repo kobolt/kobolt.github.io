@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Amiga 500 with the Framemeister</h1>
+      <p>
+        Here is how I connected the Amiga 500 to the <a href="https://solarisjapan.com/collections/micomsoft/products/xrgb-mini-framemeister-compact-up-scaler-unit-eur-scart-adapter">Micomsoft XRGB-mini Framemeister</a> to be able to get color graphics on a modern display through HDMI.<br />
+        <br />
+        The tricky part is getting a &#34;DB23&#34; connector, but I ended up using a regular DB25 connector (made from plastic) and shaving off part of it to make it fit into the Amiga 500. The mini-DIN connector on the Framemeister only accepts composite sync (not separate horizontal and vertical which is more common) but this is available on one of the pins on the Amiga. However, it is a 5V TTL level signal which is a little bit too hot so it&#39;s recommended to reduce this with a resistor. I ended up using two 360 Ohm resistors in series at 720 Ohm since that is what I found in stock at the moment. Some diagrams I found online claim that ground should be taken from pin 16 from the Amiga, but this did NOT work for me. Pin 19 which is composite video ground worked fine.<br />
+        <br />
+        Here is the cable pin out:<br />
+      </p>
+        <div class="box">
+          <pre>
+|----------------|-------|---------|--------------|
+|                | Amiga |         | Framemeister |
+| Signal         | DB23  |         | Mini-DIN     |
+|----------------|-------|---------|--------------|
+| Red            | 3     |         | 8            |
+| Green          | 4     |         | 7            |
+| Blue           | 5     |         | 6            |
+| Composite Sync | 10    | 720 Ohm | 3            |
+| Ground         | 19    |         | 4            |
+|----------------|-------|---------|--------------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        When testing the connections with clip leads I got some &#34;jail bars&#34; (faint traces of vertical lines) on the display, but these more or less disappeared when I soldered everything together properly. Not sure if that was caused by general noise or by poor clip lead cables.<br />
+        <br />
+        The finished cable connected:<br />
+      </p>
+      <img class="border" src="images/amiga_framemeister.jpg" alt="Amiga to Framemeister connection." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        24/07-2021, 
+        <a href="article-180.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

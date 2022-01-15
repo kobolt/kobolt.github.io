@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>ADCQ1706 USB Oscilloscope</h1>
+      <p>
+        On a trip to Japan I bought one of these strange <a href="https://wakamatsu.co.jp/biz/products/detail.php?product_id=49240021">USB oscilloscopes</a>. It seems it was designed for use with a Raspberry Pi, but I wanted to use it on a regular Linux desktop PC. Fortunately, the available &#34;client&#34; software for the RPi is written in Python, but it has several limitations. It&#39;s all in Japanese and it looks to be based around a web-server capturing still images. However, due to source code availability, I could easily create a new client.<br />
+        <br />
+        What I present here is a Python <a href="https://www.pygame.org">PyGame</a>-based solution instead, which has a graphical screen that updates in real time:<br />
+      </p>
+      <img class="border" src="images/oscilloscope.png" alt="Oscilloscope" />
+      <p>
+        <br />
+        I have uploaded the code to <a href="https://gitlab.com/kobolt/adcq1706-gui">GitLab</a> and <a href="https://github.com/kobolt/adcq1706-gui">GitHub</a>, but it&#39;s also presented here:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python
+import serial
+import pygame
+import time
+
+class Oscilloscope(object):
+    def __init__(self, tty_dev=&#39;/dev/ttyUSB0&#39;, trig_level=2048):
+        self._con = serial.Serial(tty_dev, 115200, timeout=2.0)
+        self._settings = {
+            1 : {&#39;hsync&#39; : 3, &#39;trig&#39; : trig_level, &#39;rise&#39; : 1},
+            2 : {&#39;hsync&#39; : 3, &#39;trig&#39; : trig_level, &#39;rise&#39; : 1}}
+
+    def get_samples(self, channel):
+        hsync = str(self._settings[channel][&#39;hsync&#39;])
+        trig  = str(self._settings[channel][&#39;trig&#39;])
+        rise  = str(self._settings[channel][&#39;rise&#39;])
+
+        self._con.write(&#39;ST&#39; + hsync + str(channel) + trig + rise + &#39;E&#39;)
+        data = self._con.read(4003)
+        if len(data) != 4003:
+            return None
+        if not (data[0] == &#39;S&#39;) and (data[1] == &#39;M&#39;) and (data[4002] == &#39;E&#39;):
+            return None
+
+        samples = list()
+        for i in range(0, 2000):
+            samples.append(int((ord(data[i*2+2]) &amp; 0x7F) + (ord(data[i*2+3]) &amp; 0x1F) * 128))
+        return samples
+
+    def increase_hsync(self, channel):
+        if self._settings[channel][&#39;hsync&#39;] &lt; 6:
+            self._settings[channel][&#39;hsync&#39;] += 1
+
+    def decrease_hsync(self, channel):
+        if self._settings[channel][&#39;hsync&#39;] &gt; 0:
+            self._settings[channel][&#39;hsync&#39;] -= 1
+
+    def get_hsync(self, channel):
+        return self._settings[channel][&#39;hsync&#39;]
+
+    def toggle_trig_rise(self, channel):
+        if self._settings[channel][&#39;rise&#39;] == 1:
+            self._settings[channel][&#39;rise&#39;] = 0
+        else:
+            self._settings[channel][&#39;rise&#39;] = 1
+
+    def increase_trig_level(self, channel):
+        if self._settings[channel][&#39;trig&#39;] &lt; 3968:
+            self._settings[channel][&#39;trig&#39;] += 256
+
+    def decrease_trig_level(self, channel):
+        if self._settings[channel][&#39;trig&#39;] &gt; 128:
+            self._settings[channel][&#39;trig&#39;] -= 256
+
+    def get_trig_level(self, channel):
+        return self._settings[channel][&#39;trig&#39;]
+
+class GUI(object):
+    def __init__(self, oscilloscope, scale=1):
+        if scale not in [1,2,4]:
+            raise Exception(&#34;Invalid scale&#34;)
+        self._scale = scale
+        self._osc = oscilloscope
+        self._ch_active = {1 : True, 2 : True}
+        pygame.init()
+        pygame.display.set_caption(&#34;Oscilloscope&#34;)
+        self._screen = pygame.display.set_mode((500 * scale, 512 * scale))
+        self._font = pygame.font.Font(pygame.font.get_default_font(), 12 * scale)
+
+    def _toggle_channel(self, channel):
+        if self._ch_active[channel] == True:
+            self._ch_active[channel] = False
+        else:
+            self._ch_active[channel] = True 
+
+    def _draw_samples(self, samples, color):
+        prev_y = None
+        for sample_no, sample in enumerate(samples):
+            y = (4096 - sample) / (8 / self._scale)
+            x = sample_no / (4 / self._scale)
+            if prev_y == None:
+                prev_y = y
+            pygame.draw.line(self._screen, color, (x, prev_y), (x, y))
+            prev_y = y
+    
+    def _draw_volt_grid(self):
+        for pos, volt in [(48,1.5), (715,1), (1381,0.5), (2048,0), (2715,-0.5), (3381,-1), (4048,-1.5)]:
+            y = pos / (8 / self._scale)
+            pygame.draw.line(self._screen, (128, 128, 128), (0, y), ((500 * self._scale), y))
+            text = self._font.render(str(volt) + &#34;V&#34;, True, (128, 128, 128))
+            if text.get_height() &gt; y:
+                self._screen.blit(text, (0, y + (1 * self._scale)))
+            else:
+                self._screen.blit(text, (0, y - text.get_height() + (1 * self._scale)))
+
+    def _draw_time_grid(self, channel, color):
+        hsync = self._osc.get_hsync(channel)
+        if hsync == 0:
+            time = [0,5,10,15,20,25,30,35,40,45]
+            unit = &#34;us&#34;
+        elif hsync == 1:
+            time = [0,10,20,30,40,50,60,70,80,90]
+            unit = &#34;us&#34;
+        elif hsync == 2:
+            time = [0,50,100,150,200,250,300,350,400,450]
+            unit = &#34;us&#34;
+        elif hsync == 3:
+            time = [0,100,200,300,400,500,600,700,800,900]
+            unit = &#34;us&#34;
+        elif hsync == 4:
+            time = [0,1,2,3,4,5,6,7,8,9]
+            unit = &#34;ms&#34;
+        elif hsync == 5:
+            time = [0,2,4,6,8,10,12,14,16,18]
+            unit = &#34;ms&#34;
+        elif hsync == 6:
+            time = [0,10,20,30,40,50,60,70,80,90]
+            unit = &#34;ms&#34;
+
+        for index in range(0, 10):
+            x = index * (50 * self._scale)
+            if x &gt; 0:
+                pygame.draw.line(self._screen, (128, 128, 128), (x, 0), (x, (512 * self._scale)))
+            text = self._font.render(str(time[index]) + unit, True, color)
+            if channel == 1:
+                self._screen.blit(text, (x + (1 * self._scale), 0))
+            if channel == 2:
+                self._screen.blit(text, (x + (1 * self._scale), (512 * self._scale) - text.get_height()))
+
+    def _draw_trig_line(self, channel, color):
+        y = (4096 - self._osc.get_trig_level(channel)) / (8 / self._scale)
+        pygame.draw.line(self._screen, color, (0, y), ((500 * self._scale), y))
+
+    def loop(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
+                    elif event.key == pygame.K_s:
+                        pygame.image.save(self._screen, &#34;oscilloscope.png&#34;)
+                        print &#34;Screenshot saved to &#39;oscilloscope.png&#39;.&#34;
+                    elif event.key == pygame.K_1:
+                        self._toggle_channel(1)
+                    elif event.key == pygame.K_2:
+                        self._toggle_channel(2)
+                    elif event.key == pygame.K_3:
+                        self._osc.increase_hsync(1)
+                    elif event.key == pygame.K_4:
+                        self._osc.decrease_hsync(1)
+                    elif event.key == pygame.K_5:
+                        self._osc.increase_hsync(2)
+                    elif event.key == pygame.K_6:
+                        self._osc.decrease_hsync(2)
+                    elif event.key == pygame.K_7:
+                        self._osc.toggle_trig_rise(1)
+                    elif event.key == pygame.K_8:
+                        self._osc.toggle_trig_rise(2)
+                    elif event.key == pygame.K_e:
+                        self._osc.increase_trig_level(1)
+                    elif event.key == pygame.K_r:
+                        self._osc.decrease_trig_level(1)
+                    elif event.key == pygame.K_t:
+                        self._osc.increase_trig_level(2)
+                    elif event.key == pygame.K_y:
+                        self._osc.decrease_trig_level(2)
+
+            self._screen.fill((255,255,255))
+            self._draw_volt_grid()
+
+            if self._ch_active[1]:
+                self._draw_time_grid(1, (255,128,128))
+                self._draw_trig_line(1, (255,128,128))
+                samples = self._osc.get_samples(1)
+                self._draw_samples(samples, (255,0,0))
+
+            if self._ch_active[2]:
+                self._draw_time_grid(2, (128,128,255))
+                self._draw_trig_line(2, (128,128,255))
+                samples = self._osc.get_samples(2)
+                self._draw_samples(samples, (0,0,255))
+
+            if (not self._ch_active[1]) and (not self._ch_active[2]):
+                time.sleep(0.1) # To avoid 100% CPU usage.
+
+            pygame.display.flip()
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+    import getopt
+
+    def print_usage_and_exit():
+        print &#34;Usage: %s [options]&#34; % (sys.argv[0])
+        print &#34;Options:&#34;
+        print &#34;  -h         Display this help and exit.&#34;
+        print &#34;  -d DEV     Serial TTY DEV to use instead of /dev/ttyUSB0.&#34;
+        print &#34;  -s SCALE   Scale of GUI, value 1, 2 or 4.&#34;
+        print &#34; &#34;
+        sys.exit(1)
+
+    def print_keys():
+        print &#34;Keys:&#34;
+        print &#34;  1 = Toggle channel #1&#34;
+        print &#34;  2 = Toggle channel #2&#34;
+        print &#34;  3 = Increase time/div for channel #1&#34;
+        print &#34;  4 = Decrease time/div for channel #1&#34;
+        print &#34;  5 = Increase time/div for channel #2&#34;
+        print &#34;  6 = Decrease time/div for channel #2&#34;
+        print &#34;  7 = Toggle rise/fall trigging for channel #1&#34;
+        print &#34;  8 = Toggle rise/fall trigging for channel #2&#34;
+        print &#34;  E = Increase trig level for channel #1&#34;
+        print &#34;  R = Decrease trig level for channel #1&#34;
+        print &#34;  T = Increase trig level for channel #2&#34;
+        print &#34;  Y = Decrease trig level for channel #2&#34;
+        print &#34;  S = Screenshot&#34;
+        print &#34;  Q = Quit&#34;
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], &#34;hd:s:&#34;)
+    except getopt.GetoptError as err:
+        print &#34;Error:&#34;, str(err)
+        print_usage_and_exit()
+
+    tty_dev = None
+    scale = None
+    for o, a in opts:
+        if o == &#39;-h&#39;:
+            print_usage_and_exit()
+        elif o == &#39;-d&#39;:
+            tty_dev = a
+        elif o == &#39;-s&#39;:
+            scale = int(a)
+
+    if tty_dev:
+        osc = Oscilloscope(tty_dev)
+    else:
+        osc = Oscilloscope()
+
+    if scale:
+        gui = GUI(osc, scale)
+    else:
+        gui = GUI(osc)
+
+    print_keys()
+    gui.loop()
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/11-2019, 
+        <a href="article-152.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

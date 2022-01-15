@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Alarm Clock in Perl/Tk</h1>
+      <p>
+        I had a metallic egg-timer that met a gruesome fate, after I discovered that it was in fact made of plastic inside. Instead of buying a new physical timer/alarm clock, I decided to write a virtual one.<br />
+        <br />
+        Below is a Perl script that will display a countdown, starting from a specified amount of minutes. When the counter reaches zero, the text in the window will blink red, in an attempt to get your attention. To make sure you see this, it is recommended to use the &#34;Always on top&#34; feature of your window manager.<br />
+        <br />
+        If required, it would probably be easy to add sound support, by just hacking the script to include something like: system(&#34;aplay bell.wav&#34;);<br />
+        <br />
+        Note that you need the <a href="http://search.cpan.org/~srezic/Tk-804.028/pod/overview.pod">Perl/Tk</a> module to use the script.<br />
+        <br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/perl -w
+use strict;
+use Tk;
+
+my $minutes = shift @ARGV
+  or die &#34;Usage: $0 &lt;minutes&gt;&#92;n&#34;;
+
+my $target = time + ($minutes * 60);
+
+my $window = new Tk::MainWindow;
+$window-&gt;repeat(50, &#92;&amp;update_display);
+my $label = $window-&gt;Label(-foreground =&gt; &#34;black&#34;,
+                           -background =&gt; &#34;white&#34;,
+                           -font =&gt; &#39;Helvetica 72 bold&#39;)-&gt;pack();
+
+Tk::MainLoop;
+
+sub update_display {
+  my $left = $target - time; # Seconds left.
+  if ($left &gt; 0) {
+    $label-&gt;configure(-text =&gt; sprintf(&#34;%02d:%02d:%02d&#34;,
+      ($left / 3600) % 60, ($left / 60) % 60, $left % 60));
+  } else {
+    if ($left % 2 == 0) {
+      $label-&gt;configure(-text =&gt; &#34;Alarm!&#34;, -foreground =&gt; &#34;red&#34;);
+    } else {
+      $label-&gt;configure(-text =&gt; &#34;Alarm!&#34;, -foreground =&gt; &#34;black&#34;);
+    }
+  }
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        11/07-2008, 
+        <a href="article-20.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

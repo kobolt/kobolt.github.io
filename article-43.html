@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Image Scaler Script</h1>
+      <p>
+        When uploading images taken with a digital camera to the interwebs, I always want to scale/resize it to a smaller size. To automate this process is of course a no-brainer, but the trick is to consider the aspect of the image. I like to use the size 800x600, but images taken with a 90 degree angle on the camera should be resized to 600x800 instead.<br />
+        <br />
+        This bourne shell script uses <a href="http://www.imagemagick.org">ImageMagick</a> to do the job:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/sh
+
+for i in &#34;$@&#34;; do
+  INFO=`identify &#34;$i&#34;` || continue;
+  WIDTH=` echo &#34;$INFO&#34; | sed -r -e &#39;s/.* ([0-9]+)x[0-9]+ .*/&#92;1/&#39;`
+  HEIGHT=`echo &#34;$INFO&#34; | sed -r -e &#39;s/.* [0-9]+x([0-9]+) .*/&#92;1/&#39;`
+  if [ $WIDTH -ge $HEIGHT ]; then
+    echo &#34;$i: W &gt; H&#34;
+    mogrify -scale 800x600 &#34;$i&#34;
+  else
+    echo &#34;$i: H &gt; W&#34;
+    mogrify -scale 600x800 &#34;$i&#34;
+  fi
+done
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        01/03-2010, 
+        <a href="article-43.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
