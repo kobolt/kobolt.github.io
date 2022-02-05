@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2022 Kjetil Erga</copyright>
-  <lastBuildDate>Sat, 15 Jan 2022 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Sat, 05 Feb 2022 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Airline Management Simulator</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-191.html</link>
+    <guid>https://kobolt.github.io/article-191.html</guid>
+    <pubDate>Sat, 05 Feb 2022 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-191.html</description>
+  </item>
   <item>
     <title>Dual Web Hosting</title>
     <category>General</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-182.html</guid>
     <pubDate>Sun, 05 Sep 2021 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-182.html</description>
-  </item>
-  <item>
-    <title>Tandon TM9362 Data Recovery</title>
-    <category>Repair</category>
-    <link>https://kobolt.github.io/article-181.html</link>
-    <guid>https://kobolt.github.io/article-181.html</guid>
-    <pubDate>Sat, 07 Aug 2021 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-181.html</description>
   </item>
 </channel>
 </rss>

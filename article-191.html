@@ -1,0 +1,1064 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Airline Management Simulator</h1>
+      <p>
+        I made a simple airline management simulator game as part of studying how the <a href="https://directory.fsf.org/wiki/Readline">GNU Readline</a> library works with regards to command completion. This means the game is based around a <a href="https://en.wikipedia.org/wiki/Command-line_interface">CLI</a> which offers tab completion.<br />
+        <br />
+        The goal of the game is to reach a certain amount of cash after buying different airplanes and setting up routes between cities at different ticket prices. Most of the data, like the cities, are randomly generated on startup. The challenge lies in the hidden information that can only be found through trial and error, like finding which cities have citizens that are willing to pay for profitable ticket prices. I realized that it is very hard to balance simulation games, so this game as well might be too hard or too easy, I am not sure.<br />
+        <br />
+        Anyway, here is the source code, try to compile it with: gcc -lreadline -lncurses -lm -Wall<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;stdarg.h&gt;
+#include &lt;string.h&gt;
+#include &lt;time.h&gt;
+#include &lt;math.h&gt;
+#include &lt;inttypes.h&gt;
+
+#include &lt;readline/readline.h&gt;
+#include &lt;readline/history.h&gt;
+
+
+
+#define CITY_MAX 24
+#define AIRPLANE_MAX 96
+
+#define CITY_X_MAX 32768 /* Kilometers */
+#define CITY_Y_MAX 32768 /* Kilometers */
+#define CITY_DISTANCE_MINIMUM 500
+
+#define COMMAND_NAME_MAX 10
+#define COMMAND_ARG_MAX 4
+#define COMMAND_ARG_NAME_MAX 16
+
+#define GAME_CASH_START 200000
+#define GAME_CASH_GOAL 1000000000
+#define GAME_RED_DAYS_MAX 10
+
+
+
+typedef enum {
+  COMMAND_ARG_TYPE_NONE = -1,
+  COMMAND_ARG_TYPE_PRICE,
+  COMMAND_ARG_TYPE_CITY_NAME,
+  COMMAND_ARG_TYPE_CITY_SRC,
+  COMMAND_ARG_TYPE_CITY_DST,
+  COMMAND_ARG_TYPE_AIRPLANE_ID,
+  COMMAND_ARG_TYPE_AIRPLANE_TYPE,
+  COMMAND_ARG_TYPE_MAX,
+} command_arg_type_t;
+
+typedef char *(*command_arg_completion_function_t)(const char *, int);
+
+typedef struct command_arg_data_s {
+  char name[6];
+  bool optional;
+  command_arg_completion_function_t function;
+} command_arg_data_t;
+
+typedef void (*command_function_t)(int, const char *[]);
+
+typedef struct command_s {
+  char name[COMMAND_NAME_MAX];
+  command_function_t function;
+  command_arg_type_t arg[COMMAND_ARG_MAX];
+} command_t;
+
+typedef struct city_s {
+  char name[4]; /* Airport Code! */
+  uint16_t x;
+  uint16_t y;
+  uint32_t demand[CITY_MAX];
+  uint8_t size;
+  uint8_t stinginess;
+} city_t;
+
+typedef enum {
+  AIRPLANE_TYPE_INVALID = -1,
+  AIRPLANE_TYPE_SMALL,
+  AIRPLANE_TYPE_MEDIUM,
+  AIRPLANE_TYPE_LARGE,
+  AIRPLANE_TYPE_MAX,
+} airplane_type_t;
+
+typedef struct airplane_s {
+  bool exists;
+  bool parked;
+  int src;
+  int dst;
+  uint32_t ticket_price;
+  airplane_type_t type;
+} airplane_t;
+
+typedef struct airplane_data_s {
+  char name[8];
+  uint32_t capacity;
+  uint32_t price;
+  double fuel_consumption_factor;
+  uint32_t upkeep_cost;
+} airplane_data_t;
+
+typedef struct game_state_s {
+  bool loop_running;
+  uint32_t day;
+  int64_t cash;
+  uint32_t current_fuel_price;
+  uint32_t nominal_fuel_price;
+  uint8_t days_in_the_red;
+} game_state_t;
+
+
+
+static void game_cycle(void);
+
+static void function_airplane(int argc, const char *argv[]);
+static void function_buy(int argc, const char *argv[]);
+static void function_city(int argc, const char *argv[]);
+static void function_help(int argc, const char *argv[]);
+static void function_park(int argc, const char *argv[]);
+static void function_quit(int argc, const char *argv[]);
+static void function_route(int argc, const char *argv[]);
+static void function_sell(int argc, const char *argv[]);
+static void function_status(int argc, const char *argv[]);
+static void function_wait(int argc, const char *argv[]);
+#ifdef DEBUG_COMMAND
+static void function_debug(int argc, const char *argv[]);
+#endif /* DEBUG_COMMAND */
+
+static char *command_arg_completion_city(const char *text, int state);
+static char *command_arg_completion_airplane_id(const char *text, int state);
+static char *command_arg_completion_airplane_type(const char *text, int state);
+
+
+
+static command_t commands[] = {
+  {&#34;airplane&#34;, function_airplane, {-1,-1,-1,-1}},
+  {&#34;buy&#34;,      function_buy,      {COMMAND_ARG_TYPE_AIRPLANE_TYPE,-1,-1,-1}},
+  {&#34;city&#34;,     function_city,     {COMMAND_ARG_TYPE_CITY_NAME,-1,-1,-1}},
+  {&#34;help&#34;,     function_help,     {-1,-1,-1,-1}},
+  {&#34;park&#34;,     function_park,     {COMMAND_ARG_TYPE_AIRPLANE_ID,-1,-1,-1}},
+  {&#34;quit&#34;,     function_quit,     {-1,-1,-1,-1}},
+  {&#34;route&#34;,    function_route,    {COMMAND_ARG_TYPE_AIRPLANE_ID,
+                                   COMMAND_ARG_TYPE_CITY_SRC,
+                                   COMMAND_ARG_TYPE_CITY_DST,
+                                   COMMAND_ARG_TYPE_PRICE}},
+  {&#34;sell&#34;,     function_sell,     {COMMAND_ARG_TYPE_AIRPLANE_ID,-1,-1,-1}},
+  {&#34;status&#34;,   function_status,   {-1,-1,-1,-1}},
+  {&#34;wait&#34;,     function_wait,     {-1,-1,-1,-1}},
+#ifdef DEBUG_COMMAND
+  {&#34;debug&#34;,    function_debug,    {-1,-1,-1,-1}},
+#endif /* DEBUG_COMMAND */
+};
+
+#define COMMANDS_MAX (sizeof(commands) / sizeof(commands[0]))
+
+static command_arg_data_t command_arg_data[COMMAND_ARG_TYPE_MAX] = {
+  {&#34;price&#34;, false, NULL},
+  {&#34;city&#34;,  true,  command_arg_completion_city},
+  {&#34;src&#34;,   false, command_arg_completion_city},
+  {&#34;dst&#34;,   false, command_arg_completion_city},
+  {&#34;id&#34;,    false, command_arg_completion_airplane_id},
+  {&#34;type&#34;,  false, command_arg_completion_airplane_type},
+};
+
+static airplane_data_t airplane_data[AIRPLANE_TYPE_MAX] = {
+  {&#34;small&#34;,   50,  50000, 0.5,  500},
+  {&#34;medium&#34;, 150, 150000, 1.0, 1000},
+  {&#34;large&#34;,  400, 400000, 2.0, 5000},
+};
+
+
+
+static game_state_t game;
+static city_t city[CITY_MAX];
+static airplane_t airplane[AIRPLANE_MAX];
+
+
+
+static int city_distance(int city1_index, int city2_index)
+{
+  /* Pythagorean theorem */
+  double a = abs(city[city1_index].x - city[city2_index].x);
+  double b = abs(city[city1_index].y - city[city2_index].y);
+  double c = sqrt((a * a) + (b * b));
+  return (int)c;
+}
+
+
+
+static void city_generate(void)
+{
+  for (int i = 0; i &lt; CITY_MAX; i++) {
+
+    /* Generate uniqe name. */
+    bool name_unique = false;
+    while (! name_unique) {
+      name_unique = true;
+      city[i].name[0] = 0x41 + random() % 26;
+      city[i].name[1] = 0x41 + random() % 26;
+      city[i].name[2] = 0x41 + random() % 26;
+      city[i].name[3] = &#39;&#92;0&#39;;
+      for (int j = 0; j &lt; i; j++) {
+        if (0 == strncmp(city[i].name, city[j].name, strlen(city[i].name))) {
+          name_unique = false;
+        }
+      }
+    }
+
+    /* Generate location, but at a minimum distance from others. */
+    bool distance_ok = false;
+    while (! distance_ok) {
+      distance_ok = true;
+      city[i].x = random() % CITY_X_MAX;
+      city[i].y = random() % CITY_Y_MAX;
+      for (int j = 0; j &lt; i; j++) {
+        if (city_distance(i, j) &lt; CITY_DISTANCE_MINIMUM) {
+          distance_ok = false;
+        }
+      }
+    }
+
+    city[i].size       = 1 + (random() % 255);
+    city[i].stinginess = 1 + (random() % 255);
+  }
+
+  /* Calculate base demand when all cities are setup. */
+  for (int i = 0; i &lt; CITY_MAX; i++) {
+    for (int j = 0; j &lt; CITY_MAX; j++) {
+      city[i].demand[j] = city[i].size + city[j].size;
+      city[i].demand[j] += random() % 64;
+    }
+  }
+}
+
+
+
+static int city_index_by_name(const char *city_name)
+{
+  for (int i = 0; i &lt; CITY_MAX; i++) {
+    if (0 == strncmp(city[i].name, city_name, strlen(city[i].name))) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+
+
+static char *city_size_description(int city_index)
+{
+  uint8_t size = city[city_index].size;
+
+  if (size &gt; 224) {
+    return &#34;huge&#34;;
+  } else if (size &gt; 192) {
+    return &#34;large&#34;;
+  } else if (size &gt; 128) {
+    return &#34;medium&#34;;
+  } else if (size &gt; 64) {
+    return &#34;small&#34;;
+  } else {
+    return &#34;tiny&#34;;
+  }
+}
+
+
+
+static airplane_type_t airplane_type_by_name(const char *type_name)
+{
+  for (int i = 0; i &lt; AIRPLANE_TYPE_MAX; i++) {
+    if (0 == strncmp(airplane_data[i].name, type_name,
+      strlen(airplane_data[i].name))) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+
+
+static void function_quit(int argc, const char *argv[])
+{
+  game.loop_running = false;
+}
+
+
+
+static void function_help(int argc, const char *argv[])
+{
+  for (int i = 0; i &lt; COMMANDS_MAX; i++) {
+    printf(&#34;%10s &#34;, commands[i].name);
+    for (int j = 0; j &lt; COMMAND_ARG_MAX; j++) {
+      command_arg_type_t type = commands[i].arg[j];
+      if (type == COMMAND_ARG_TYPE_NONE) {
+        break;
+      }
+      if (command_arg_data[type].optional) {
+        printf(&#34;[&#34;);
+      } else {
+        printf(&#34;&lt;&#34;);
+      }
+      printf(&#34;%s&#34;, command_arg_data[type].name);
+      if (command_arg_data[type].optional) {
+        printf(&#34;] &#34;);
+      } else {
+        printf(&#34;&gt; &#34;);
+      }
+    }
+    printf(&#34;&#92;n&#34;);
+  }
+}
+
+
+
+static void function_city(int argc, const char *argv[])
+{
+  if (argc == 1) {
+    for (int i = 0; i &lt; CITY_MAX; i++) {
+      /* Convert X,Y to Latitude/Longitude. */
+      char latitude_direction, longitude_direction;
+      double latitude_degrees, longitude_degrees;
+      latitude_degrees =  ((double)city[i].x / (double)CITY_X_MAX) * 180;
+      longitude_degrees = ((double)city[i].y / (double)CITY_Y_MAX) * 180;
+      if (latitude_degrees &gt; 90.0) {
+        latitude_direction = &#39;E&#39;;
+        latitude_degrees = latitude_degrees - 90.0;
+      } else {
+        latitude_direction = &#39;W&#39;;
+        latitude_degrees = 90.0 - latitude_degrees;
+      }
+      if (longitude_degrees &gt; 90.0) {
+        longitude_direction = &#39;N&#39;;
+        longitude_degrees = longitude_degrees - 90.0;
+      } else {
+        longitude_direction = &#39;S&#39;;
+        longitude_degrees = 90.0 - longitude_degrees;
+      }
+      printf(&#34;%s @ %4.1f° %c, %4.1f° %c (%s city)&#92;n&#34;, city[i].name,
+        longitude_degrees, longitude_direction,
+        latitude_degrees, latitude_direction,
+        city_size_description(i));
+    }
+
+  } else {
+
+    int index = city_index_by_name(argv[1]);
+    if (index &lt; 0) {
+      printf(&#34;City does not exist!&#92;n&#34;);
+      return;
+    }
+
+    for (int i = 0; i &lt; CITY_MAX; i++) {
+      if (index == i) {
+        continue;
+      }
+      printf(&#34;%s -&gt; %s   Demand: %d&#92;n&#34;,
+        city[index].name,
+        city[i].name,
+        city[index].demand[i]);
+    }
+  }
+}
+
+
+
+static void function_airplane(int argc, const char *argv[])
+{
+  int airplanes = 0;
+
+  for (int i = 0; i &lt; AIRPLANE_MAX; i++) {
+    if (airplane[i].exists) {
+      printf(&#34;#%d   &#34;, i + 1);
+      printf(&#34;Type: %-6s   &#34;, airplane_data[airplane[i].type].name);
+      if (airplane[i].parked) {
+        printf(&#34;Parked&#92;n&#34;);
+      } else {
+        printf(&#34;At: %s   Going To: %s   Charging: $%d&#92;n&#34;,
+          city[airplane[i].src].name,
+          city[airplane[i].dst].name,
+          airplane[i].ticket_price);
+      }
+      airplanes++;
+    }
+  }
+
+  if (0 == airplanes) {
+    printf(&#34;No airplanes owned, buy one...&#92;n&#34;);
+  }
+}
+
+
+
+static void function_buy(int argc, const char *argv[])
+{
+  if (argc != 2) {
+    printf(&#34;Please specify airplane type!&#92;n&#34;);
+    printf(&#34;Valid types are: &#34;);
+    for (int i = 0; i &lt; AIRPLANE_TYPE_MAX; i++) {
+      printf(&#34;%s &#34;, airplane_data[i].name);
+    }
+    printf(&#34;&#92;n&#34;);
+    return;
+  }
+
+  airplane_type_t type = airplane_type_by_name(argv[1]);
+  if (AIRPLANE_TYPE_INVALID == type) {
+    printf(&#34;Invalid airplane type specified!&#92;n&#34;);
+    return;
+  }
+
+  if (game.cash &lt; airplane_data[type].price) {
+    printf(&#34;Not enough cash!&#92;n&#34;);
+    return;
+  }
+
+  for (int i = 0; i &lt; AIRPLANE_MAX; i++) {
+    if (! airplane[i].exists) {
+      airplane[i].type = type;
+      airplane[i].exists = true;
+      airplane[i].parked = true;
+      airplane[i].ticket_price = 0;
+      game.cash -= airplane_data[type].price;
+
+      printf(&#34;Airplane #%d with capacity %d bought for $%d.&#92;n&#34;, i + 1,
+        airplane_data[type].capacity, airplane_data[type].price);
+      game_cycle();
+      return;
+    }
+  }
+
+  printf(&#34;Cannot buy more airplanes!&#92;n&#34;);
+}
+
+
+
+static void function_route(int argc, const char *argv[])
+{
+  if (argc != 5) {
+    printf(&#34;Missing arguments!&#92;n&#34;);
+    return;
+  }
+
+  int airplane_index = atoi(argv[1]);
+  airplane_index--; /* ID to index */
+  if (airplane_index &lt; 0 || airplane_index &gt;= AIRPLANE_MAX) {
+    printf(&#34;Invalid airplane ID!&#92;n&#34;);
+    return;
+  }
+
+  if (false == airplane[airplane_index].exists) {
+    printf(&#34;Airplane #%d does not exist!&#92;n&#34;, airplane_index + 1);
+    return;
+  }
+
+  if (false == airplane[airplane_index].parked) {
+    printf(&#34;Airplane #%d is in operation (not parked)!&#92;n&#34;, airplane_index + 1);
+    return;
+  }
+
+  int src_index = city_index_by_name(argv[2]);
+  if (src_index &lt; 0) {
+    printf(&#34;Source city does not exist!&#92;n&#34;);
+    return;
+  }
+
+  int dst_index = city_index_by_name(argv[3]);
+  if (dst_index &lt; 0) {
+    printf(&#34;Destination city does not exist!&#92;n&#34;);
+    return;
+  }
+
+  int price = atoi(argv[4]);
+  if (price &lt;= 0) {
+    printf(&#34;Price is invalid!&#92;n&#34;);
+    return;
+  }
+
+  airplane[airplane_index].parked = false;
+  airplane[airplane_index].src = src_index;
+  airplane[airplane_index].dst = dst_index;
+  airplane[airplane_index].ticket_price = price;
+
+  printf(&#34;Airplane #%d now flying from %s to %s for $%d.&#92;n&#34;,
+    airplane_index + 1, city[src_index].name, city[dst_index].name, price);
+  game_cycle();
+}
+
+
+
+static void function_park(int argc, const char *argv[])
+{
+  if (argc != 2) {
+    printf(&#34;Please specify airplane ID!&#92;n&#34;);
+    return;
+  }
+
+  int airplane_index = atoi(argv[1]);
+  airplane_index--; /* ID to index */
+  if (airplane_index &lt; 0 || airplane_index &gt;= AIRPLANE_MAX) {
+    printf(&#34;Invalid airplane ID!&#92;n&#34;);
+    return;
+  }
+
+  if (false == airplane[airplane_index].exists) {
+    printf(&#34;Airplane #%d does not exist!&#92;n&#34;, airplane_index + 1);
+    return;
+  }
+
+  if (true == airplane[airplane_index].parked) {
+    printf(&#34;Airplane #%d already parked!&#92;n&#34;, airplane_index + 1);
+    return;
+  }
+
+  airplane[airplane_index].parked = true;
+
+  printf(&#34;Airplane #%d parked.&#92;n&#34;, airplane_index + 1);
+  game_cycle();
+}
+
+
+
+static void function_status(int argc, const char *argv[])
+{
+  int airplanes = 0;
+
+  for (int i = 0; i &lt; AIRPLANE_MAX; i++) {
+    if (airplane[i].exists) {
+      airplanes++;
+    }
+  }
+
+  printf(&#34;Day        : %d&#92;n&#34;, game.day);
+  printf(&#34;Cash       : $%&#34;PRIi64&#34;&#92;n&#34;, game.cash);
+  printf(&#34;Airplanes  : %d&#92;n&#34;, airplanes);
+  printf(&#34;Fuel price : $%d per kilometer&#92;n&#34;, game.current_fuel_price);
+
+  for (int i = 0; i &lt; 3; i++) {
+    printf(&#34;&#92;n&#34;);
+    printf(&#34;Data for &#39;%s&#39; airplane:&#92;n&#34;, airplane_data[i].name);
+    printf(&#34;  Capacity         : %d passengers&#92;n&#34;, airplane_data[i].capacity);
+    printf(&#34;  Purchase price   : $%d&#92;n&#34;, airplane_data[i].price);
+    printf(&#34;  Upkeep cost      : $%d&#92;n&#34;, airplane_data[i].upkeep_cost);
+    printf(&#34;  Fuel consumption : %d%%&#92;n&#34;, 
+      (int)(airplane_data[i].fuel_consumption_factor * 100));
+  }
+}
+
+
+
+static void function_sell(int argc, const char *argv[])
+{
+  if (argc != 2) {
+    printf(&#34;Please specify airplane ID!&#92;n&#34;);
+    return;
+  }
+
+  int airplane_index = atoi(argv[1]);
+  airplane_index--; /* ID to index */
+  if (airplane_index &lt; 0 || airplane_index &gt;= AIRPLANE_MAX) {
+    printf(&#34;Invalid airplane ID!&#92;n&#34;);
+    return;
+  }
+
+  if (false == airplane[airplane_index].exists) {
+    printf(&#34;Airplane #%d does not exist!&#92;n&#34;, airplane_index + 1);
+    return;
+  }
+
+  if (false == airplane[airplane_index].parked) {
+    printf(&#34;Airplane #%d is in operation (not parked)!&#92;n&#34;, airplane_index + 1);
+    return;
+  }
+
+  airplane[airplane_index].exists = false;
+  game.cash += airplane_data[airplane[airplane_index].type].price;
+
+  printf(&#34;Airplane #%d sold for $%d.&#92;n&#34;, airplane_index + 1,
+    airplane_data[airplane[airplane_index].type].price);
+  game_cycle();
+}
+
+
+
+static void function_wait(int argc, const char *argv[])
+{
+  game_cycle();
+}
+
+
+
+#ifdef DEBUG_COMMAND
+static void function_debug(int argc, const char *argv[])
+{
+  printf(&#34;Raw City Data:&#92;n&#34;);
+  for (int i = 0; i &lt; CITY_MAX; i++) {
+    printf(&#34;%s @ %05hu,%05hu, Size: %d, Stinginess: %d&#92;n&#34;,
+      city[i].name, city[i].x, city[i].y, city[i].size, city[i].stinginess);
+  }
+
+  printf(&#34;&#92;n&#34;);
+  printf(&#34;Distances:&#92;n&#34;);
+  printf(&#34;     |&#34;);
+  for (int i = 0; i &lt; CITY_MAX; i++) {
+    printf(&#34; %s |&#34;, city[i].name);
+  }
+  printf(&#34;&#92;n&#34;);
+
+  for (int i = 0; i &lt; CITY_MAX; i++) {
+    printf(&#34; %s |&#34;, city[i].name);
+    for (int j = 0; j &lt; CITY_MAX; j++) {
+      printf(&#34;%5d|&#34;, city_distance(i, j));
+    }
+    printf(&#34;&#92;n&#34;);
+  }
+
+  printf(&#34;&#92;n&#34;);
+  printf(&#34;Nominal Fuel Price: %d&#92;n&#34;, game.nominal_fuel_price);
+}
+#endif /* DEBUG_COMMAND */
+
+
+
+static void game_fluctuate(uint32_t *value,
+  int32_t variance_start, int32_t variance_end,
+  uint32_t absolute_minimum, uint32_t absolute_maximum)
+{
+  /* Conversion to signed integers to handle negative values. */
+  int32_t variance = (random() % ((variance_end - variance_start) + 1));
+  variance += variance_start;
+  int32_t new_value = *value;
+  new_value += variance;
+  if (new_value &lt; (int32_t)absolute_minimum) {
+    new_value = absolute_minimum;
+  } else if (new_value &gt; (int32_t)absolute_maximum) {
+    new_value = absolute_maximum;
+  }
+  *value = new_value;
+}
+
+
+
+static void game_cycle(void)
+{
+  /* Fly airplanes according to routes. */
+  for (int i = 0; i &lt; AIRPLANE_MAX; i++) {
+    if (airplane[i].exists) {
+      if (! airplane[i].parked) {
+
+        /* Calculate passengers willing to fly! */
+        int distance = city_distance(airplane[i].src, airplane[i].dst);
+        int demand = city[airplane[i].src].demand[airplane[i].dst];
+
+        /* Nominal ticket price is based on having a full flight with a
+           medium size airplane with the nominal fuel price
+           giving exactly zero profits. */
+        double nominal_price = ((distance * game.nominal_fuel_price) /
+          airplane_data[AIRPLANE_TYPE_MEDIUM].capacity);
+
+        /* The stinginess of the city gives an additional factor. */
+        double stinginess = city[airplane[i].src].stinginess / 32.0;
+
+        /* Passengers are divided into five groups of different size. */
+        int group[5];
+        group[0] = demand / 20; /*  5% */
+        group[1] = demand / 5;  /* 20% */
+        group[2] = demand / 2;  /* 50% */
+        group[3] = demand / 5;  /* 20% */
+        group[4] = demand / 20; /*  5% */
+
+        /* The five groups accepts different prices. */
+        double accepts_price[5];
+        accepts_price[0] = nominal_price * 0.70 * stinginess;
+        accepts_price[1] = nominal_price * 0.95 * stinginess;
+        accepts_price[2] = nominal_price * 1.05 * stinginess;
+        accepts_price[3] = nominal_price * 1.15 * stinginess;
+        accepts_price[4] = nominal_price * 1.30 * stinginess;
+
+#ifdef DEBUG_DEMAND
+        printf(&#34;%s -&gt; %s, Nominal: $%.2f, Stinginess: %.2f&#92;n&#34;,
+          city[airplane[i].src].name, city[airplane[i].dst].name,
+          nominal_price, stinginess);
+        for (int j = 0; j &lt; 5; j++) {
+          printf(&#34;  Group #%d of %d people accepts anything below $%.0f&#92;n&#34;,
+            j, group[j], accepts_price[j]);
+        }
+#endif /* DEBUG_DEMAND */
+
+        int passengers = 0;
+        for (int j = 0; j &lt; 5; j++) {
+          if (airplane[i].ticket_price &lt; accepts_price[j]) {
+            passengers += group[j];
+          }
+        }
+
+        if (passengers &gt; airplane_data[airplane[i].type].capacity) {
+          passengers = airplane_data[airplane[i].type].capacity;
+        }
+
+        printf(&#34;Airplane #%d flew %d passenger%s from %s to %s&#92;n&#34;, i + 1,
+          passengers, (passengers == 1) ? &#34;&#34; : &#34;s&#34;,
+          city[airplane[i].src].name, city[airplane[i].dst].name);
+
+        /* Swap source and destination. */
+        int swap = airplane[i].src;
+        airplane[i].src = airplane[i].dst;
+        airplane[i].dst = swap;
+
+        /* Generate cash from ticket prices. */
+        game.cash += passengers * airplane[i].ticket_price;
+
+        /* Subtract fuel price. */
+        game.cash -= distance * ((double)game.current_fuel_price *
+          airplane_data[airplane[i].type].fuel_consumption_factor);
+      }
+      /* Subtract upkeep price for airplane, even when parked. */
+      game.cash -= airplane_data[airplane[i].type].upkeep_cost;
+    }
+  }
+
+  /* Fluctuate traveling demand. */
+  for (int i = 0; i &lt; CITY_MAX; i++) {
+    for (int j = 0; j &lt; CITY_MAX; j++) {
+      if (i == j) {
+        continue;
+      }
+
+      uint32_t variance = city[i].size + city[j].size;
+      variance += random() % 64;
+      variance /= 10;
+      game_fluctuate(&amp;city[i].demand[j], -variance, variance, 0, 1000);
+    }
+  }
+
+  /* Price/cost fluctuations. */
+  game_fluctuate(&amp;game.current_fuel_price, -1, 1, 3, 10);
+  game_fluctuate(&amp;airplane_data[0].upkeep_cost, -20, 20, 200, 1000);
+  game_fluctuate(&amp;airplane_data[1].upkeep_cost, -50, 50, 500, 2000);
+  game_fluctuate(&amp;airplane_data[2].upkeep_cost, -250, 250, 2000, 10000);
+  game_fluctuate(&amp;airplane_data[0].price, -500, 500, 20000, 100000);
+  game_fluctuate(&amp;airplane_data[1].price, -1000, 1000, 50000, 300000);
+  game_fluctuate(&amp;airplane_data[2].price, -5000, 5000, 100000, 800000);
+
+  /* Check and possibly warn about balance. */
+  if (game.cash &lt; 0) {
+    if (game.days_in_the_red &gt;= GAME_RED_DAYS_MAX) {
+      printf(&#34;Game over! You went bankrupt...&#92;n&#34;);
+      game.loop_running = false;
+      return;
+    }
+    printf(&#34;WARNING! Cash in the red, you have %d day%s left resolve this.&#92;n&#34;,
+      GAME_RED_DAYS_MAX - game.days_in_the_red,
+      (GAME_RED_DAYS_MAX - game.days_in_the_red == 1) ? &#34;&#34; : &#34;s&#34;);
+    game.days_in_the_red++;
+  } else {
+    game.days_in_the_red = 0;
+  }
+
+  if (game.cash &gt;= GAME_CASH_GOAL) {
+    printf(&#34;Congratulations! You reached the goal of %d$ in %d days.&#92;n&#34;,
+        GAME_CASH_GOAL, game.day);
+    game.loop_running = false;
+    return;
+  }
+
+  game.day++;
+}
+
+
+
+static void game_init(void)
+{
+  srandom(time(NULL));
+  city_generate();
+
+  for (int i = 0; i &lt; AIRPLANE_MAX; i++) {
+    airplane[i].exists = false;
+  }
+
+  game.day = 1;
+  game.days_in_the_red = 0;
+  game.cash = GAME_CASH_START;
+  game.current_fuel_price = 4 + (random() % 4);
+  game.nominal_fuel_price = game.current_fuel_price;
+}
+
+
+
+static char *command_arg_completion_city(const char *text, int state)
+{
+  static int index;
+
+  if (state == 0) {
+    index = 0;
+  }
+
+  while (index &lt; CITY_MAX) {
+    if (0 == strncmp(city[index].name, text, strlen(text))) {
+      return strdup(city[index++].name);
+    }
+    index++;
+  }
+
+  return NULL;
+}
+
+
+
+static char *command_arg_completion_airplane_id(const char *text, int state)
+{
+  static int index;
+  static char airplane_id_string[AIRPLANE_MAX][4];
+  static int airplanes;
+
+  if (state == 0) {
+    index = 0;
+    airplanes = 0;
+    /* Generate the list of possible numbers as strings. */
+    for (int i = 0; i &lt; AIRPLANE_MAX; i++) {
+      if (airplane[i].exists) {
+        snprintf(airplane_id_string[i], sizeof(airplane_id_string[i]),
+          &#34;%d&#34;, i + 1);
+        airplanes++;
+      }
+    }
+  }
+
+  if (0 == airplanes) {
+    return NULL;
+  }
+
+  while (index &lt; AIRPLANE_TYPE_MAX) {
+    if (0 == strncmp(airplane_id_string[index], text, strlen(text))) {
+      return strdup(airplane_id_string[index++]);
+    }
+    index++;
+  }
+
+  return NULL;
+}
+
+
+
+static char *command_arg_completion_airplane_type(const char *text, int state)
+{
+  static int index;
+
+  if (state == 0) {
+    index = 0;
+  }
+
+  while (index &lt; AIRPLANE_TYPE_MAX) {
+    if (0 == strncmp(airplane_data[index].name, text, strlen(text))) {
+      return strdup(airplane_data[index++].name);
+    }
+    index++;
+  }
+
+  return NULL;
+}
+
+
+
+static char *command_completion(const char *text, int state)
+{
+  static int index;
+
+  if (state == 0) {
+    index = 0;
+  }
+
+  while (index &lt; COMMANDS_MAX) {
+    if (0 == strncmp(commands[index].name, text, strlen(text))) {
+      return strdup(commands[index++].name);
+    }
+    index++;
+  }
+
+  return NULL;
+}
+
+
+
+static char **command_completion_entry(const char *text, int start, int end)
+{
+  rl_attempted_completion_over = 1;
+  if (start == 0) {
+    /* Command part. */
+    return rl_completion_matches(text, command_completion);
+
+  } else {
+    /* Arguments part. */
+    for (int i = 0; i &lt; COMMANDS_MAX; i++) {
+      if (0 == strncmp(commands[i].name, rl_line_buffer,
+                strlen(commands[i].name))) {
+        /* Found the command entered... */
+        int arg_no = -1;
+        bool saw_space = false;
+        for (char *p = rl_line_buffer; *p != &#39;&#92;0&#39;; p++) {
+          if (*p == &#39; &#39;) {
+            if (! saw_space) {
+              arg_no++;
+              saw_space = true;
+            }
+          } else {
+            saw_space = false;
+          }
+        }
+        /* ...Found the argument number... */
+        if (arg_no &lt; COMMAND_ARG_MAX) {
+          command_arg_type_t type = commands[i].arg[arg_no];
+          command_arg_completion_function_t function = 
+            command_arg_data[type].function;
+          if (function != NULL) {
+            /* ...Call the specific function. */
+            return rl_completion_matches(text, function);
+          }
+        }
+        break;
+      }
+    }
+
+    return NULL;
+  }
+}
+
+
+
+static bool command_function_call(char *command)
+{
+  const char *argv[COMMAND_ARG_MAX + 1]; /* Includes the command name. */
+
+  /* Split command into argc and argv. */
+  int argc = 0;
+  char *token = strtok(command, &#34; &#34;);
+  do {
+    if (token != NULL) {
+      argv[argc] = token;
+      argc++;
+      if (argc == COMMAND_ARG_MAX + 1) {
+        break;
+      }
+    }
+    token = strtok(NULL, &#34; &#34;);
+  } while (token != NULL);
+
+  /* Attempt to call matching command. */
+  if (argc == 0) {
+    return false;
+  }
+  for (int i = 0; i &lt; COMMANDS_MAX; i++) {
+    if (0 == strncmp(commands[i].name, argv[0],
+              strlen(commands[i].name))) {
+      (commands[i].function(argc, argv));
+      return true;
+    }
+  }
+
+  printf(&#34;Unknown command: %s&#92;n&#34;, command);
+  return false;
+}
+
+
+
+int main(int argc, const char *argv[])
+{
+  char *command;
+  char prompt[32];
+
+  printf(&#34;*** AIRLINE MANAGEMENT SIMULATOR ***&#92;n&#34;);
+  printf(&#34;Reach the goal of %d$&#92;n&#34;, GAME_CASH_GOAL);
+  printf(&#34;Type &#39;help&#39; or use tab completion.&#92;n&#34;);
+
+  game_init();
+
+  rl_attempted_completion_function = command_completion_entry;
+
+  game.loop_running = true;
+  while (game.loop_running) {
+    snprintf(prompt, sizeof(prompt), &#34;[%u] $%&#34;PRIi64&#34; &gt; &#34;, game.day, game.cash);
+    command = readline(prompt);
+    if (command == NULL) { /* EOF */
+      return 0;
+    }
+    if (0 == strlen(command)) {
+      continue;
+    }
+
+    add_history(command);
+    command_function_call(command);
+    free(command);
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        05/02-2022, 
+        <a href="article-191.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
