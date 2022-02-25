@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>DOS Keyboard Fix TSR</h1>
+      <p>
+        I have an old <a href="https://en.wikipedia.org/wiki/AST_Research">AST</a> Premium Exec 386SX/20 laptop running DOS. After the mechanical harddisk failed I replaced it with a flashdisk, but after re-assembly some of the keys on the keyboard would no longer work. I traced this to the &#39;.&#39;, &#39;ø&#39;, &#39;å&#39;, &#39;+&#39; and &#39;&#92;&#39; keys, all of which happens to be on one row/column on the keyboard matrix. After further troubleshooting I could find no fault with the keyboard or associated cables, so unfortunately the problem seems to be within the keyboard controller which is embedded into a custom chipset.<br />
+        <br />
+      </p>
+      <img class="border" src="images/ast_actel_chip.jpg" alt="Custom AST Actel Chipset" />
+      <p>
+        <br />
+        The lack of &#39;.&#39; and &#39;&#92;&#39; makes it hard to navigate around in DOS, so I started looking into a solution. Since it is nearly impossible to find spare parts like that custom chipset I ended up with a software solution, specifically in the form of a <a href="https://en.wikipedia.org/wiki/Terminate-and-stay-resident_program">TSR</a>.<br />
+        <br />
+        This TSR hooks into and intercepts the <a href="https://en.wikipedia.org/wiki/INT_16H">int 16h</a> calls that are used for keyboard services. By pressing Alt+F1 a scancode representing &#39;.&#39; is returned instead. Also Alt+F2 returns &#39;&#92;&#39; and Alt+F3 returns &#39;:&#39;. This will only work for DOS programs like COMMAND.COM or EDIT that actually use the BIOS services. For most games it probably won&#39;t work, but luckily the affected keys are seldom used in games.<br />
+        <br />
+        The code:<br />
+      </p>
+        <div class="box">
+          <pre>
+org 0x100
+bits 16
+cpu 8086
+
+section .text
+start:
+  jmp main
+
+int16_interrupt:
+  sti ; Allow other interrupts!
+  mov word [int16_incoming_ax], ax ; Store incoming parameter for later use.
+
+  ; Call original interrupt handler:
+  pushf
+  cli
+original_int16:
+  call original_int16:original_int16 ; Will be overwritten runtime!
+  sti
+
+  ; Check if result should be intercepted:
+  pushf
+  push bx
+  push ax
+  mov word bx, [int16_incoming_ax]
+  cmp bh, 0x00 ; Check if AH was &#34;Wait for Keypress&#34;.
+  je int16_check_f1
+  cmp bh, 0x10 ; Check if AH was &#34;Extended Wait for Keypress&#34;.
+  je int16_check_f1
+  jmp int16_end_pop_ax
+
+int16_check_f1:
+  cmp ax, 0x6800 ; Alt + F1
+  jne int16_check_f2
+  pop ax
+  mov ax, 0x342E ; &#39;.&#39;
+  jmp int16_end
+
+int16_check_f2:
+  cmp ax, 0x6900 ; Alt + F2
+  jne int16_check_f3
+  pop ax
+  mov ax, 0x2B5C ; &#39;&#92;&#39;
+  jmp int16_end
+
+int16_check_f3:
+  cmp ax, 0x6A00 ; Alt + F3
+  jne int16_end_pop_ax
+  pop ax
+  mov ax, 0x273A ; &#39;:&#39;
+  jmp int16_end
+
+int16_end_pop_ax:
+  pop ax
+int16_end:
+  pop bx
+  popf
+  retf 2
+
+int16_incoming_ax:
+  dw 0
+
+tsr_end: ; TSR end marker.
+
+main:
+  ; NOTE: No protection to prevent TSR from being loaded twice or more!
+
+  ; Call DOS to get original interrupt handler:
+  mov al, 0x16
+  mov ah, 0x35
+  int 0x21
+  mov word [original_int16 + 3], es
+  mov word [original_int16 + 1], bx
+
+  ; Call DOS to set new interrupt handler:
+  mov al, 0x16
+  mov ah, 0x25
+  ; DS is already same as CS, no need to change.
+  mov dx, int16_interrupt
+  int 0x21
+
+  ; Terminate and Stay Resident:
+  mov dx, tsr_end
+  shr dx, 1
+  shr dx, 1
+  shr dx, 1
+  shr dx, 1
+  add dx, 0x11 ; Add 0x1 for remainder and 0x10 for PSP.
+  mov ax, 0x3100
+  int 0x21
+          </pre>
+        </div>
+      <p>
+        <br />
+        Assemble it with <a href="https://www.nasm.us/">NASM</a>: nasm fixkeys.asm -fbin -o fixkeys.com<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        25/02-2022, 
+        <a href="article-192.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
