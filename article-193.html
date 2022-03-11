@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>DTMF Sound Generator</h1>
+      <p>
+        This is a simple program to generate <a href="https://en.wikipedia.org/wiki/Dual-tone_multi-frequency_signaling">DTMF</a> sounds using <a href="http://libsdl.org/">SDL</a> as used by telephones. Simply pass the &#34;phone number&#34; as the command line argument.<br />
+        <br />
+        The code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;string.h&gt;
+#include &lt;SDL2/SDL.h&gt;
+#include &lt;SDL2/SDL_audio.h&gt;
+#include &lt;math.h&gt; /* sin() */
+
+#define AUDIO_SAMPLE_RATE 44100
+
+typedef struct audio_data_s {
+  uint32_t sample_no;
+  double freq_1;
+  double freq_2;
+  bool stop;
+  bool stopped;
+} audio_data_t;
+
+static void dtmf(char c, double *freq_h, double *freq_v)
+{
+  switch (c) {
+  default:
+  case &#39;1&#39;:
+  case &#39;4&#39;:
+  case &#39;7&#39;:
+  case &#39;*&#39;:
+    *freq_h = 1209;
+    break;
+  case &#39;2&#39;:
+  case &#39;5&#39;:
+  case &#39;8&#39;:
+  case &#39;0&#39;:
+    *freq_h = 1336;
+    break;
+  case &#39;3&#39;:
+  case &#39;6&#39;:
+  case &#39;9&#39;:
+  case &#39;#&#39;:
+    *freq_h = 1477;
+    break;
+  case &#39;A&#39;:
+  case &#39;B&#39;:
+  case &#39;C&#39;:
+  case &#39;D&#39;:
+    *freq_h = 1633;
+    break;
+  }
+
+  switch (c) {
+  default:
+  case &#39;1&#39;:
+  case &#39;2&#39;:
+  case &#39;3&#39;:
+  case &#39;A&#39;:
+    *freq_v = 697;
+    break;
+  case &#39;4&#39;:
+  case &#39;5&#39;:
+  case &#39;6&#39;:
+  case &#39;B&#39;:
+    *freq_v = 770;
+    break;
+  case &#39;7&#39;:
+  case &#39;8&#39;:
+  case &#39;9&#39;:
+  case &#39;C&#39;:
+    *freq_v = 852;
+    break;
+  case &#39;*&#39;:
+  case &#39;0&#39;:
+  case &#39;#&#39;:
+  case &#39;D&#39;:
+    *freq_v = 941;
+    break;
+  }
+}
+
+static void audio_callback(void *userdata, Uint8 *stream, int len)
+{
+  int i;
+  audio_data_t *audio_data;
+  double sample;
+  double time;
+  
+  audio_data = (audio_data_t *)userdata;
+
+  if (audio_data-&gt;stop == false) {
+    audio_data-&gt;stopped = false;
+  }
+
+  for (i = 0; i &lt; len; i++) {
+    time = audio_data-&gt;sample_no / (double)AUDIO_SAMPLE_RATE;
+    sample = sin(2.0 * M_PI * audio_data-&gt;freq_1 * time);
+    sample += sin(2.0 * M_PI * audio_data-&gt;freq_2 * time);
+    sample /= 2;
+    if (audio_data-&gt;stopped) {
+      stream[i] = 128;
+    } else {
+      stream[i] = (Uint8)(127 + (sample * 127));
+      if (audio_data-&gt;stop &amp;&amp; stream[i] &gt;= 126 &amp;&amp; stream[i] &lt;= 130) {
+        audio_data-&gt;stopped = true;
+      }
+    }
+    audio_data-&gt;sample_no++;
+  }
+}
+
+int main(int argc, char *argv[])
+{
+  SDL_AudioSpec desired, obtained;
+  audio_data_t audio_data;
+  char *number;
+
+  if (argc != 2) {
+    fprintf(stderr, &#34;Usage: %s &lt;number&gt;&#92;n&#34;, argv[0]);
+    return 0;
+  }
+
+  if (SDL_Init(SDL_INIT_AUDIO) != 0) {
+    fprintf(stderr, &#34;SDL_Init() failed: %s&#92;n&#34;, SDL_GetError());
+    return 1;
+  }
+  atexit(SDL_Quit);
+
+  desired.freq     = AUDIO_SAMPLE_RATE;
+  desired.format   = AUDIO_U8;
+  desired.channels = 1;
+  desired.samples  = 1024;
+  desired.userdata = &amp;audio_data;
+  desired.callback = audio_callback;
+
+  if (SDL_OpenAudio(&amp;desired, &amp;obtained) != 0) {
+    fprintf(stderr, &#34;SDL_OpenAudio() failed: %s&#92;n&#34;, SDL_GetError());
+    return 1;
+  }
+
+  if (obtained.format != AUDIO_U8) {
+    fprintf(stderr, &#34;Did not get unsigned 8-bit audio format!&#92;n&#34;);
+    SDL_CloseAudio();
+    return 1;
+  }
+
+  for (number = &amp;argv[1][0]; *number != &#39;&#92;0&#39;; number++) {
+    audio_data.sample_no = 0;
+    audio_data.stop = false;
+    dtmf(*number, &amp;audio_data.freq_1, &amp;audio_data.freq_2);
+    SDL_PauseAudio(0);
+    SDL_Delay(200);
+    audio_data.stop = true;
+    SDL_Delay(20);
+    SDL_PauseAudio(1);
+    SDL_Delay(30);
+  }
+
+  SDL_CloseAudio();
+
+  return 0;
+}
+
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        11/03-2022, 
+        <a href="article-193.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
