@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Terminal Mode Commodore 64 Emulator Update</h1>
+      <p>
+        I have performed a massive overhaul of the <a href="article-177.html">proof-of-concept C64 emulator</a> I published about last year. This new version,which I have dubbed &#34;0.2&#34; is much more usable.<br />
+        <br />
+        A major change in the architecture is that the old version was blocking on input from stdin, which is an interesting concept, but not feasible for more advanced usage. It is now based around <a href="https://en.wikipedia.org/wiki/Curses_(programming_library)">curses</a> with non-blocking stdin instead. Moving to curses means there is now a lot better support for graphics, including colors if a 256-color terminal is used. Conversion is done from <a href="https://en.wikipedia.org/wiki/PETSCII">PETSCII</a> to ASCII and will work best as long as the default character sets are used. There is no sprite emulation.<br />
+        <br />
+        Pressing Ctrl-C at any time will switch to a (non-curses) debugger. In this mode it is possible to dump memory locations and get a CPU trace. In addition there is support for setting read and write breakpoints on memory addresses which breaks back into this same debugger. In order to properly exit the emulator one must also typically enter the debugger and issue a &#39;q&#39; from there to quit.<br />
+        <br />
+        The emulator can be run at close to C64 speed (for games) or in &#34;warp mode&#34; where 100% CPU is used (for raw BASIC programs). I also needed to add support for the timers in the <a href="https://en.wikipedia.org/wiki/MOS_Technology_CIA">CIA</a> since some games rely on these for random number generation. One unique feature is that getting the TOD (Time of Day) registers from the CIA will return the actual clock from the host system.<br />
+        <br />
+        As before the emulator needs the ROMs from <a href="https://vice-emu.sourceforge.io/">VICE</a> to run, but the location of these can now be specified on the command line in case they are not at the default location.<br />
+        <br />
+        There is no Datasette (tape) or 1541 (floppy disk) support, but C64 PRG-style programs may be loaded directly from the command line (or debugger) instead. These are injected directly into memory where they are supposed to be for the BASIC &#34;RUN&#34; command to work. Most BASIC programs should probably work, but machine code programs are hit-and-miss.<br />
+        <br />
+        The new version can be downloaded <a href="supplies/tmce64-0.2.tar.gz">here</a> and the <a href="https://github.com/kobolt/tmce64">GitHub</a> repository has also been updated.<br />
+        <br />
+        Finally, some color screenshots:<br />
+      </p>
+      <img class="border" src="images/tmce64-basic.png" alt="BASIC Prompt" />
+      <p>
+      </p>
+      <img class="border" src="images/tmce64-rolling_demo1.png" alt="Rolling Demo #1" />
+      <p>
+      </p>
+      <img class="border" src="images/tmce64-rolling_demo2.png" alt="Rolling Demo #2" />
+      <p>
+      </p>
+      <img class="border" src="images/tmce64-lord_of_balrogs.png" alt="Lord of the Balrogs" />
+      <p>
+      </p>
+      <img class="border" src="images/tmce64-oslo_boers.png" alt="Oslo B0rs" />
+      <p>
+      </p>
+      <img class="border" src="images/tmce64-regneark.png" alt="Regneark" />
+      <p>
+      </p>
+      <img class="border" src="images/tmce64-stock_market.png" alt="Stock Market" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        08/04-2022, 
+        <a href="article-195.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
