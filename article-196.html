@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CP/M on the Raspberry Pi Pico</h1>
+      <p>
+        A new port is available of my <a href="article-179.html">&#34;kaytil&#34; Z80 CP/M 2.2 emulator</a>, this time targeting the new <a href="https://www.raspberrypi.com/products/raspberry-pi-pico/">Raspberry Pi Pico</a>.<br />
+        <br />
+        A snapshot of the &#34;Version 0.2&#34; source can be downloaded <a href="supplies/kaytil-0.2.tar.gz">here</a>, or check out the Git repository <a href="https://github.com/kobolt/kaytil">here</a>. The <a href="article-184.html">GR-SAKURA version</a> has now also been incorporated into the same tarball and Git repo, instead of residing on a branch.<br />
+        <br />
+        In the same fashion as the GR-SAKURA version, the CP/M 2.2 and CBIOS binaries are embedded directly into the final binary. For the Pico version this is taken even a step further since the disk images are ALSO embedded into the final binary! This means the disk images are in fact hard-coded and needs to be provided/updated before building. The disk images provided with the source code are just dummies and should be replaced with something more useful.<br />
+        <br />
+        I figured that embedding the disk images was the easiest way to get things up and running considering the constraints of the Raspberry Pi Pico platform. This works nicely since the Pico has 2MB of Flash and can easily hold four IBM 3740 floppy disk images, typically 256KB in size each. Embedding the disk images is done using <a href="https://sourceware.org/binutils/docs/binutils/objcopy.html">objcopy</a> and forcefully placed in the &#34;.rodata&#34; section which causes them to reside in the Pico Flash instead of the SRAM.<br />
+        <br />
+        The console is available on the &#34;standard&#34; UART at pins 1 and 2 and running at 115200 baud. Conversion between ADM-3A codes to VT100/ANSI codes are done in the emulator in the same way as the other versions.<br />
+        <br />
+        Building requires the ARM GCC toolchain, CMake and the <a href="https://github.com/raspberrypi/pico-sdk">Pico SDK</a>; just follow the official guide on how to set this up. In typical CMake fashion, create a build folder and call cmake pointing to the &#34;pico/&#34; subdirectory containing the CMakeLists.txt file:<br />
+      </p>
+        <div class="box">
+          <pre>
+mkdir build
+cd build
+PICO_SDK_PATH=/path/to/pico-sdk cmake /path/to/kaytil/pico/
+make
+          </pre>
+        </div>
+      <p>
+        The resulting &#34;kaytil.elf&#34; file can be flashed with SWD, or the &#34;kaytil.uf2&#34; file can be copied through USB in the BOOTSEL mode.<br />
+        <br />
+        Here is a photo showing it in action, using a Commodre 64 as a terminal:<br />
+      </p>
+      <img class="border" src="images/kaytil_pico_c64.jpg" alt="Kaytil on the Pico with a C64 Terminal" />
+      <p>
+        For this to work I used a level shifter between the C64 user port and the Raspberry Pi Pico to convert between +5V and +3.3V. In addition I changed the baudrate to 2400 baud by calling &#34;uart_set_baudrate(uart0, 2400)&#34; in &#34;console_init()&#34;.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        22/04-2022, 
+        <a href="article-196.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
