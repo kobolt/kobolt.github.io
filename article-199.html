@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Terminal Mode Commodore 64 Emulator Disk Support</h1>
+      <p>
+        I have added support for D64 disk images to <a href="article-195.html">tmce64</a> and increased the version number to &#34;0.3&#34;. In order to facilitate this several things needed to be added. The CIA emulation has been expanded to include the data ports, which are used to communicate with the disk drives. But the biggest task was to emulate the <a href="https://en.wikipedia.org/wiki/Commodore_bus">Commodore IEC serial bus</a> that the KERNAL expects.<br />
+        <br />
+        The disk and serial bus emulation is by no means complete, and is limited to be able to get a file listing (LOAD&#34;$&#34;,8) and loading individual files. Fast loaders will not work and attempting to do anything fancy will probably freeze the emulator.<br />
+        <br />
+        Stack trace support has also been added to the built-in debugger. There is even support for symbol names, but this is currently just a hardcoded list of certain serial bus functions. Bank switching for the VIC-II chip is also handled in case any programs changes the graphics memory areas.<br />
+        <br />
+        These changes makes it possible to run the 8-Bit Guy&#39;s <a href="https://www.the8bitguy.com/product/petscii-robots/">Attack of the PETSCII Robots</a> in the emulator. Since conversion is done from PETSCII, the reality is closer to &#34;ASCII Robots&#34; though. Since sprites are not supported, use the &#34;C64PETSCII&#34; version of the game.<br />
+        <br />
+        Some more screenshots:<br />
+      </p>
+      <img class="border" src="images/tmce64-aotpr_menu.png" alt="Attack of the PETSCII Robots Menu" />
+      <p>
+      </p>
+      <img class="border" src="images/tmce64-aotpr_ingame.png" alt="Attack of the PETSCII Robots In-Game" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        02/07-2022, 
+        <a href="article-199.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
