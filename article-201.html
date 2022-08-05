@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CentreCOM MR820TR Hub Repair</h1>
+      <p>
+        I found a broken &#34;Allied Telesyn CentreCOM MR820TR&#34; network hub in the trash:<br />
+      </p>
+      <img class="border" src="images/mr820tr_broken.jpg" alt="MR820TR Broken" />
+      <p>
+        <br />
+        When power was applied the power LED would just blink rapidly. The internal PSU is supposed to supply +5V and +12V on two rails, but when I measured these with the logic board connected they were just +1.6V and +8.1V. Disconnecting the logic board showed +4.8V on the +5V rail and variying voltage between +7.3V and +7.6V on the +12V rail, so likely something wrong with the internal PSU.<br />
+        <br />
+        I measured the <a href="https://en.wikipedia.org/wiki/Equivalent_series_resistance">ESR</a> of several electrolytic capacitors in-circuit and one of them (C06) in the center of the board had bad readings. I unsoldered this one and measured it again, and it was still bad:<br />
+      </p>
+      <img class="border" src="images/mr820tr_bad_cap.jpg" alt="MR820TR Bad Capacitor" />
+      <p>
+        <br />
+        I replaced it with a new one:<br />
+      </p>
+      <img class="border" src="images/mr820tr_new_cap.jpg" alt="MR820TR New Capacitor" />
+      <p>
+        <br />
+        This network hub is now working again:<br />
+      </p>
+      <img class="border" src="images/mr820tr_fixed.jpg" alt="MR820TR Fixed" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        05/08-2022, 
+        <a href="article-201.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
