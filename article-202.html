@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Monospaced 11x10 Font</h1>
+      <p>
+        For my <a href="article-198.html">VT100 terminal emulator on Raspberry Pi Pico</a> project I needed to make my own font to fit the specific requirements. For convenience, that source code only contains the font data as a static &#34;char.rom&#34; binary file. For completeness sake I present the font data source here.<br />
+        <br />
+        The source data is an image, so any modifications can be done in an image editor:<br />
+      </p>
+      <img class="border" src="images/11x10_vt100.png" alt="11x10 Font Data" />
+      <p>
+        <br />
+        As can be seen here the image is divided into a grid of 16x16 to provide 256 characters in total.<br />
+        <br />
+        This image needs to be converted to <a href="http://netpbm.sourceforge.net/doc/pgm.html">PGM format</a> and then be fed into a special utility that converts it to the actual ROM binary file.<br />
+        <br />
+        The source code for the PGM to ROM utility is provided here, which operates on stdin/stdout for the conversion:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdbool.h&gt;
+
+#define HEIGHT 10
+#define WIDTH 11
+#define CHAR_PER_LINE 16
+#define BYTES_PER_LINE 176
+#define COLLECT (HEIGHT * BYTES_PER_LINE)
+
+static unsigned char buffer[COLLECT];
+
+static int power_of_two(int n)
+{
+  if (n == 0) {
+    return 1;
+  } else {
+    return 2 * power_of_two(n - 1);
+  }
+}
+
+int main(void)
+{
+  int skip = 4;
+  int c, n, i, j, k;
+  int b;
+
+  n = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+    if (skip &gt; 0) {
+      if (c == &#39;&#92;n&#39;) {
+        skip--;
+      }
+      continue;
+    }
+
+    buffer[n] = c;
+    n++;
+    if (n &gt;= COLLECT) {
+      n = 0;
+
+      /* Store as 16 bits by 10 lines, even if 11 bits wide. */
+
+      for (i = 0; i &lt; CHAR_PER_LINE; i++) {
+        for (j = 0; j &lt; HEIGHT; j++) {
+          b = 0;
+          for (k = 0; k &lt; 8; k++) {
+            if (buffer[k + (i * WIDTH) + (j * BYTES_PER_LINE)] == 0) {
+              b += power_of_two(7 - k);
+            }
+          }
+          fputc(b, stdout);
+
+          b = 0;
+          for (k = 0; k &lt; 3; k++) {
+            if (buffer[k + 8 + (i * WIDTH) + (j * BYTES_PER_LINE)] == 0) {
+              b += power_of_two(2 - k);
+            }
+          }
+          fputc(b, stdout);
+        }
+      }
+    }
+  }
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        19/08-2022, 
+        <a href="article-202.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
