@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2022 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 19 Aug 2022 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 02 Sep 2022 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Epson HX-20 Emulator</title>
+    <category>Open Source</category>
+    <link>https://kobolt.github.io/article-203.html</link>
+    <guid>https://kobolt.github.io/article-203.html</guid>
+    <pubDate>Fri, 02 Sep 2022 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-203.html</description>
+  </item>
   <item>
     <title>Monospaced 11x10 Font</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-194.html</guid>
     <pubDate>Fri, 25 Mar 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-194.html</description>
-  </item>
-  <item>
-    <title>DTMF Sound Generator</title>
-    <category>Scripts and Code</category>
-    <link>https://kobolt.github.io/article-193.html</link>
-    <guid>https://kobolt.github.io/article-193.html</guid>
-    <pubDate>Fri, 11 Mar 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-193.html</description>
   </item>
 </channel>
 </rss>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Epson HX-20 Emulator</h1>
+      <p>
+        I have made an emulator called &#34;hex20&#34; that emulates the <a href="https://en.wikipedia.org/wiki/Epson_HX-20">Epson HX-20 Portable Computer</a> in a Linux terminal, similar to my other <a href="article-179.html">Z80 CP/M</a>, <a href="article-194.html">NES</a> and <a href="article-195.html">C64</a> emulators.<br />
+        <br />
+        The HX-20 system uses two Hitachi HD6301 CPUs (based on the <a href="https://en.wikipedia.org/wiki/Motorola_6800">Motorola 6800</a> family) which communicate with each other over a internal serial link. This emulator needs the ROM files for both of these to function. A <a href="https://en.wikipedia.org/wiki/Cyclic_redundancy_check">CRC32</a> check is performed on startup to make sure that the correct version 1.0 or version 1.1 ROM files are used.<br />
+        <br />
+        One of the main features is the emulation of the LCD panel by using curses to display each individual pixel as a &#39;#&#39; (or &#39;%&#39;) on a large 120x32 terminal window. It is also possible to force a smaller 20x4 window, but then only ASCII will be displayed and none of the special pixel drawing functions will work. Most of the keyboard keys are supported and multiple international character sets can be selected.<br />
+        <br />
+        Another feature is auto-loading of BASIC program text files. This is achieved through clever use of the HX-20 ROM software ability to do automatic key input. A &#39;2&#39; is injected to enter BASIC from the menu, then all the text from the file is sent, and finally a BASIC RUN command is issued to start execution. On a real HX-20 a &#34;Ctrl/@&#34; initialization is usually needed on a cold start, but all the necessary data is already initialized automatically by the emulator itself. The RTC is also mapped directly to the host system clock so it does not need to be set.<br />
+        <br />
+        The initial version can be downloaded <a href="supplies/hex20-0.1.tar.gz">here</a> but the code is also available in this <a href="https://github.com/kobolt/hex20">Git repository</a> for further development. Note that at this point several features are still missing like sound support, TF-20 floppy drive and micro-cassette emulation.<br />
+        <br />
+        Some screenshots from the emulator running in xterm:<br />
+      </p>
+      <img class="border" src="images/hex20-main.png" alt="Main menu" />
+      <p>
+      </p>
+      <img class="border" src="images/hex20-clock.png" alt="Clock" />
+      <p>
+      </p>
+      <img class="border" src="images/hex20-blackjack.png" alt="Blackjack" />
+      <p>
+      </p>
+      <img class="border" src="images/hex20-blimp.png" alt="Blimp" />
+      <p>
+        <br />
+        Development of the emulator would have been impossible without the excellent Epson HX-20 resources from <a href="https://electrickery.nl/comp/hx20/index.html">F. J. Kraan&#39;s</a> web pages.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        02/09-2022, 
+        <a href="article-203.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
