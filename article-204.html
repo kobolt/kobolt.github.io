@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Sharp IQ-7100M Linux Link</h1>
+      <p>
+        Here is a way to download data from a Sharp IQ-7100M organizer into a modern Linux system. To be able to make the connection you will need to use a USB&lt;-&gt;UART converter that operates on a lower TTL voltage level and most importantly INVERTS the TXD and RXD logic levels. I used the <a href="https://www.sparkfun.com/products/9873">SparkFun DEV-09873</a> which is actually 3.3V, but the <a href="https://www.sparkfun.com/products/9716">5V version</a> probably works as well since the Sharp organizer uses 5V TTL levels. The FTDI FT232RL chip on this supports inverting the TXD and RXD logic levels by using the &#34;FT_PROG&#34; program to reprogram the settings.<br />
+        <br />
+        The connection table is as follows:<br />
+      </p>
+        <div class="box">
+          <pre>
+|------|--------------|
+| FTDI | Sharp 15-Pin |
+| -----|---|----------|
+| GND  | 7 | GND      |
+| RXD  | 2 | TXD      |
+| TXD  | 3 | RXD      |
+|------|---|----------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        With the SparkFun adapter it is possible to just use three wires with male Dupont connectors:<br />
+      </p>
+      <img class="border" src="images/sharp_iq-7100m.jpg" alt="Sharp IQ-7100M" />
+      <p>
+        <br />
+        Here is a small C program that will download the &#34;MEMO&#34; database:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+
+#define TTY_DEVICE &#34;/dev/ttyUSB0&#34;
+
+static const char command[] = &#34;&#92;x04R030000&#92;r&#92;nMEMO    1  &#92;r&#92;n&#34;;
+
+int main(void)
+{
+  int fd;
+  struct termios tios;
+  unsigned char byte;
+  const char *p;
+
+  fd = open(TTY_DEVICE, O_RDWR | O_NOCTTY);
+  if (fd == -1) {
+    fprintf(stderr, &#34;open() failed with errno: %d&#92;n&#34;, errno);
+    return EXIT_FAILURE;
+  }
+
+  if (tcgetattr(fd, &amp;tios) == -1) {
+    fprintf(stderr, &#34;tcgetattr() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return EXIT_FAILURE;
+  }
+
+  cfmakeraw(&amp;tios);
+  cfsetispeed(&amp;tios, B9600);
+  cfsetospeed(&amp;tios, B9600);
+
+  if (tcsetattr(fd, TCSANOW, &amp;tios) == -1) {
+    fprintf(stderr, &#34;tcsetattr() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return EXIT_FAILURE;
+  }
+
+  /* Send the command, using a small delay: */
+  p = &amp;command[0];
+  while (*p != &#39;&#92;0&#39;) {
+    if (write(fd, p, 1) == -1) {
+      fprintf(stderr, &#34;write() failed with errno: %d&#92;n&#34;, errno);
+      close(fd);
+      return EXIT_FAILURE;
+    }
+    usleep(10000);
+    p++;
+  }
+
+  /* Read the response until a EOF character appears: */
+  do {
+    if (read(fd, &amp;byte, 1) != 1) {
+      fprintf(stderr, &#34;read() failed with errno: %d&#92;n&#34;, errno);
+      close(fd);
+      return EXIT_FAILURE;
+    }
+    putc(byte, stdout);
+  } while (byte != 0x1A);
+
+  close(fd);
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        This program just dumps the raw data, which is already in ASCII. Since there is no flow control, a sleep of 10ms was added between each byte sent to prevent the Sharp organizer from overflowing and giving up. Note that you will need to be in the &#34;PC-Link&#34; menu for any transfer to work, which is reached by pressing &#34;Shift&#34; + &#34;Option&#34; then &#34;4&#34;.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        23/09-2022, 
+        <a href="article-204.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
