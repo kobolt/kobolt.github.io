@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2022 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 23 Sep 2022 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 14 Oct 2022 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>More CP/M Emulator Ports</title>
+    <category>Open Source</category>
+    <link>https://kobolt.github.io/article-205.html</link>
+    <guid>https://kobolt.github.io/article-205.html</guid>
+    <pubDate>Fri, 14 Oct 2022 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-205.html</description>
+  </item>
   <item>
     <title>Sharp IQ-7100M Linux Link</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-196.html</guid>
     <pubDate>Fri, 22 Apr 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-196.html</description>
-  </item>
-  <item>
-    <title>Terminal Mode Commodore 64 Emulator Update</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-195.html</link>
-    <guid>https://kobolt.github.io/article-195.html</guid>
-    <pubDate>Fri, 08 Apr 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-195.html</description>
   </item>
 </channel>
 </rss>

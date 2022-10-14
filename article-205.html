@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>More CP/M Emulator Ports</h1>
+      <p>
+        I decided to port my <a href="article-196.html">&#34;kaytil&#34; Z80 CP/M 2.2 emulator</a> to even more platforms to see if it could be done. It can now be compiled for DOS by using the <a href="https://delorie.com/">DJGPP toolchain</a> or Windows by using the <a href="https://www.mingw-w64.org/">MinGW toolchain</a>. In order to support Windows, I needed to make a curses based implementation of the console interface and this can also be used to compile an alternative Linux version based on (n)curses instead.<br />
+        <br />
+        Since DJGPP is actually a 32-bit environment the DOS version also requires a 32-bit CPU to run and will use the CWSDPMI.EXE extender. The CPU needs to be fast as well, at least a Pentium II, to get acceptable speeds. But in order to not run too fast, a slowdown mechanism exists in the emulator as well. This slowdown mechanism is just a busy-wait since DOS has no multitasking concept and will just keeps the entire CPU to itself anyway.<br />
+        <br />
+        I ran a simple benchmark for the DOS version by using &#34;BASIC-80 Rev. 5.21&#34; and the following BASIC program:<br />
+      </p>
+        <div class="box">
+          <pre>
+10 FOR I=0 TO 10000 STEP 1
+20 PRINT I
+30 NEXT I
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here are the results:<br />
+      </p>
+        <div class="box">
+          <pre>
+|----------------------|---------------------|
+|                      |      Slowdown       |
+|System                | Enabled    Disabled |
+|----------------------|----------|----------|
+|QEMU (AMD Ryzen 9)    | 1m11s    | 0m21s    |
+|DOSBox (AMD Ryzen 9)  | 1m11s    | -        |        
+|Pentium 166MHz        | 2m01s    | 1m59s    |        
+|486SX 25MHz           | 19m16s   | -        |
+|----------------------|----------|----------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        So it is possible to run it on a 486 CPU but it will be very slow.<br />
+        <br />
+        The updated source code can be found <a href="supplies/kaytil-0.3.tar.gz">here</a> or at the Git repo <a href="https://github.com/kobolt/kaytil">here</a>. Instructions for building is on the README.md within, but for convenience, here is a binary of the <a href="supplies/kaytil-dos.zip">DOS version</a> and <a href="supplies/kaytil-win.zip">Windows version</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        14/10-2022, 
+        <a href="article-205.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
