@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>lazyboNES Emulator TAS Support</h1>
+      <p>
+        I have made some updates to the <a href="article-194.html">lazyboNES emulator</a> which is used to run Super Mario Bros in a Linux terminal.<br />
+        <br />
+        Some updates were made a while ago actually, in the <a href="https://github.com/kobolt/lazyboNES">GitHub</a> repository, tagged as version 0.2. The main feature then was support for 8 ANSI colors, as well as various bugfixes and minor improvements that was found during play testing.<br />
+        <br />
+        Now I present <a href="supplies/lazybones-0.3.tar.gz">version 0.3</a>. (An update has also been made to the GitHub repo.) The main feature is support for <a href="https://en.wikipedia.org/wiki/Tool-assisted_speedrun">Tool-assisted speedruns</a> by reading controller inputs from a <a href="https://fceux.com/web/FM2.html">FM2 file</a>.<br />
+        <br />
+        Some critical changes were needed in order to get this to work properly, if not the controller input would not be correctly aligned with the video frames. The first requirement was better synchronization between the CPU and the PPU (video) where the clock cycles for each needed to be more accurate and similar to a real NES. The second requirement was that the PPU needs to run a few frames by itself before the CPU is started.<br />
+        <br />
+        Here is a screenshot of the color mode:<br />
+      </p>
+      <img class="border" src="images/lazybones-color.png" alt="lazyboNES color screenshot" />
+      <p>
+        <br />
+        For a full TAS playthrough in lazyboNES check <a href="https://www.youtube.com/watch?v=kDsrsHwDWrY">this YouTube video</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        28/10-2022, 
+        <a href="article-206.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
