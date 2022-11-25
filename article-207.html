@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>PS/2 Floppy Drive Capacitor Replacement</h1>
+      <p>
+        I was able to successfully change the SMD electrolytic capacitors on a PS/2 floppy drive used in the P70/P75 luggable computers. These capacitors are prone to leaking and may eventually cause damage to the circuit boards. The floppy drive manufacturer is ALPS and the model number is DFP723D15C. It is also marked with IBM numbers &#34;P/N 79F3224&#34; and &#34;FRU P/N 79F3225&#34;. Since PS/2 floppy drives have a slightly different connector they cannot be easily replaced with a standard PC floppy drive.<br />
+        <br />
+        Here is the list of electrolytic capacitors:<br />
+      </p>
+        <div class="box">
+          <pre>
+|----------------|-----|-----------------------|
+|Location        | ID  | Value                 |
+|----------------|-----|-----------------------|
+|Interface Board | C3  | 10uF 16V              |
+|Interface Board | C4  | 10uF 16V              |
+|Interface Board | C5  | 10uF 16V              |
+|Interface Board | C6  | 10uF 16V              |
+|Interface Board | C7  | 10uF 16V              |
+|----------------|-----|-----------------------|
+|Motor Board     | 6C  | 10uF 16V              |
+|Motor Board     | 8C  | 4.7uF 16V Unpolarized |
+|Motor Board     | 9C  | 4.7uF 16V Unpolarized |
+|Motor Board     | 10C | 4.7uF 16V Unpolarized |
+|Motor Board     | 7C  | 4.7uF 25V             |
+|----------------|-----|-----------------------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        And here is an overview image:<br />
+      </p>
+      <img class="border" src="images/ps2_floppy_caps_overview.jpg" alt="Capacitor overview" />
+      <p>
+        <br />
+        For replacements of the 10uF caps I used 35V rated &#34;RND 150VVT035M100CA1L&#34; and for the 4.7uF polarized cap a 50V rated &#34;RND 150VVT050M4R7CA1L&#34;. I did not find any unpolarized SMD type electrolytic caps so I used ceramic caps &#34;Murata GRJ32DC72A475KE11L&#34; instead.<br />
+        <br />
+        Here are some images of the replacements:<br />
+      </p>
+      <img class="border" src="images/ps2_floppy_caps_new1.jpg" alt="New capactors spot #1" />
+      <p>
+      </p>
+      <img class="border" src="images/ps2_floppy_caps_new2.jpg" alt="New capactors spot #2" />
+      <p>
+      </p>
+      <img class="border" src="images/ps2_floppy_caps_new3.jpg" alt="New capactors spot #3" />
+      <p>
+        <br />
+        It is also worth mentioning that I had to lubricate the floppy drive as well, since it seemed to have trouble moving when I tested. I used white lithium grease on the stepper motor drive shaft and silicone grease on the plastic surfaces where the head assembly slide back and forth.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        25/11-2022, 
+        <a href="article-207.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
