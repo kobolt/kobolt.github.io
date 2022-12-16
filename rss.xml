@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2022 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 25 Nov 2022 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 16 Dec 2022 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>SPEA Graphiti Painter 3</title>
+    <category>Configuration</category>
+    <link>https://kobolt.github.io/article-208.html</link>
+    <guid>https://kobolt.github.io/article-208.html</guid>
+    <pubDate>Fri, 16 Dec 2022 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-208.html</description>
+  </item>
   <item>
     <title>PS/2 Floppy Drive Capacitor Replacement</title>
     <category>Repair</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-199.html</guid>
     <pubDate>Sat, 02 Jul 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-199.html</description>
-  </item>
-  <item>
-    <title>VT100 Terminal Emulator on Raspberry Pi Pico</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-198.html</link>
-    <guid>https://kobolt.github.io/article-198.html</guid>
-    <pubDate>Fri, 03 Jun 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-198.html</description>
   </item>
 </channel>
 </rss>
