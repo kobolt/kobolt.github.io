@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Motorola BDM Debugger in DOS QEMU</h1>
+      <p>
+        I have some boards with a <a href="https://en.wikipedia.org/wiki/Freescale_683XX">Motorola 65332 MCU</a> (which later became Freescale and then NXP) that have a Motorola 68000 core. There is a debugging port on these boards known as &#34;BDM&#34; or &#34;Background Debug Mode&#34; which is very useful.<br />
+        <br />
+        I have managed to connect to this port using an adapter that can be connected to a standard PC parallel port. There seems to be two versions of this adapter found on the Internet, one using a <a href="https://cmp.felk.cvut.cz/~pisa/m683xx/bdm_driver.html">74LS74 flip-flop</a> and another using a <a href="https://www.nxp.com/docs/en/application-note/AN1230.pdf">74LS76 flip-flop</a>.<br />
+        <br />
+        I built the 74LS74 variant using a prototype circuit board. To help with this I converted the schematic to another form to show where to connect all the wires using color coding:<br />
+      </p>
+      <img class="border" src="images/bdm_board_schematic.png" alt="BDM Board Schematic" />
+      <p>
+        <br />
+        Here is a picture of the finished adapter without the logic chips. 14-pin DIP sockets should have been used but I only had 20-pin DIP sockets available:<br />
+      </p>
+      <img class="border" src="images/bdm_board.jpg" alt="BDM Board" />
+      <p>
+        <br />
+        Here are the signals on the pin header that can be connected to a parallel port on a PC:<br />
+      </p>
+        <div class="box">
+          <pre>
+|-------|------------|--------|
+| DB-25 | Signal     | Header |
+|-------|------------|--------|
+| 17    | STEP_OUT   | A      |
+| 10    | PWR_DN/VCC | B      |
+| 14    | RSTOUT     | C      |
+|  1    | DSCLK      | D      |
+| 15    | FREEZE     | E      |
+| 12    | DSO        | F      |
+| 16    | DSI        | H      |
+| 11+18 | NC/GND     | I      |
+|-------|------------|--------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here are the signals going to the target BDM port:<br />
+      </p>
+        <div class="box">
+          <pre>
+|---------|--------|
+| Signal  | Header |
+|---------|--------|
+| DSCLK   |  4     |
+| VSS/GND |  5     |
+| FREEZE  |  6     |
+| RESET   |  7     |
+| DSI     |  8     |
+| VDD/VCC |  9     |
+| DSO     | 10     |
+|---------|--------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        I have put MS-DOS 6.22 on a <a href="https://www.qemu.org/">QEMU x86 emulator</a> image and then installed the DOS-based &#34;BD32&#34; program from Motorola which can still be found on <a href="https://www.nxp.com/downloads/en/debuggers-runtime-analysis/BD32-122DBG.zip">NXP&#39;s pages</a>.<br />
+        <br />
+        The modern PC I am using has a PCI-express board with a parallel port and enabling passthrough in the QEMU emulator on Linux done by simply passing this on the command line arguments:<br />
+      </p>
+        <div class="box">
+          <pre>
+-parallel /dev/parport0
+          </pre>
+        </div>
+      <p>
+        <br />
+        It is important to &#34;slow down&#34; the communication speed in BD32 when running on faster hardware, so I have used the setting &#34;1000&#34; which can be configured in the &#34;bd32.cfg&#34; file like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+lpt1
+1000
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a screenshot of QEMU running BD32 in DOS:<br />
+      </p>
+      <img class="border" src="images/bdm_bd32_qemu.png" alt="BD32 in QEMU" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        06/01-2023, 
+        <a href="article-209.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

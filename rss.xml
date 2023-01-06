@@ -5,10 +5,18 @@
   <link>http://kobolt.github.io/</link>
   <description>A blog about my projects!</description>
   <language>en-us</language>
-  <copyright>Copyright 2007-2022 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 16 Dec 2022 00:00:00 -0000</lastBuildDate>
+  <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
+  <lastBuildDate>Fri, 06 Jan 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Motorola BDM Debugger in DOS QEMU</title>
+    <category>Configuration</category>
+    <link>https://kobolt.github.io/article-209.html</link>
+    <guid>https://kobolt.github.io/article-209.html</guid>
+    <pubDate>Fri, 06 Jan 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-209.html</description>
+  </item>
   <item>
     <title>SPEA Graphiti Painter 3</title>
     <category>Configuration</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-200.html</guid>
     <pubDate>Fri, 15 Jul 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-200.html</description>
-  </item>
-  <item>
-    <title>Terminal Mode Commodore 64 Emulator Disk Support</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-199.html</link>
-    <guid>https://kobolt.github.io/article-199.html</guid>
-    <pubDate>Sat, 02 Jul 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-199.html</description>
   </item>
 </channel>
 </rss>
