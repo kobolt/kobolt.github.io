@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 06 Jan 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 20 Jan 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>CP/M-68K for Motorola 68332</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-210.html</link>
+    <guid>https://kobolt.github.io/article-210.html</guid>
+    <pubDate>Fri, 20 Jan 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-210.html</description>
+  </item>
   <item>
     <title>Motorola BDM Debugger in DOS QEMU</title>
     <category>Configuration</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-201.html</guid>
     <pubDate>Fri, 05 Aug 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-201.html</description>
-  </item>
-  <item>
-    <title>Renesas GCC Toolchains Update</title>
-    <category>Configuration</category>
-    <link>https://kobolt.github.io/article-200.html</link>
-    <guid>https://kobolt.github.io/article-200.html</guid>
-    <pubDate>Fri, 15 Jul 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-200.html</description>
   </item>
 </channel>
 </rss>

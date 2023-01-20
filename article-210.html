@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CP/M-68K for Motorola 68332</h1>
+      <p>
+        I have created a <a href="https://en.wikipedia.org/wiki/CP/M">CP/M</a> BIOS to be able to run CP/M-68K on an embedded system with a <a href="https://en.wikipedia.org/wiki/Freescale_683XX">Motorola 68332 MCU</a>. The 68332 contains a &#34;Queued Serial Module&#34; that the BIOS interacts with to provide a console for CP/M over a RS-232 serial port. There is only support for one disk, which is a RAM disk implementation, also handled by the BIOS. During development I relied heavily on the BDM functionality which <a href="article-209.html">I made an adapter for</a>, but this can also be used to load the CP/M system and RAM disk image directly into memory through the use of <a href="https://en.wikipedia.org/wiki/SREC_(file_format)">S-records</a>.<br />
+        <br />
+        Since CP/M-68K programs are written for pure Motorola 68000 CPUs there is a known incompatibility with one particular &#34;MOVE SR,xx&#34; instruction in Motorola 68010 and later CPUs including the 68332 core. It is possible to patch this in software, so this BIOS implements the <a href="http://aminet.net/package/docs/hard/MC68010">DeciGEL</a> method originally used by some upgraded Amiga systems.<br />
+        <br />
+        The particular board I am using has 256KB of RAM available, mapped starting at 0x100000 and I ended up with the following memory map by dividing it into 16x16KB parts:<br />
+      </p>
+        <div class="box">
+          <pre>
+|--------|--------|----------|
+| Start  | End    | Use      |
+|--------|--------|----------|
+| 100000 | 103FFF | VBR      |
+| 104000 | 107FFF | TPA      |
+| 108000 | 10BFFF | TPA      |
+| 10C000 | 10FFFF | TPA      |
+| 110000 | 113FFF | TPA      |
+| 114000 | 117FFF | RAM-Disk |
+| 118000 | 11BFFF | RAM-Disk |
+| 11C000 | 11FFFF | RAM-Disk |
+| 120000 | 123FFF | RAM-Disk |
+| 124000 | 127FFF | RAM-Disk |
+| 128000 | 12BFFF | RAM-Disk |
+| 12C000 | 12FFFF | RAM-Disk |
+| 130000 | 133FFF | RAM-Disk |
+| 134000 | 137FFF | RAM-Disk |
+| 138000 | 13BFFF | CP/M     |
+| 13C000 | 13FFFF | CP/M     |
+|--------|--------|----------|
+          </pre>
+        </div>
+      <p>
+        This board already has it&#39;s own BIOS that sets up the hardware (e.g. the UART in the Queued Serial Module) and ends up pointing the CPU Vector Base Register (VBR) to 0x100000. TPA is the &#34;Transient Program Area&#34; used by programs that run within CP/M.<br />
+        <br />
+        The RAM disk image can be prepared on another Linux computer using <a href="http://www.moria.de/~michael/cpmtools/">cpmtools</a> and the following definition:<br />
+      </p>
+        <div class="box">
+          <pre>
+diskdef ram-68332
+  seclen 128
+  tracks 72
+  sectrk 16
+  blocksize 1024
+  maxdir 64
+  skew 0
+  boottrk 0
+  os 2.2
+end
+          </pre>
+        </div>
+      <p>
+        <br />
+        The commands involved in preparing the disk and then a S-record representation would typically be:<br />
+      </p>
+        <div class="box">
+          <pre>
+mkfs.cpm -f ram-68332 ramdisk.bin
+cpmcp -f ram-68332 ramdisk.bin &lt;file&gt; 0:&lt;file&gt;
+srec_cat ramdisk.bin -binary -offset 0x114000 -o ramdisk.s68 -motorola -disable=data-count -execution_start_address 0
+          </pre>
+        </div>
+      <p>
+        <br />
+        Assembling the BIOS and linking CP/M-68K for a new system requires another already running CP/M-68K system with the development tools. The Digital Research documentation from the 80&#39;s suggests using a <a href="https://www.ricomputermuseum.org/collections-gallery/small-systems-at-ricm/motorola-exormacs-development-system">Motorola EXORmacs</a> development system, but luckily we have <a href="http://davesrocketworks.com/electronics/cpm68/simulator.html">emulators</a> available for this purpose now.<br />
+        <br />
+        From within the emulator the following steps are used to assemble, link and relocate the CP/M-68K system binary. The final command dumps the binary in S-record format to the console:<br />
+      </p>
+        <div class="box">
+          <pre>
+AS68 BIOS332.S
+LO68 -R -UCPM -O CPM.REL CPMLIB BIOS332.O
+RELOC -B138000 CPM.REL CPM.SYS
+SENDC68 CPM.SYS
+          </pre>
+        </div>
+      <p>
+        The CPMLIB library I got from the CP/M-68K version 1.3 disk set <a href="https://www.mega-micros.co.uk/cpm-68k.htm">here</a>.<br />
+        <br />
+        Here is the BIOS assembly source code (BIOS332.S) in 68000 assembly language, it is based on the &#34;ERG&#34; BIOS from the Digital Research manuals:<br />
+      </p>
+        <div class="box">
+          <pre>
+*****************************************************************
+*                                                               *
+*               CP/M-68K BIOS                                   *
+*       Basic Input/Output Subsystem                            *
+*       For Motorola 68332 Embedded System                      *
+*                                                               *
+*****************************************************************
+
+        .globl  _init           * BIOS initialization entry point
+        .globl  _ccp            * CCP entry point
+
+_init:  move.l  #traphndl,$10008c * Set up trap #3 handler (on VBR offset)
+        move.l  #privhndl,$100020 * Catch privilege exception (on VBR offset)
+        move.l  #welcome,a0     * Display welcome message
+weloop: move.b  (a0)+,d1
+        cmpi.b  #$24,d1         * Compare against &#39;$&#39;
+        beq     wedone
+        jsr     conout
+        bra     weloop
+wedone: clr.l   d0              * Log on disk A:, user 0
+        rts
+
+traphndl:
+        cmpi    #nfuncs,d0
+        bcc     trapng
+        lsl     #2,d0           * Multiply bios function by 4
+        movea.l 6(pc,d0),a0     * Get handler address
+        jsr     (a0)            * Call handler
+trapng:
+        rte
+
+biosbase:
+        .dc.l  _init    *  0 - Initialization
+        .dc.l  wboot    *  1 - Warm boot
+        .dc.l  constat  *  2 - Console status
+        .dc.l  conin    *  3 - Read console character
+        .dc.l  conout   *  4 - Write console character
+        .dc.l  lstout   *  5 - List character output
+        .dc.l  pun      *  6 - Auxiliary output
+        .dc.l  rdr      *  7 - Auxiliary input
+        .dc.l  home     *  8 - Home
+        .dc.l  seldsk   *  9 - Select disk drive
+        .dc.l  settrk   * 10 - Select track number
+        .dc.l  setsec   * 11 - Select sector number
+        .dc.l  setdma   * 12 - Set DMA address
+        .dc.l  read     * 13 - Read sector
+        .dc.l  write    * 14 - Write sector
+        .dc.l  listst   * 15 - Return list status
+        .dc.l  sectran  * 16 - Sector translate
+        .dc.l  home     * 17 - N/A
+        .dc.l  getseg   * 18 - Get address of memory region table
+        .dc.l  getiob   * 19 - Get I/O byte
+        .dc.l  setiob   * 20 - Set I/O byte
+        .dc.l  flush    * 21 - Flush buffers
+        .dc.l  setexc   * 22 - Set exception handle address
+
+        nfuncs=(*-biosbase)/4
+
+wboot:  jmp     _ccp
+
+constat: move.b $fffc0d,d0      * Get status from SCSR register
+        andi.b  #$40,d0         * Check for RDRF=1 data available?
+        beq     noton           * Branch if not
+        moveq.l #$1,d0          * Set result to true
+        rts
+noton:  clr.l   d0              * Set result to false
+        rts
+
+conin:  bsr     constat         * See if key pressed
+        tst     d0
+        beq     conin           * Wait until key pressed
+        move.b  $fffc0f,d0      * Get key from SCDR register
+        rts
+
+conout: move.b  $fffc0c,d0      * Get status from SCSR register
+        andi.b  #$01,d0         * Check for TDRE=1 transmit OK?
+        beq     conout          * Wait until our port has aged...
+        move.b  d1,$fffc0f      * And output it to SCDR register
+        rts
+
+lstout: rts
+
+pun:    rts
+
+rdr:    rts
+
+listst: move.b  #$ff,d0 * Device not ready
+        rts
+
+home:   rts
+
+seldsk:
+        moveq   #0,d0
+        cmpi.b  #1,d1           * Only disk A: RAM disk supported
+        bpl     selrtn          * Return 0 in d0 for other disks
+        move.l  #$114000,selmem * Prepare base memory address for RAM disk
+        move.l  #dph,d0         * Point d0 at dph
+selrtn: rts
+
+settrk: move.b  d1,track
+        rts
+
+setsec: move.b  d1,sector
+        rts
+
+setdma: move.l  d1,dma
+        rts
+
+sectran: move.w d1,d0   * No sector translation, just 1-to-1 mapping
+        rts
+
+read:
+        clr.l   d0
+        move.b  track,d0
+        mulu    #16,d0          * Multiply by SPT
+        add.b   sector,d0
+        mulu    #128,d0         * Multiply by sector size
+        add.l   selmem,d0       * Add offset for RAM disk address in memory
+        move.l  dma,a0
+        move.l  d0,a1
+        move.l  #127,d0         * Read 128 bytes
+rloop:  move.b  (a1)+,(a0)+     * Transfer byte
+        dbra    d0,rloop
+        clr.l   d0
+        rts
+
+write:
+        clr.l   d0
+        move.b  track,d0
+        mulu    #16,d0          * Multiply by SPT
+        add.b   sector,d0
+        mulu    #128,d0         * Multiply by sector size
+        add.l   selmem,d0       * Add offset for RAM disk address in memory
+        move.l  dma,a0
+        move.l  d0,a1
+        move.l  #127,d0         * Write 128 bytes
+wloop:  move.b  (a0)+,(a1)+     * Transfer byte
+        dbra    d0,wloop
+        clr.l   d0
+        rts
+
+flush:  clr.l   d0      * Return successful
+        rts
+
+getseg: move.l  #memrgn,d0
+        rts
+
+getiob: rts
+
+setiob: rts
+
+setexc: andi.l  #$ff,d1         * Do only for exceptions 0 - 255
+        cmpi    #8,d1
+        beq     noset           * Skip touch privilege exception
+        cmpi    #9,d1           * and Trace exception
+        beq     noset
+        lsl     #2,d1           * Multiply exception number by 4
+        movea.l d1,a0
+        add.l   #$100000,a0     * Add VBR to address
+        move.l  (a0),d0         * Return old vector value
+        move.l  d2,(a0)         * Insert new vector
+noset:  rts
+
+* DeciGEL patch originally made for Amiga systems using Motorola 68010
+privhndl:
+        movem.l D0/A0,-(SP)     * Save registers
+        move.l  8+2(SP),A0      * Pointer to opcode
+        move.w  (A0),D0         * Pickup opcode
+        andi.w  #$FFC0,D0       * Mask out EA field
+        cmpi.w  #$40C0,D0       * Is it a MOVE SR,ea?
+        bne.s   privsk
+        bset    #1,(A0)         * Convert it to MOVE CCR,ea
+privsk: movem.l (SP)+,D0/A0     * Restore regs
+        rte                     * Rerun new opcode
+
+
+
+        .data
+
+* Welcome text
+
+welcome: .dc.b  13,10,&#39;CP/M for Motorola 68332&#39;,13,10,&#39;$&#39;
+
+* Disk variables
+
+selmem: .dc.l   0       * Disk (RAM disk base address) requested by seldsk
+track:  .dc.b   0       * Track requested by settrk
+sector: .dc.b   0       * Sector requested by setsec
+dma:    .dc.l   0       * DMA address requested by setdma
+
+* Memory region definition
+
+memrgn: .dc.w   1       * 1 memory region
+        .dc.l   $104000 * Start
+        .dc.l   $ffff   * Length/size
+
+* Disk parameter header
+
+dph:    .dc.l   0       * No translation table used
+        .dc.w   0       * Dummy
+        .dc.w   0
+        .dc.w   0
+        .dc.l   dirbuf  * Pointer to directory buffer
+        .dc.l   dpb     * Pointer to disk parameter block
+        .dc.l   0       * Check vector not used for unremovable RAM disk
+        .dc.l   alv     * Pointer to allocation vector
+
+* Disk parameter block
+
+dpb:    .dc.w   16      * Sectors per track
+        .dc.b   3       * Block shift
+        .dc.b   7       * Block mask
+        .dc.b   0       * Extent mask
+        .dc.b   0       * Dummy fill
+        .dc.w   143     * Disk size
+        .dc.w   63      * 64 directory entries
+        .dc.w   0       * Reserved
+        .dc.w   0       * Check vector not used for unremovable RAM disk
+        .dc.w   0       * Track offset zero since no boot sector on RAM disk
+
+
+
+        .bss
+
+dirbuf: .ds.b   128     * Directory buffer
+alv:    .ds.b   18      * Allocation vector = (disk size / 8) + 1
+
+        .end
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        20/01-2023, 
+        <a href="article-210.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
