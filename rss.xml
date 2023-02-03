@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 20 Jan 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 03 Feb 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>ASCII Atari 2600 Emulator</title>
+    <category>Open Source</category>
+    <link>https://kobolt.github.io/article-211.html</link>
+    <guid>https://kobolt.github.io/article-211.html</guid>
+    <pubDate>Fri, 03 Feb 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-211.html</description>
+  </item>
   <item>
     <title>CP/M-68K for Motorola 68332</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-202.html</guid>
     <pubDate>Fri, 19 Aug 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-202.html</description>
-  </item>
-  <item>
-    <title>CentreCOM MR820TR Hub Repair</title>
-    <category>Repair</category>
-    <link>https://kobolt.github.io/article-201.html</link>
-    <guid>https://kobolt.github.io/article-201.html</guid>
-    <pubDate>Fri, 05 Aug 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-201.html</description>
   </item>
 </channel>
 </rss>
