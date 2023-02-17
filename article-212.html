@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" href="infocenter.css" type="text/css" />
+    <title>Kjetil's Information Center</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Terminal Mode Commodore 64 SID Support</h1>
+      <p>
+        I have added <a href="https://en.wikipedia.org/wiki/MOS_Technology_6581">SID</a> sound support to my <a href="article-195.html">tmce64</a> emulator and bumped the version number to &#34;0.4&#34;. The SID is quite complicated so instead of trying to emulate it myself I have added a wrapper around the excellent <a href="https://en.wikipedia.org/wiki/ReSID">reSID</a> implementation, which is also used by the <a href="https://vice-emu.sourceforge.io/">VICE emulator</a> I believe.<br />
+        <br />
+        I have based my wrapper around reSID version 0.16 which can be found <a href="http://www.zimmers.net/anonftp/pub/cbm/crossplatform/emulators/resid/index.html">here</a>. There seems to be a newer experimental version available also, but I have not tried it.<br />
+        <br />
+        I did not install reSID system wide, but instead just compiled it:<br />
+      </p>
+        <div class="box">
+          <pre>
+tar -xvzf resid-0.16.tar.gz
+cd resid-0.16
+./configure
+make
+          </pre>
+        </div>
+      <p>
+        This will result in a static &#34;libresid.a&#34; library being built in the hidden &#34;.libs&#34; sub-directory which needs to be pointed to in the tmce64 Makefile along with the reSID header files.<br />
+        <br />
+        The tmce64 0.4 release also contains some other improvements and bug-fixes, but most notably a simple implementation of the VIC-II raster interrupt which is used by a lot of <a href="https://csdb.dk/">demos</a>. However the accuracy is far from perfect so expect many demos to fail, especially later ones that rely on very precise timings. Support for undocumented 6502 opcodes was merged from the <a href="article-211.html">ASCII Atari 2600 Emulator</a> project. A joystick handled by SDL2 is now also supported, but only plugged in the C64 port 2.<br />
+        <br />
+        A challenge with reSID and SDL2 audio is to keep them in sync, so that reSID writes audio data at approximately the same speed as the SDL2 audio callback can read it. I have solved this by letting reSID directly control the overall emulation speed to catch up or let go if one or the other falls behind. There is still some problems if &#34;warp mode&#34; is activated where the sync is lost which will cause bad audio while attempting to catch up.<br />
+        <br />
+        Version 0.4 can be downloaded <a href="supplies/tmce64-0.4.tar.gz">here</a> but the <a href="https://github.com/kobolt/tmce64">GitHub</a> repository has also been updated.<br />
+        <br />
+        I have uploaded some videos to YouTube that shows the reSID sound implementation:<br />
+        * Late 80&#39;s <a href="https://www.youtube.com/shorts/u5-h6eYAdSM">&#34;Future Composer 2.0 Intro&#34;</a> demo.<br />
+        * Late 80&#39;s <a href="https://www.youtube.com/shorts/0011a7Ipztk">&#34;In Full Gear&#34;</a> demo in monochrome mode.<br />
+        * Modern <a href="https://www.youtube.com/shorts/vJPg_WGLFfQ">&#34;Digioi&#34;</a> game with heavy PETSCII graphics.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        17/02-2023, 
+        <a href="article-212.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
