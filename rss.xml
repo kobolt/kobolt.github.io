@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 17 Feb 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 03 Mar 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Kermit for CP/M-68K</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-213.html</link>
+    <guid>https://kobolt.github.io/article-213.html</guid>
+    <pubDate>Fri, 03 Mar 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-213.html</description>
+  </item>
   <item>
     <title>Terminal Mode Commodore 64 Emulator SID Support</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-204.html</guid>
     <pubDate>Fri, 23 Sep 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-204.html</description>
-  </item>
-  <item>
-    <title>Epson HX-20 Emulator</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-203.html</link>
-    <guid>https://kobolt.github.io/article-203.html</guid>
-    <pubDate>Fri, 02 Sep 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-203.html</description>
   </item>
 </channel>
 </rss>
