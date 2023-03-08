@@ -49,3 +49,15 @@ img.border {
   border: 3px solid #222222;
 }
 
+/* For mobile, remove the left/right page split: */
+@media all and (orientation: portrait) {
+  menu {
+    background: #dddddd;
+    border: 3px solid #222222;
+  }
+  content {
+    background: #ffffff;
+    border: 3px solid #222222;
+  }
+}
+
