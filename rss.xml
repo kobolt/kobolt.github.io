@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 17 Mar 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Mon, 03 Apr 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>IBM 6576 Power Supply Repair</title>
+    <category>Repair</category>
+    <link>https://kobolt.github.io/article-215.html</link>
+    <guid>https://kobolt.github.io/article-215.html</guid>
+    <pubDate>Mon, 03 Apr 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-215.html</description>
+  </item>
   <item>
     <title>Epson HX-20 Emulator Sound Support</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-206.html</guid>
     <pubDate>Fri, 28 Oct 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-206.html</description>
-  </item>
-  <item>
-    <title>More CP/M Emulator Ports</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-205.html</link>
-    <guid>https://kobolt.github.io/article-205.html</guid>
-    <pubDate>Fri, 14 Oct 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-205.html</description>
   </item>
 </channel>
 </rss>
