@@ -12,18 +12,18 @@ body {
 
 .menu {
   background: #dddddd;
-  float: left;
-  width: 16%;
-  padding: 1%;
-  border: 3px solid #222222;
+  float: none;
+  width: auto;
+  padding: 0;
+  border: initial;
 }
 
 .content {
   background: #ffffff;
-  float: right;
-  width: 78%;
-  padding: 1%;
-  border: 3px solid #222222;
+  float: none;
+  width: auto;
+  padding: 0;
+  border: initial;
 }
 
 .box {
@@ -43,9 +43,11 @@ hr {
 
 img.noborder {
   border: 0; /* Used where the border looks ugly on the background. */
+  max-width: 100%;
 }
 
 img.border {
   border: 3px solid #222222;
+  max-width: 100%;
 }
 
