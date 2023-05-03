@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Mon, 17 Apr 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Wed, 03 May 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Casio Personal Printer FP-40 Repair</title>
+    <category>Repair</category>
+    <link>https://kobolt.github.io/article-217.html</link>
+    <guid>https://kobolt.github.io/article-217.html</guid>
+    <pubDate>Wed, 03 May 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-217.html</description>
+  </item>
   <item>
     <title>lazyboNES Emulator FDS Support</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-208.html</guid>
     <pubDate>Fri, 16 Dec 2022 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-208.html</description>
-  </item>
-  <item>
-    <title>PS/2 Floppy Drive Capacitor Replacement</title>
-    <category>Repair</category>
-    <link>https://kobolt.github.io/article-207.html</link>
-    <guid>https://kobolt.github.io/article-207.html</guid>
-    <pubDate>Fri, 25 Nov 2022 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-207.html</description>
   </item>
 </channel>
 </rss>

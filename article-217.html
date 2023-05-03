@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Casio Personal Printer FP-40 Repair</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Casio Personal Printer FP-40 Repair</h1>
+      <p>
+        I found this small <a href="http://pocket.free.fr/html/casio/fp-40_e.html">Caso FP-40</a> thermal printer in the trash.<br />
+        <br />
+        It had suffered extreme NiCd battery corrosion damage:<br />
+      </p>
+      <img class="border" src="images/casio_fp-40_battery_damage.jpg" alt="Casio FP-40 battery damage" />
+      <p>
+        <br />
+        The board with the most damage is responsible for the cassette interface, the battery connection itself and as a junction to the buttons and DIP switches. This was board bypassed by soldering new wiring between the other boards. There was also some damage on the upper right on mainboard, which was repaired by using a Dremel to remove the solder mask, then re-tinning the slightly corroded traces.<br />
+        <br />
+        Luckily someone already reverse engineered the <a href="http://www.pisi.com.pl/piotr433/">circuit diagram</a> which helps a lot with restoring the wiring.<br />
+        <br />
+        New wiring on the underside of the mainboard:<br />
+      </p>
+      <img class="border" src="images/casio_fp-40_mainboard_soldering.jpg" alt="Casio FP-40 mainboard soldering" />
+      <p>
+        <br />
+        Repair overview with the heavily corroded board (and battery!) now removed:<br />
+      </p>
+      <img class="border" src="images/casio_fp-40_repair_overview.jpg" alt="Casio FP-40 repair overview" />
+      <p>
+        <br />
+        A connection diagram with the new wiring:<br />
+      </p>
+      <img class="border" src="images/casio_fp-40_wiring_diagram.png" alt="Casio FP-40 wiring diagram" />
+      <p>
+        <br />
+        A power source can be connected on the VCC and VP pin headers. I used a current-limiting PSU supplying 4.8V which matches the previous 4x1.2V supply from the NiCd cells. I also tried using the 5V rail from a standard PC PSU but this caused some malfunction so not recommended.<br />
+        <br />
+        Printing of the test pattern, by holding down the &#34;FEED&#34; button while powering on:<br />
+      </p>
+      <img class="border" src="images/casio_fp-40_test_pattern.jpg" alt="Casio FP-40 test pattern" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        03/05-2023, 
+        <a href="article-217.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
