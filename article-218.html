@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Epson HX-20 Emulator External Cassette Support</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Epson HX-20 Emulator External Cassette Support</h1>
+      <p>
+        There is now support for the external cassette interface on my <a href="article-203.html">hex20</a> Epson HX-20 emulator and the version number has been increase to &#34;0.3&#34;. This is specifically for the external interface, referred to as &#34;CAS1:&#34; in BASIC or &#34;C&#34; in the MONITOR. The internal micro-cassette is still not supported, although the interface is probably similar.<br />
+        <br />
+        The cassette emulation works through <a href="https://en.wikipedia.org/wiki/WAV">WAV files</a>, meaning such files are either read or written. Only the specific format of 8-bit, Mono and 44100 Hz sampling rate is supported. Here is an example of converting an <a href="https://en.wikipedia.org/wiki/MP3">MP3</a> file to the right format using the <a href="https://www.mpg123.de/">mpg123</a> and <a href="https://sox.sourceforge.net/">sox</a> command line utilities:<br />
+      </p>
+        <div class="box">
+          <pre>
+mpg123 -w file.wav file.mp3
+sox file.wav -r 44100 -b 8 -c 1 good.wav
+          </pre>
+        </div>
+      <p>
+        <br />
+        Triggering the reading (loading) or writing (saving) is done through the hex20 debugger which is accessed by Ctrl+C. After entering &#39;LOAD&#34;CAS1:&#34;&#39; in BASIC and it is searching, enter the debugger and use the &#39;g&#39; command to start reading the WAV file. Prior to entering &#39;SAVE&#34;CAS1:FILENAME&#34;&#39; in BASIC, enter the debugger and use the &#39;f&#39; command to prepare to write the WAV file. The WAV files that are created by hex20 can be played back to a real Epson HX-20 using it&#39;s EAR input, just make sure the volume is set really high.<br />
+        <br />
+      </p>
+      <img class="border" src="images/hex20-cas1load.png" alt="Loading from CAS1: in BASIC" />
+      <p>
+        <br />
+        An additional feature in this release is the possibility of loading a <a href="https://en.wikipedia.org/wiki/SREC_(file_format)">S-record</a> directly into the MONITOR to modify memory after the system has been initialized. This injection functions similarly to the automatic BASIC program loading. Only 16-bit S-records with the &#34;S1&#34; prefix are recognized, here is an example on how to convert a binary file using the <a href="https://srecord.sourceforge.net/">srec_cat</a> command line utility:<br />
+      </p>
+        <div class="box">
+          <pre>
+srec_cat file.bin -binary -offset 0x1000 -o file.s68 -motorola
+          </pre>
+        </div>
+      <p>
+        <br />
+        Version 0.3 can be downloaded <a href="supplies/hex20-0.3.tar.gz">here</a> but the <a href="https://github.com/kobolt/hex20">GitHub</a> repository has also been updated.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        02/06-2023, 
+        <a href="article-218.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
