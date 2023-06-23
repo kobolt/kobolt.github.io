@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Multi-threaded Password Hasher</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Multi-threaded Password Hasher</h1>
+      <p>
+        A long time ago I read about a programming challenge that involved writing a multi-threaded password hasher, but I never got around to it and had almost forgotten about it. That is, until now, so I present here my effort after combining <a href="http://man7.org/linux/man-pages/man7/mq_overview.7.html">POSIX Message Queues</a> and <a href="http://man7.org/linux/man-pages/man7/pthreads.7.html">POSIX Threads</a>. This particular implementation uses <a href="https://en.wikipedia.org/wiki/MD5">MD5</a> but that can be easily changed by editing the pwgen_hash() function.<br />
+        <br />
+        Here&#39;s the code, link with -lpthread -lrt -lcrypto:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;mqueue.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;openssl/md5.h&gt;
+
+#define QUEUE_NAME &#34;/pwgen_print&#34;
+#define QUEUE_MAX_SIZE 10
+#define QUEUE_MSG_SIZE 128
+
+#define PW_LEN_MAX 32
+
+static char set[256] = {0};
+static int set_size = 1;
+static int min_len = 1;
+static int max_len = 1;
+
+typedef struct pwgen_arg_s {
+  int my_index;
+  int pw_len;
+} pwgen_arg_t;
+
+static inline void pwgen_hash(char *pw, mqd_t mq)
+{
+   char buffer[QUEUE_MSG_SIZE];
+   unsigned char md[MD5_DIGEST_LENGTH];
+
+   MD5_CTX ctx;
+   MD5_Init(&amp;ctx);
+   MD5_Update(&amp;ctx, pw, strlen(pw));
+   MD5_Final(md, &amp;ctx);
+
+   snprintf(buffer, QUEUE_MSG_SIZE, 
+     &#34;%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x   %s&#34;,
+     md[0], md[1], md[2],  md[3],  md[4],  md[5],  md[6],  md[7],
+     md[8], md[9], md[10], md[11], md[12], md[13], md[14], md[15],
+     pw);
+
+   mq_send(mq, buffer, strlen(buffer), 0);
+}
+
+static void pwgen_traverse(uint8_t pw[], int pw_len,
+  int index, int lowest_index, mqd_t mq)
+{
+  if (index == lowest_index) {
+    do {
+      /* Hashing is done here */
+      char buffer[pw_len + 1];
+      for (index = 0; index &lt; pw_len; index++) {
+        buffer[index] = set[pw[index]];
+      }
+      buffer[pw_len] = &#39;&#92;0&#39;;
+      pwgen_hash(buffer, mq);
+
+      pw[lowest_index]++;
+    } while (pw[lowest_index] &lt; set_size);
+
+  } else if (index &gt; lowest_index) {
+    do {
+      pwgen_traverse(pw, pw_len, index - 1, lowest_index, mq);
+      pw[index - 1] = 0;
+      pw[index]++;
+    } while (pw[index] &lt; set_size);
+  }
+}
+
+static void *pwgen_thread(void *arg)
+{
+  uint8_t pw[((pwgen_arg_t *)arg)-&gt;pw_len];
+  mqd_t mq;
+
+  memset(pw, 0, ((pwgen_arg_t *)arg)-&gt;pw_len);
+  pw[0] = ((pwgen_arg_t *)arg)-&gt;my_index;
+
+  mq = mq_open(QUEUE_NAME, O_WRONLY);
+  if (mq == (mqd_t)-1) {
+    fprintf(stderr, &#34;%s: mq_open(): %s&#92;n&#34;, __func__, strerror(errno));
+    return ((void *)-1);
+  }
+
+  pwgen_traverse(pw,
+    ((pwgen_arg_t *)arg)-&gt;pw_len,
+    ((pwgen_arg_t *)arg)-&gt;pw_len - 1,
+    1, mq);
+  mq_close(mq);
+
+  return ((void *)0);
+}
+
+static void *pwgen_print_thread(void *arg)
+{
+  (void)arg;
+  mqd_t mq;
+  ssize_t read;
+  struct mq_attr attr;
+  char buffer[QUEUE_MSG_SIZE];
+  int i;
+
+  memset(&amp;attr, 0, sizeof(struct mq_attr));
+  attr.mq_maxmsg  = QUEUE_MAX_SIZE;
+  attr.mq_msgsize = QUEUE_MSG_SIZE;
+
+  mq = mq_open(QUEUE_NAME, O_CREAT | O_RDONLY, 0644, &amp;attr);
+  if (mq == (mqd_t)-1) {
+    fprintf(stderr, &#34;%s: mq_open(): %s&#92;n&#34;, __func__, strerror(errno));
+    return ((void *)-1);
+  }
+
+  while (1) {
+    read = mq_receive(mq, buffer, QUEUE_MSG_SIZE, NULL);
+    if (read &gt; 0) {
+      for (i = 0; i &lt; read; i++) {
+        fputc(buffer[i], stdout);
+      }
+      fputc(&#39;&#92;n&#39;, stdout);
+    } else {
+      if (read == -1) {
+        fprintf(stderr, &#34;%s: mq_receive(): %s&#92;n&#34;, __func__, strerror(errno));
+      }
+      break;
+    }
+  }
+
+  mq_close(mq);
+  mq_unlink(QUEUE_NAME);
+
+  return ((void *)0);
+}
+
+static void pwgen_start(void)
+{
+  pthread_t pwgen_tid[set_size];
+  pwgen_arg_t arg[set_size];
+  int len, index;
+
+  for (len = min_len; len &lt;= max_len; len++) {
+    /* Start all threads. */
+    for (index = 0; index &lt; set_size; index++) {
+      arg[index].my_index = index;
+      arg[index].pw_len = len;
+      pthread_create(&amp;pwgen_tid[index], NULL, pwgen_thread, &amp;arg[index]);
+    }
+
+    /* Wait for all threads. */
+    for (index = 0; index &lt; set_size; index++) {
+      pthread_join(pwgen_tid[index], NULL);
+    }
+  }
+}
+
+static int pwgen(void)
+{
+  pthread_t print_tid;
+  mqd_t mq;
+
+  /* Create print thread and wait for it to create its message queue. */
+  pthread_create(&amp;print_tid, NULL, pwgen_print_thread, NULL);
+  while (1) {
+    mq = mq_open(QUEUE_NAME, O_WRONLY);
+    if (mq == (mqd_t)-1) {
+      if (errno == ENOENT) {
+        usleep(1000);
+      } else {
+        fprintf(stderr, &#34;%s: mq_open(): %s&#92;n&#34;, __func__, strerror(errno));
+        return -1;
+      }
+
+    } else {
+      break;
+    }
+  }
+
+  /* Start password generating threads. */
+  pwgen_start();
+
+  /* Send dummy message of 0 bytes to terminate print thread. */
+  char dummy[1];
+  mq_send(mq, dummy, 0, 0);
+  pthread_join(print_tid, NULL);
+
+  return 0;
+}
+
+static void display_help(char *progname)
+{
+  fprintf(stderr, &#34;Usage: %s &lt;options&gt;&#92;n&#34;, progname);
+  fprintf(stderr, &#34;Options:&#92;n&#34;
+     &#34;  -h       Display this help and exit.&#92;n&#34;
+     &#34;  -s SET   Character SET to use. (E.g. &#92;&#34;abcde&#92;&#34;)&#92;n&#34;
+     &#34;  -n MIN   Minimum length of generated password. (2 - %d)&#92;n&#34;
+     &#34;  -x MAX   Maximum length of generated password. (2 - %d)&#92;n&#34;
+     &#34;&#92;n&#34;, PW_LEN_MAX, PW_LEN_MAX);
+}
+
+int main(int argc, char *argv[])
+{
+  int c;
+
+  while ((c = getopt(argc, argv, &#34;hs:n:x:&#34;)) != -1) {
+    switch (c) {
+    case &#39;h&#39;:
+      display_help(argv[0]);
+      break;
+
+    case &#39;s&#39;:
+      strncpy(set, optarg, sizeof(set));
+      set_size = strlen(set);
+      break;
+
+    case &#39;n&#39;:
+      min_len = atoi(optarg);
+      break;
+
+    case &#39;x&#39;:
+      max_len = atoi(optarg);
+      break;
+
+    case &#39;?&#39;:
+    default:
+      display_help(argv[0]);
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (set_size &lt;= 1) {
+    fprintf(stderr, &#34;Please specify a character set!&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  if (min_len &lt; 2 || min_len &gt; PW_LEN_MAX) {
+    fprintf(stderr, &#34;Please specify minimum length within range!&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  if (max_len &lt; 2 || max_len &gt; PW_LEN_MAX) {
+    fprintf(stderr, &#34;Please specify minimum length within range!&#92;n&#34;);
+    display_help(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  pwgen();
+
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        23/06-2023, 
+        <a href="article-219.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
