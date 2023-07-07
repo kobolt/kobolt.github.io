@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Epson HX-20 Video Player</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Epson HX-20 Video Player</h1>
+      <p>
+        To push the <a href="https://en.wikipedia.org/wiki/Epson_HX-20">Epson HX-20</a> to its limits, I have programmed a streaming video player for it. The project consists of two parts; an assembly program that runs on the HX-20 which receives the video data and a Linux client in C that sends it. The video data transfer is done on the &#34;high speed&#34; 38400 baud link on the 5-pin &#34;Serial&#34; port of the HX-20.<br />
+        <br />
+        The resolution of the HX-20 is just 120x32 monochrome pixels and data must be pushed to the LCD controllers from the CPU. The video data transfer protocol uses 2 bytes to update one pixel anywhere on the screen. With 38400 baud this makes it possible to update 2400 pixels each second, or 100 per frame with 24 FPS. The Linux client sequentially reads simple <a href="https://netpbm.sourceforge.net/">PBM</a> images.<br />
+        <br />
+        An existing video file can be converted with <a href="https://ffmpeg.org/">ffmpeg</a> and <a href="https://imagemagick.org/">ImageMagick</a> like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+ffmpeg -i &lt;video-file&gt; out%04d.png
+for i in *.png; do convert &#34;$i&#34; -resize 120x32&#92;! &#34;${i/.png/.pbm}&#34;; done
+          </pre>
+        </div>
+      <p>
+        <br />
+        To help with development my <a href="article-203.html">hex20</a> emulator was updated to support emulation of the &#34;high speed&#34; serial interface, which is now available in <a href="supplies/hex20-0.4.tar.gz">version 0.4</a> and in the <a href="https://github.com/kobolt/hex20">GitHub</a> repository.<br />
+        <br />
+        Here is the assembly code, which can be assembled with <a href="https://dasm-assembler.github.io/">dasm</a>:<br />
+      </p>
+        <div class="box">
+          <pre>
+        processor hd6303
+
+; Registers:
+PORT2   equ $03
+TRCSR   equ $11
+RDR     equ $12
+LCDSEL  equ $26
+LCDDAT  equ $2A
+GATEB   equ $28
+
+        org $1000 ; Run from HX-20 RAM.
+; Program:
+start
+        ; Set P22 to redirect SCI serial to external connector:
+        ldaa PORT2
+        nega
+        anda 0x04
+        staa PORT2
+        sei
+        ;
+        ; Read first serial byte, the LCD number (9 to 14) and LCD row data.
+poll1   tst TRCSR
+        bpl poll1
+        ldaa RDR
+        beq poll1 ; If byte is 0 then go back, this can be used to sync.
+        tab ; Prepare B register for row data.
+        ;
+        anda #%00001111 ; Strip lower 4 bits for LCD number selection.
+        staa LCDSEL
+        ;
+        ; The 4 upper bits are LCD row data.
+        ; LCD rows clear: 0x20, 0x24, 0x28, 0x2C, 0x30, 0x34, 0x38, 0x3C
+        ; LCD rows set  : 0x40, 0x44, 0x48, 0x4C, 0x50, 0x54, 0x58, 0x5C
+        tba
+        ; Bits 4 and 5 for the lower 4 row bits.
+        anda #%00110000
+        lsra
+        lsra
+        ; Bits 6 and 7 for the upper 4 row bits.
+        lsrb
+        lsrb
+        lsrb
+        lsrb
+        lsrb
+        lsrb
+        incb
+        incb
+        aslb
+        aslb
+        aslb
+        aslb
+        aba ; Add A and B...
+        tab ; ...Store row data in B for use later.
+        ;
+        ; Read second serial byte, the LCD column (0x80-&gt;0xA7, 0xC0-&gt;0xE7).
+poll2   tst TRCSR
+        bpl poll2
+        ldaa RDR
+        beq poll1 ; If byte is 0 then go back, this can be used to sync.
+        ;
+        ; Column
+        staa LCDDAT
+bsycol  tst GATEB
+        bpl bsycol 
+        ldx LCDDAT ; Clock LCD SCK signal 4 times.
+        ldx LCDDAT
+        ldx LCDDAT
+        ldx LCDDAT
+        ;
+        ; Row
+        stab LCDDAT
+bsyrow  tst GATEB
+        bpl bsyrow 
+        ldx LCDDAT ; Clock LCD SCK signal 4 times.
+        ldx LCDDAT
+        ldx LCDDAT
+        ldx LCDDAT
+        ;
+        ; Repeat and go back to first byte.
+        jmp poll1
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is the C code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+#include &lt;time.h&gt;
+#include &lt;limits.h&gt;
+
+static bool image[32][120];
+static bool prev_image[32][120];
+
+static int image_read(const char *path)
+{
+  FILE *fh;
+  char line[128];
+  int c;
+  int x;
+  int y;
+
+  fh = fopen(path, &#34;rb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;fopen() failed with errno: %d&#92;n&#34;, errno);
+    return -1;
+  }
+
+  fgets(line, sizeof(line), fh); /* Header */
+  if (line[0] != &#39;P&#39; &amp;&amp; line[1] != &#39;4&#39;) {
+    fprintf(stderr, &#34;Not a binary PBM image!&#92;n&#34;);
+    return -1;
+  }
+
+reread:
+  fgets(line, sizeof(line), fh); /* Additional Headers */
+  if (line[0] == &#39;#&#39;) {
+    goto reread;
+  }
+
+  if (strncmp(line, &#34;120 32&#34;, 6) != 0) {
+    fprintf(stderr, &#34;Dimensions must be 120x32!&#92;n&#34;);
+    return -1;
+  }
+
+  x = 0;
+  y = 0;
+  while ((c = fgetc(fh)) != EOF) {
+    image[y][x]   = (c &gt;&gt; 7) &amp; 1;
+    image[y][x+1] = (c &gt;&gt; 6) &amp; 1;
+    image[y][x+2] = (c &gt;&gt; 5) &amp; 1;
+    image[y][x+3] = (c &gt;&gt; 4) &amp; 1;
+    image[y][x+4] = (c &gt;&gt; 3) &amp; 1;
+    image[y][x+5] = (c &gt;&gt; 2) &amp; 1;
+    image[y][x+6] = (c &gt;&gt; 1) &amp; 1;
+    image[y][x+7] =  c       &amp; 1;
+    x += 8;
+    if (x == 120) {
+      x = 0;
+      y++;
+      if (y == 32) {
+        break;
+      }
+    }
+  }
+  fclose(fh);
+
+  return 0;
+}
+
+static void image_display(int fd)
+{
+  uint8_t lcd;
+  uint8_t col;
+  uint8_t row;
+  uint8_t byte;
+  int x;
+  int y;
+
+  for (lcd = 9; lcd &lt;= 14; lcd++) {
+    for (col = 0x80; col &lt; 0xA8; col++) {
+      for (row = 0; row &lt; 8; row++) {
+        y =  ((lcd - 9) / 3) * 16;
+        x = (((lcd - 9) % 3) * 40) + (col - 0x80);
+
+        if (image[y+row][x] == prev_image[y+row][x]) {
+          continue;
+        }
+
+        if (image[y+row][x]) {
+          byte = lcd | ((row + 8) &lt;&lt; 4);
+        } else {
+          byte = lcd | (row &lt;&lt; 4);
+        }
+
+        write(fd, &amp;byte, 1);
+        write(fd, &amp;col, 1);
+      }
+    }
+    for (col = 0xC0; col &lt; 0xE8; col++) {
+      for (row = 0; row &lt; 8; row++) {
+        y = (((lcd - 9) / 3) * 16) + 8;
+        x = (((lcd - 9) % 3) * 40) + (col - 0xC0);
+
+        if (image[y+row][x] == prev_image[y+row][x]) {
+          continue;
+        }
+
+        if (image[y+row][x]) {
+          byte = lcd | ((row + 8) &lt;&lt; 4);
+        } else {
+          byte = lcd | (row &lt;&lt; 4);
+        }
+
+        write(fd, &amp;byte, 1);
+        write(fd, &amp;col, 1);
+      }
+    }
+  }
+
+  memcpy(prev_image, image, sizeof(bool) * 32 * 120);
+}
+
+int main(int argc, char *argv[])
+{
+  struct termios tios;
+  int fd;
+  uint8_t byte;
+  struct timespec ts;
+  uint64_t now;
+  uint64_t target;
+  int image_no;
+  char image_path[PATH_MAX];
+
+  if (argc != 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;tty&gt; &lt;directory&gt;&#92;n&#34;, argv[0]);
+    return 1;
+  }
+
+  fd = open(argv[1], O_RDWR | O_NOCTTY);
+  if (fd == -1) {
+    fprintf(stderr, &#34;open() failed with errno: %d&#92;n&#34;, errno);
+    return 1;
+  }
+
+  if (tcgetattr(fd, &amp;tios) == -1) {
+    fprintf(stderr, &#34;tcgetattr() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return 1;
+  }
+
+  cfmakeraw(&amp;tios);
+  cfsetispeed(&amp;tios, B38400);
+  cfsetospeed(&amp;tios, B38400);
+
+  if (tcsetattr(fd, TCSANOW, &amp;tios) == -1) {
+    fprintf(stderr, &#34;tcsetattr() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return 1;
+  }
+
+  /* Sync: */
+  byte = 0;
+  write(fd, &amp;byte, 1);
+  write(fd, &amp;byte, 1);
+
+  /* Present a blank image first to clear the screen: */
+  memset(image, false, sizeof(bool) * 32 * 120);
+  memset(prev_image, true, sizeof(bool) * 32 * 120);
+
+  clock_gettime(CLOCK_MONOTONIC, &amp;ts);
+  target = ((uint32_t)ts.tv_sec * 1000000000L) + ts.tv_nsec;
+  target += 41666000L;
+
+  image_no = 0;
+  while (1) {
+    /* Display it: */
+    image_display(fd);
+    image_no++;
+
+    /* Sync: */
+    byte = 0;
+    write(fd, &amp;byte, 1);
+    write(fd, &amp;byte, 1);
+
+    /* Load next image: */
+    snprintf(image_path, sizeof(image_path),
+      &#34;%s/out%04d.pbm&#34;, argv[2], image_no);
+    fprintf(stderr, &#34;[%s]&#34;, image_path);
+    if (image_read(image_path) != 0) {
+      break;
+    }
+
+    /* Wait for one frame: 41666us */
+    clock_gettime(CLOCK_MONOTONIC, &amp;ts);
+    now = ((uint32_t)ts.tv_sec * 1000000000L) + ts.tv_nsec;
+    while (now &lt; target) {
+      fprintf(stderr, &#34;.&#34;);
+      usleep(1000);
+      clock_gettime(CLOCK_MONOTONIC, &amp;ts);
+      now = ((uint32_t)ts.tv_sec * 1000000000L) + ts.tv_nsec;
+    }
+    fprintf(stderr, &#34;&#92;n&#34;);
+
+    /* Set next target further ahead: */
+    while (now &gt; target) {
+      target += 41666000L;
+    }
+  }
+
+  close(fd);
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        And there is a Makefile to conveniently build both:<br />
+      </p>
+        <div class="box">
+          <pre>
+all: hx20video.s68 hx20video
+
+hx20video.bin: hx20video.asm
+	dasm $^ -o$@ -f3 -l$(basename $^).lst
+
+hx20video.s68: hx20video.bin
+	srec_cat hx20video.bin -binary -offset 0x1000 -o hx20video.s68 -motorola
+
+hx20video: hx20video.c
+	gcc -o hx20video hx20video.c -Wall -Wextra
+
+.PHONY: clean
+clean:
+	rm -f hx20video *.s68 *.bin *.lst
+          </pre>
+        </div>
+      <p>
+        <br />
+        The machine code produced for the HX-20 is meant to be run from RAM and the S-record can be easily loaded into the MONITOR with the hex20 emulator. In hex20 it is possible to <a href="article-218.html">save a program to a WAV file</a> which can be played into the MONITOR a real HX-20 from the external cassette interface.<br />
+        <br />
+        Here is a <a href="https://www.youtube.com/watch?v=ZwgCA46qBcA">YouTube demo video</a> of a silhouette animation that was converted.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        07/07-2023, 
+        <a href="article-220.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
