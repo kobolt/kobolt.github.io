@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 07 Jul 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Tue, 22 Aug 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Racing Game in Curses</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-221.html</link>
+    <guid>https://kobolt.github.io/article-221.html</guid>
+    <pubDate>Tue, 22 Aug 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-221.html</description>
+  </item>
   <item>
     <title>Epson HX-20 Video Player</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-212.html</guid>
     <pubDate>Fri, 17 Feb 2023 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-212.html</description>
-  </item>
-  <item>
-    <title>ASCII Atari 2600 Emulator</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-211.html</link>
-    <guid>https://kobolt.github.io/article-211.html</guid>
-    <pubDate>Fri, 03 Feb 2023 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-211.html</description>
   </item>
 </channel>
 </rss>
