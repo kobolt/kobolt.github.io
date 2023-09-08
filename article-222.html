@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - NEC PC-9801N Repair</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>NEC PC-9801N Repair</h1>
+      <p>
+        After removing all the batteries inside, I brought a NEC PC-9801N that I got from some friends with me in my luggage from Japan. The <a href="https://en.wikipedia.org/wiki/PC-98">PC-9800</a> series of computers are mostly only found in Japan and feature an altered architecture that differs slightly from standard IBM compatible PCs. One of the internal batteries had leaked and started to cause some heavy corrosion, but luckily only on a bracket and not on any of the circuit boards inside. However, this unit had problems with both the power supply brick and the floppy disk drive that needed repair.<br />
+        <br />
+        Inside the power supply unit, two electrolytic capacitors had started leaking:<br />
+      </p>
+      <img class="border" src="images/pc9801n_psu_bad_caps.jpg" alt="Bad capacitors in the NEC PC-9801N PSU" />
+      <p>
+        <br />
+        One of them 120uF/25V and the other 27uF/35V which looked like this on the underside:<br />
+      </p>
+      <img class="border" src="images/pc9801n_psu_bad_cap_c7.jpg" alt="Bad capacitor C7" />
+      <p>
+        <br />
+        I had no 27uF capacitor in storage, so I used a 33uF instead which worked fine. With the power supply fixed the PC would turn on, but when accessing the floppy disk drive some strange sounds would appear. When opening the drive for inspection I discovered that the belt had turned to mush and coiled itself around the motor:<br />
+      </p>
+      <img class="border" src="images/pc9801n_fdd_belt_old.jpg" alt="Broken belt in floppy disk drive" />
+      <p>
+        <br />
+        But that is not all, the floppy disk drive (which is a &#34;Citizen U1DB-05A&#34; by the way) also contains some known leaking SMD electrolytic capacitors. The larger ones of these had indeed started leaking and caused some minor corrosion. I replaced these with modern MLCC replacements of same values:<br />
+      </p>
+      <img class="border" src="images/pc9801n_fdd_caps_new.jpg" alt="New MLCC capacitors in floppy disk drive." />
+      <p>
+        <br />
+        For replacing the floppy drive belt, I found some information online regarding a <a href="https://www.sengoku.co.jp/mod/sgk_cart/detail.php?code=EEHD-0HEC">specific one</a> with dimensions of 57x0.4x2.2 to buy. The new belt is installed like so:<br />
+      </p>
+      <img class="border" src="images/pc9801n_fdd_belt_new.jpg" alt="New belt in floppy disk drive" />
+      <p>
+        <br />
+        The PC-98 series of computers use their own unusual floppy disk formats which differs from the standard IBM PC ones. One of these formats is known as &#34;1232&#34; and is supported by the PC-9801N floppy drive. By using a old IBM branded USB floppy drive (showing up as &#34;Y-E Data, Inc. FlashBuster-U Floppy&#34; in lsusb) I was able to create floppy disks with that format.<br />
+        <br />
+        First use <a href="https://github.com/tedigh/ufiformat">ufiformat</a> to low-level format the floppy disk:<br />
+      </p>
+        <div class="box">
+          <pre>
+sudo modprobe sg
+sudo ufiformat -f 1232 /dev/sdX
+          </pre>
+        </div>
+      <p>
+        <br />
+        It is then possible to <a href="https://en.wikipedia.org/wiki/Dd_(Unix)">dd</a> images over or use <a href="https://www.gnu.org/software/mtools/">Mtools</a> to do high-level formatting and copy files:<br />
+      </p>
+        <div class="box">
+          <pre>
+mformat -t77 -h2 -s8 -S3 -c1 -m0xfe -r6 a:
+mcopy *.* a:
+          </pre>
+        </div>
+      <p>
+        For Mtools to work, the &#34;a:&#34; must be configured to the USB floppy disk drive in &#34;/etc/mtools.conf&#34; first. I noticed that many PC-98 floppy disk images come in a &#34;FDI&#34; format. To be able to &#34;dd&#34; these over, remove the 4096 byte header first.<br />
+        <br />
+        Here is the repaired computer running the PC-98 version of <a href="https://en.wikipedia.org/wiki/Puyo_Puyo_(video_game)">Puyo Puyo</a>:<br />
+      </p>
+      <img class="border" src="images/pc9801n_puyo_puyo.jpg" alt="PC-9801N running Puyo Puyo" />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        08/09-2023, 
+        <a href="article-222.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

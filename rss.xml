@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Tue, 22 Aug 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 08 Sep 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>NEC PC-9801N Repair</title>
+    <category>Repair</category>
+    <link>https://kobolt.github.io/article-222.html</link>
+    <guid>https://kobolt.github.io/article-222.html</guid>
+    <pubDate>Fri, 08 Sep 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-222.html</description>
+  </item>
   <item>
     <title>Racing Game in Curses</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-213.html</guid>
     <pubDate>Fri, 03 Mar 2023 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-213.html</description>
-  </item>
-  <item>
-    <title>Terminal Mode Commodore 64 Emulator SID Support</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-212.html</link>
-    <guid>https://kobolt.github.io/article-212.html</guid>
-    <pubDate>Fri, 17 Feb 2023 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-212.html</description>
   </item>
 </channel>
 </rss>
