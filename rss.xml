@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 08 Sep 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 22 Sep 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Epson HX-20 Emulator MinGW Build</title>
+    <category>Open Source</category>
+    <link>https://kobolt.github.io/article-223.html</link>
+    <guid>https://kobolt.github.io/article-223.html</guid>
+    <pubDate>Fri, 22 Sep 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-223.html</description>
+  </item>
   <item>
     <title>NEC PC-9801N Repair</title>
     <category>Repair</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-214.html</guid>
     <pubDate>Fri, 17 Mar 2023 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-214.html</description>
-  </item>
-  <item>
-    <title>Kermit for CP/M-68K</title>
-    <category>Scripts and Code</category>
-    <link>https://kobolt.github.io/article-213.html</link>
-    <guid>https://kobolt.github.io/article-213.html</guid>
-    <pubDate>Fri, 03 Mar 2023 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-213.html</description>
   </item>
 </channel>
 </rss>

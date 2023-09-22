@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Epson HX-20 Emulator MinGW Build</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Epson HX-20 Emulator MinGW Build</h1>
+      <p>
+        I have added a Makefile to compile <a href="article-203.html">hex20</a> for Windows with <a href="https://www.mingw-w64.org/">MinGW</a> and <a href="https://pdcurses.org/">PDCurses</a>. Some improvements has also been made to the RS-232C emulation and it is now possible to use RS-232C to save files from BASIC as well. This can be used to read a <a href="article-218.html">cassette WAV file</a> and then write it back to a text file.<br />
+        <br />
+        Assuming the PDCurses version 3.9 and the MinGW directory is located at the same level has the hex20 source directory, the following steps can be used to build:<br />
+      </p>
+        <div class="box">
+          <pre>
+set PATH=..&#92;mingw32&#92;bin;%PATH%
+set PDCURSES_SRCDIR=../PDCurses-3.9
+mingw32-make.exe -f %PDCURSES_SRCDIR%/wincon/Makefile
+mingw32-make.exe -f Makefile.mingw
+          </pre>
+        </div>
+      <p>
+        <br />
+        The changes are included in the updated version 0.5 which can be downloaded <a href="supplies/hex20-0.5.tar.gz">here</a> but the <a href="https://github.com/kobolt/hex20">GitHub</a> repository has been updated as well. For convenience, here is also a <a href="supplies/hex20.exe">Windows binary</a> built with the described method.<br />
+        <br />
+        Here is a screenshot of hex20 running in the Windows Command Prompt:<br />
+      </p>
+      <img class="border" src="images/hex20-win.png" alt="hex20.exe in Command Prompt" />
+      <p>
+        <br />
+        The included MinGW Makefile does not build the <a href="article-214.html">sound support</a>, but this is possible to achieve with <a href="https://www.libsdl.org/">SDL2</a> and some changes:<br />
+      </p>
+        <div class="box">
+          <pre>
+OBJECTS=main.o hd6301.o mem.o console.o rs232.o cassette.o debugger.o crc32.o piezo.o pdcurses.a
+CFLAGS=-Wall -Wextra -I../PDCurses-3.9 -I../SDL2-2.0.20/i686-w64-mingw32/include -DF32_AUDIO -DPIEZO_AUDIO_ENABLE -DSERIAL_DISABLE -DMANUAL_BREAK
+LDFLAGS=-lSDL2 -lm -L../SDL2-2.0.20/i686-w64-mingw32/lib
+          </pre>
+        </div>
+      <p>
+      </p>
+        <div class="box">
+          <pre>
+piezo.o: piezo.c
+        gcc -c $^ ${CFLAGS}
+          </pre>
+        </div>
+      <p>
+        SDL2 gets dynamically linked, so to run it afterwards the SDL2.dll runtime is also needed.<br />
+        <br />
+        High speed serial support is not included since it relies on Linux specific functionality to route it to a TTY. For some strange reason the SIGINT signal handler does not get called, so instead the Ctrl+C break to enter the debugger is handled by the console emulation layer directly.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        22/09-2023, 
+        <a href="article-223.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
