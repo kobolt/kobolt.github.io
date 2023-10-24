@@ -41,6 +41,11 @@ hr {
   border: 0;
 }
 
+p.warning {
+  color: #ff0000;
+  font-weight: bold;
+}
+
 img.noborder {
   border: 0; /* Used where the border looks ugly on the background. */
 }
