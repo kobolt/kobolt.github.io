@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Epson HX-20 Terminal Program</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Epson HX-20 Terminal Program</h1>
+      <p>
+        To be able to convert the <a href="https://en.wikipedia.org/wiki/Epson_HX-20">Epson HX-20</a> into to a terminal using its RS-232C port, I made this assembly program which can be assembled with <a href="https://dasm-assembler.github.io/">dasm</a>:<br />
+      </p>
+        <div class="box">
+          <pre>
+        processor hd6303
+
+; Kernel routines:
+DSPSCR  equ $FF4F
+RSMST   equ $FF88
+RSONOF  equ $FF85
+RSOPEN  equ $FF82
+RSGET   equ $FF79
+RSPUT   equ $FF76
+RSCLOS  equ $FF7F
+KEYIN   equ $FF9A
+KEYSTS  equ $FF9D
+MENU    equ $FF25
+SCRFNC  equ $FF5E
+
+; Kernel variables:
+RSDCNT  equ $01C2
+
+        org $1000 ; Run from HX-20 RAM.
+; Program:
+start
+        ; Set virtual screen size.
+        ldx #packet
+        jsr SCRFNC
+        jmp endpack
+packet
+        dc.b $87   ; Screen size function
+        dc.b 19    ; Columns
+        dc.b 3     ; Rows
+        dc.w $1300 ; Buffer address
+endpack
+
+        ; Clear the virtual screen.
+        ldaa #$0C
+        jsr DSPSCR
+
+        ; Set RS-232 parameters.
+        ldaa #%11110101 ; No parity, 1 stop bit, flow control off.
+        ;ldab #%01001000 ; 1200bps, 8 data bits.
+        ldab #%00101000 ; 300bps, 8 data bits.
+        jsr RSMST
+
+        ; Turn on RS-232.
+        ldaa #1
+        jsr RSONOF
+
+        ; Setup RS-232 buffer.
+        ldd #200
+        ldx #$1100
+        jsr RSOPEN
+
+rschk
+        ; Get one character from RS-232.
+        ldd RSDCNT
+        beq keychk
+        jsr RSGET
+
+        ; Output on virtual screen.
+        jsr DSPSCR
+
+keychk
+        ; Check for keyboard activity.
+        jsr KEYSTS
+        beq rschk
+        jsr KEYIN
+
+        ; Terminate on &#39;ESC&#39; press.
+        cmpa #$1B
+        beq end
+
+        ; Check for swap between lowercase and uppercase.
+        cmpa #$41 ; &#39;A&#39;
+        blt cdone
+        cmpa #$5A ; &#39;Z&#39;
+        ble cutol
+        cmpa #$61 ; &#39;a&#39;
+        blt cdone
+        cmpa #$7A ; &#39;z&#39;
+        bgt cdone
+
+        ; Covert from lowercase to uppercase.
+        anda #%11011111
+        jsr cdone
+
+cutol
+        ; Covert from uppercase to lowercase.
+        oraa #%00100000
+
+cdone
+        ; Put one character on RS-232.
+        jsr RSPUT
+        jmp rschk
+
+end
+        ; Shut down RS-232.
+        jsr RSCLOS
+        ldaa #0
+        jsr RSONOF
+
+        ; Go back to main menu.
+        jmp MENU
+
+          </pre>
+        </div>
+      <p>
+        <br />
+        It is only a &#34;dumb&#34; terminal supporting a few of the basic ASCII control codes, which happens to be handled automatically by the &#34;virtual screen&#34; routines in the HX-20 ROM code. It&#39;s best to run the communication at 300 baud, which is hard-coded into this program. Running faster baudrates will cause the receive buffer to overflow because writing to the LCD screen and scrolling it is too slow.<br />
+        <br />
+        For convenience, here is a <a href="https://en.wikipedia.org/wiki/BASIC">BASIC</a> representation of the program:<br />
+      </p>
+        <div class="box">
+          <pre>
+1 DATA 206,16,9,189,255,94,126,16,14,135,19,3,19,0,134,12
+2 DATA 189,255,79,134,245,198,40,189,255,136,134,1,189,255,133,204
+3 DATA 0,200,206,17,0,189,255,130,252,1,194,39,6,189,255,121
+4 DATA 189,255,79,189,255,157,39,240,189,255,154,129,27,39,29,129
+5 DATA 65,45,19,129,90,47,13,129,97,45,11,129,122,46,7,132
+6 DATA 223,189,16,86,138,32,189,255,118,126,16,40,189,255,127,134
+7 DATA 0,189,255,133,126,255,37
+8 FOR I=4096 TO 4198
+9 READ A
+10 POKE I,A
+11 NEXT I
+12 EXEC 4096
+          </pre>
+        </div>
+      <p>
+        <br />
+        Before loading this BASIC program, the &#34;MEMSET 8192&#34; BASIC command must be run to move the program area, to avoid corrupting anything.<br />
+        <br />
+        Here is a <a href="https://www.youtube.com/watch?v=K40e7f1X9LQ">YouTube demo video</a> of the terminal program in action against a Linux host to do some rudimentary web browsing.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        10/11-2023, 
+        <a href="article-225.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

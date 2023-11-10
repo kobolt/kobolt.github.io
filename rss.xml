@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 13 Oct 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 10 Nov 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Epson HX-20 Terminal Program</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-225.html</link>
+    <guid>https://kobolt.github.io/article-225.html</guid>
+    <pubDate>Fri, 10 Nov 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-225.html</description>
+  </item>
   <item>
     <title>Epson HX-20 Micro-Cassette Data Recovery</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-216.html</guid>
     <pubDate>Mon, 17 Apr 2023 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-216.html</description>
-  </item>
-  <item>
-    <title>IBM 6576 Power Supply Repair</title>
-    <category>Repair</category>
-    <link>https://kobolt.github.io/article-215.html</link>
-    <guid>https://kobolt.github.io/article-215.html</guid>
-    <pubDate>Mon, 03 Apr 2023 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-215.html</description>
   </item>
 </channel>
 </rss>
