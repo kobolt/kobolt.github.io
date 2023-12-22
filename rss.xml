@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 08 Dec 2023 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 22 Dec 2023 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Sega SG-1000/SC-3000 Emulator for BASIC</title>
+    <category>Open Source</category>
+    <link>https://kobolt.github.io/article-228.html</link>
+    <guid>https://kobolt.github.io/article-228.html</guid>
+    <pubDate>Fri, 22 Dec 2023 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-228.html</description>
+  </item>
   <item>
     <title>M80 Framework Revisited</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-219.html</guid>
     <pubDate>Fri, 23 Jun 2023 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-219.html</description>
-  </item>
-  <item>
-    <title>Epson HX-20 Emulator External Cassette Support</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-218.html</link>
-    <guid>https://kobolt.github.io/article-218.html</guid>
-    <pubDate>Fri, 02 Jun 2023 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-218.html</description>
   </item>
 </channel>
 </rss>
