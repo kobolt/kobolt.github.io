@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - USB Cable Testing</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>USB Cable Testing</h1>
+      <p>
+        As is common I have accumulated a lot of USB cables over the years. After having trouble with one of them I decided it was time to test them all. There seems to be several different approaches to this, but I decided supply the cable with the usual 5V supply and put a 100 ohm power resistor on the other end as load. I am not sure if this is very accurate, but it should be good enough to filter out good and bad cables.<br />
+        <br />
+        My modular approach involved the resistor with soldered connectors to be used with Mini-USB and Micro-USB breakout boards:<br />
+      </p>
+      <img class="border" src="images/usb_connectors.jpg" alt="USB connectors and power resistor" />
+      <p>
+        <br />
+        I measured the 5V source to actually be around 5.09V. Nearly all of the cables are of unknown origin, so only the length is and measure voltage are listed.<br />
+        <br />
+        Micro-USB:<br />
+        * 300cm = 4.95V<br />
+        * 200cm = 5.06V<br />
+        * 120cm = 5.04V<br />
+        * 100cm = 5.07V<br />
+        * 33cm = 5.06V<br />
+        * 32cm = 5.04V<br />
+        * 32cm = 5.07V<br />
+        <br />
+        Mini-USB:<br />
+        * 120cm = 5.05V<br />
+        * 80cm = Broken!<br />
+        * 80cm = 4.91V<br />
+        * 73cm = 4.82V<br />
+        * 57cm = 5.07V<br />
+        * 44cm = 5.07V<br />
+        * 44cm = 5.07V<br />
+        * 31cm = 5.08V<br />
+        * 28cm = 5.04V<br />
+        * 22cm = 5.08V<br />
+        <br />
+        As expected from the Micro-USB cables, the 3m cable had quite a large voltage drop, but I was surprised about the 2m cable giving such good results. Among the Mini-USB ones there was one broken and two pretty poor ones that fell below 5.00V. Those will go to the recycler.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#mundane">Mundane</a>,
+        by
+        Kjetil
+        @ 
+        26/01-2024, 
+        <a href="article-229.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

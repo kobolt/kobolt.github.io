@@ -5,10 +5,18 @@
   <link>http://kobolt.github.io/</link>
   <description>A blog about my projects!</description>
   <language>en-us</language>
-  <copyright>Copyright 2007-2023 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 22 Dec 2023 00:00:00 -0000</lastBuildDate>
+  <copyright>Copyright 2007-2024 Kjetil Erga</copyright>
+  <lastBuildDate>Fri, 26 Jan 2024 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>USB Cable Testing</title>
+    <category>Mundane</category>
+    <link>https://kobolt.github.io/article-229.html</link>
+    <guid>https://kobolt.github.io/article-229.html</guid>
+    <pubDate>Fri, 26 Jan 2024 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-229.html</description>
+  </item>
   <item>
     <title>Sega SG-1000/SC-3000 Emulator for BASIC</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-220.html</guid>
     <pubDate>Fri, 07 Jul 2023 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-220.html</description>
-  </item>
-  <item>
-    <title>Multi-threaded Password Hasher</title>
-    <category>Scripts and Code</category>
-    <link>https://kobolt.github.io/article-219.html</link>
-    <guid>https://kobolt.github.io/article-219.html</guid>
-    <pubDate>Fri, 23 Jun 2023 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-219.html</description>
   </item>
 </channel>
 </rss>
