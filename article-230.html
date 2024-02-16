@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - CP/M Emulator C99 Compatibility</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CP/M Emulator C99 Compatibility</h1>
+      <p>
+        I have made some changes to my <a href="article-205.html">&#34;kaytil&#34; Z80 CP/M 2.2 emulator</a> to support compilation on older Linux distributions. This meant removing some <a href="https://en.wikipedia.org/wiki/C11_(C_standard_revision)">C11</a> specific changes I made and reverting back to <a href="https://en.wikipedia.org/wiki/C99">C99</a>.<br />
+        <br />
+        The source files used for the DOS and Windows targets are also affected so that might also be a benefit. The GR-SAKURA and Raspberry Pi Pico target specific source files are not changed since the hardware for those is newer than C11. When compiling for Linux the &#34;_POSIX_C_SOURCE&#34; is also defined since it is required to reach some of the standard library functions with C99.<br />
+        <br />
+        The biggest change required when going to C99 was the replacement of anonymous structures and unions with named ones. Some additional macros were added to help with this transition. There was a unexpected &#34;bug&#34; appearing when compiling for Linux with C99 as well; the arrival of the SIGALRM signal would result in a program termination. The solution was to change from using signal() to using sigaction() for setting up the signal handler.<br />
+        <br />
+        I also looked into going as far back as supporting pure <a href="https://en.wikipedia.org/wiki/ANSI_C">C89</a> and made some minor changes for that as well. But I stopped due to the lack &#34;bit-field&#34; support, which required a lot of changes. The code is compilable with -std=c89 but will give warnings with the -Wpedantic flag set.<br />
+        <br />
+        Here is a screenshot running on Slackware 11.0 in QEMU and compiled with GCC 3.4.6:<br />
+      </p>
+      <img class="border" src="images/kaytil_qemu_slack11.png" alt="Emulator within an emulator!" />
+      <p>
+        <br />
+        The version has been bumped to 0.4 and the new package be found <a href="supplies/kaytil-0.4.tar.gz">here</a> or gotten from the <a href="https://github.com/kobolt/kaytil">Git repo</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        16/02-2024, 
+        <a href="article-230.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
