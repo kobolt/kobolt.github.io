@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Epson HX-20 Emulator Micro-Printer Support</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Epson HX-20 Emulator Micro-Printer Support</h1>
+      <p>
+        There is now support for the micro-printer in my <a href="article-223.html">hex20</a> Epson HX-20 emulator. The version has been bumped to 0.6 and it can be downloaded <a href="supplies/hex20-0.6.tar.gz">here</a> or fetched from the <a href="https://github.com/kobolt/hex20">GitHub</a> repository. A text file is specified by the &#34;-p&#34; argument which will get appended with the dot lines from the printer in form of &#39;#&#39; and &#39; &#39; characters. The output is 144 dots wide.<br />
+        <br />
+        The reason this support was added was to experiment with graphical printing on a real HX-20 and having emulation support makes everything a lot easier in terms of software development.<br />
+        <br />
+        Here is a C program that will generate a <a href="https://dasm-assembler.github.io/">dasm</a> compatible assembly program to print a <a href="https://netpbm.sourceforge.net/doc/pbm.html">binary PBM</a> image.<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;string.h&gt;
+
+int main(void)
+{
+  char line[128];
+  bool dots[144];
+  int c;
+  int n;
+  int i;
+  int dotline;
+
+  fgets(line, sizeof(line), stdin);
+  if (line[0] != &#39;P&#39; &amp;&amp; line[1] != &#39;4&#39;) {
+    fprintf(stderr, &#34;Not a binary PBM image!&#92;n&#34;);
+    return EXIT_FAILURE;
+  }
+
+reread:
+  fgets(line, sizeof(line), stdin);
+  if (line[0] == &#39;#&#39;) {
+    goto reread;
+  }
+
+  if (strncmp(line, &#34;144 &#34;, 4) != 0) {
+    fprintf(stderr, &#34;Width must be 144 pixels!&#92;n&#34;);
+    return -1;
+  }
+
+  /* Generate assembly program header: */
+  fprintf(stdout, &#34;        processor hd6303&#92;n&#34;);
+  fprintf(stdout, &#34;        org $1000&#92;n&#34;);
+  fprintf(stdout, &#34;        jmp start&#92;n&#34;);
+  fprintf(stdout, &#34;data&#92;n&#34;);
+
+  /* Generate image data: */
+  n = 0;
+  dotline = 0;
+  while ((c = fgetc(stdin)) != EOF) {
+    dots[n]   = (c &gt;&gt; 7) &amp; 1;
+    dots[n+1] = (c &gt;&gt; 6) &amp; 1;
+    dots[n+2] = (c &gt;&gt; 5) &amp; 1;
+    dots[n+3] = (c &gt;&gt; 4) &amp; 1;
+    dots[n+4] = (c &gt;&gt; 3) &amp; 1;
+    dots[n+5] = (c &gt;&gt; 2) &amp; 1;
+    dots[n+6] = (c &gt;&gt; 1) &amp; 1;
+    dots[n+7] =  c       &amp; 1;
+    n += 8;
+    if (n == 144) {
+      for (i = 0; i &lt; 144; i += 6) {
+        fprintf(stdout, &#34;        dc.b $%02x&#92;n&#34;,
+          ((dots[i+5] &lt;&lt; 5) |
+           (dots[i+4] &lt;&lt; 4) |
+           (dots[i+3] &lt;&lt; 3) |
+           (dots[i+2] &lt;&lt; 2) |
+           (dots[i+1] &lt;&lt; 1) |
+           (dots[i])));
+      }
+      n = 0;
+      dotline++;
+      if (dotline &gt;= 255) {
+        break; /* Limit */
+      }
+    }
+  }
+
+  /* Generate assembly program footer: */
+  fprintf(stdout, &#34;start&#92;n&#34;);
+  fprintf(stdout, &#34;        ldaa #%d&#92;n&#34;, dotline);
+  fprintf(stdout, &#34;        ldab #24&#92;n&#34;);
+  fprintf(stdout, &#34;        ldx #data&#92;n&#34;);
+  fprintf(stdout, &#34;loop&#92;n&#34;);
+  fprintf(stdout, &#34;        jsr $FF91&#92;n&#34;);
+  fprintf(stdout, &#34;        abx&#92;n&#34;);
+  fprintf(stdout, &#34;        deca&#92;n&#34;);
+  fprintf(stdout, &#34;        bne loop&#92;n&#34;);
+  fprintf(stdout, &#34;        jmp $FF25&#92;n&#34;);
+
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a Makefile for the entire process, assuming an &#34;image.pbm&#34; input file exists:<br />
+      </p>
+        <div class="box">
+          <pre>
+all: image.s68
+
+image.bin: image.asm
+	dasm $^ -o$@ -f3 -l$(basename $^).lst
+
+image.s68: image.bin
+	srec_cat image.bin -binary -offset 0x1000 -o image.s68 -motorola
+
+image.asm: image.pbm hx20ppbm
+	./hx20ppbm &lt; image.pbm &gt; image.asm
+
+hx20ppbm: hx20ppbm.c
+	gcc -o hx20ppbm hx20ppbm.c -Wall -Wextra
+
+.PHONY: clean
+clean:
+	rm -f hx20ppbm image.asm *.s68 *.bin *.lst
+          </pre>
+        </div>
+      <p>
+        <br />
+        The resulting &#34;image.s68&#34; S-record file can be passed to the MONITOR in the hex20 emulator for testing, where it can be run with the &#34;G1000&#34; command. The hex20 emulator can also be used to <a href="article-218.html">write this program to a WAV file</a> which can then be transferred to a real Epson HX-20. A demo video of this can be found <a href="https://www.youtube.com/watch?v=PsOogYpkR-ol">here</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        01/03-2024, 
+        <a href="article-231.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
