@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Commodore PC 20-III Emulator</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore PC 20-III Emulator</h1>
+      <p>
+        Following my trend of emulators to be run in a Linux terminal, this time the target is the <a href="https://oldcomputer.info/pc/commodore20/index.htm">Commodore PC 20-III</a> XT-class <a href="https://en.wikipedia.org/wiki/Commodore_IBM_PC_compatible_systems">IBM clone</a>. This computer is fairly well documented, with even circuit diagrams being available, making the work somewhat easier. I also have a <a href="article-188.html">real one</a> which was helpful when trying to reverse engineer parts of the MOS 5720 chip which is unique to these Commodore PCs.<br />
+        <br />
+        My intention with this emulator is not accuracy, but rather a testing and experimentation platform for dealing with IBM compatible PCs and DOS. Several hacks are used to control the timing and the emulation is not cycle accurate at all. One possibly unique feature of this emulator is interception of the <a href="https://en.wikipedia.org/wiki/INT_16H">BIOS keyboard services</a> to block on stdin and relax the host CPU. This can be configured for either DOS or CP/M-86. Comprehensive CPU instruction trace with disassembly is also a compile time option.<br />
+        <br />
+        I have mostly tested using the Commodore PC BIOS ROM v4.38 which I happen to have in my real PC 20-III, but some other ROM versions might work as well. Booting is easiest done from a floppy disk image, but it is also possible to possible to boot from a hard disk image if it has the correct C/H/S layout matching the WD93024-X 20 MB hard drive originally meant for this PC.<br />
+        <br />
+        Graphics wise the 80 column CGA screen buffer is presented in curses, with color support and also clever translation of some <a href="https://en.wikipedia.org/wiki/Code_page_437">CP437</a> characters to ACS (Alternative Character Set). I had intended to include curses mouse support as well, but currently only the left and right mouse button is supported. Emulating the mouse position was too difficult and will probably require lots of additional hacks to work if implemented sometime in the future. The host system clock will be exposed through emulation of the OKI MSM6242 RTC. Most other standard PC functions like DMA and IRQ handling are handled by the Faraday FE2010 chipset emulation as needed.<br />
+        <br />
+        Here is a screenshot of the boot and MS-DOS 3.21, also showing the ACS symbols:<br />
+      </p>
+      <img class="border" src="images/pc20iii-boot.png" alt="PC 20-III bootup in curses." />
+      <p>
+        <br />
+        You can download <a href="supplies/pc20iii-0.1.tar.gz">version 0.1</a> here or check the <a href="https://github.com/kobolt/pc20iii">Git</a> repository which might be more up to date.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        29/03-2024, 
+        <a href="article-232.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
