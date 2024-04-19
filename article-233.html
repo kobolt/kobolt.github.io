@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - CP/M for Sega SG-1000/SC-3000</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CP/M for Sega SG-1000/SC-3000</h1>
+      <p>
+        How to shoehorn CP/M onto a 40 year old Sega games console?<br />
+        <br />
+        I have experimented with this, and the approach I came up with is a bank switched cartridge that contains RAM in one of the 32K banks, in addition to 32K RAM in the upper area. This cartridge does not (yet) exist physically, but it can run on several emulators, so in theory it might be possible on real hardware as well. There exists a floppy drive for the SC-3000 called the SF-7000, which might have been suitable for running CP/M somehow as well, but this is very rare and details about its operation is scarce.<br />
+        <br />
+        This proof-of-concept project builds a cartridge with a bootloader and up to four IBM 3740 compatible floppy disk images spread over the different banks. The bank switching is based on the same mechanism as used in the <a href="https://www.sc3000-multicart.com/">SC-3000 Survivors Multicart</a>.<br />
+        <br />
+        I relied heavily on my own <a href="article-228.html">SG-Touzen</a> emulator for developing this and I even found some bugs in the emulator itself. Bank switching support needed to be added as well of course. I have included these updates in a new version 0.2 that can be downloaded <a href="supplies/sgtouzen-0.2.tar.gz">here</a> or gotten from the updated <a href="https://github.com/kobolt/sgtouzen">Git</a> repository. I also managed to modify both the <a href="https://www.mamedev.org/">MAME</a> and <a href="https://www.smspower.org/meka/">MEKA</a> emulators to work with this cartridge as well.<br />
+        <br />
+        The console input and output to CP/M is handled by a minimal terminal implementation in the CBIOS that polls the SK-1100 keyboard and outputs characters on the TMS9918 chip in text mode. Due to complexity and space constraints only basic ASCII control characters are handled and there is no cursor. This works well enough with several pieces of CP/M software including MBASIC, Sargon Chess and Zork.<br />
+        <br />
+        Download the CP/M project source code from <a href="supplies/sega-cpm.tar.gz">here</a> or from the <a href="https://github.com/kobolt/sega-cpm">Git</a> repository. The <a href="http://48k.ca/zmac.html">zmac</a> assembler is required to build it. The included README.md contains more technical details and instructions on how to modify the other emulators to work with the cartridge.<br />
+        <br />
+        Here is a screenshot from the SG-Touzen emulator running MBASIC within CP/M:<br />
+      </p>
+      <img class="border" src="images/sgtouzen-mbasic.png" alt="SG-Touzen running CP/M." />
+      <p>
+        <br />
+        Here is a <a href="https://www.youtube.com/watch?v=vhEXx4vPP1A">video demo</a> with the different emulators as well.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        19/04-2024, 
+        <a href="article-233.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
