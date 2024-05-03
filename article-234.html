@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Commodore PC 20-III Emulator Update</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore PC 20-III Emulator Update</h1>
+      <p>
+        I have made some quick updates to my <a href="article-232.html">pc20iii</a> emulator. Two notable bugs have been fixed that caused some software to crash, and support has been added to do passthrough of the RS-232 COM port to a real TTY on the Linux host.<br />
+        <br />
+        The first interesting bug was that sometimes <a href="https://en.wikipedia.org/wiki/Direct_memory_access">DMA</a> writes from the floppy drive would overwrite the memory, typically the stack, when it shouldn&#39;t have. This happened because a DMA write can be initiated while the DMA controller is in &#34;verify&#34; mode, and then it should not do any writes. Adding preliminary support for the DMA mode register solved this issue.<br />
+        <br />
+        The second interesting bug was that the ESC instructions on the 8088 CPU was not correctly handled. While not actually supported in version 0.1, I had mistakenly assumed the instructions were only 1 byte, but it can actually vary in size, so in some cases the wrong opcodes would be fetched. Properly handling the <a href="https://en.wikipedia.org/wiki/ModR/M">ModR/M</a> byte fixed this. The ESC instructions are typically used to talk to the <a href="https://en.wikipedia.org/wiki/Intel_8087">8087 floating point unit</a>, so software that tried to probe that could crash.<br />
+        <br />
+        The COM port passthrough supports the typical standard baud rates and will forward the baud rate set by the software inside the emulator out to the host. Note that hardware flow control is currently not supported, so the incoming CD/DSR/CTS signals are just set high while the outgoing RTS/DTR signals are ignored. Large <a href="https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)">FIFOs</a> are implemented in both directions to handle variations in speed compared to the inside of the emulator and the outside world. Trace can also be dumped in the debugger, which is handy for sniffing traffic.<br />
+        <br />
+        Some adjustments were done to the curses keyboard handling. The F11 key is no longer just sending the &#34;Alt&#34; key but is toggled on to be sent together with the next key, making more combination key presses possible. Some &#34;Ctrl&#34; key combinations are now also possible, as long as they are passed on to the emulator program.<br />
+        <br />
+        Here is a screenshot of CheckIt 3.0 doing a very inaccurate CPU speed benchmark:<br />
+      </p>
+      <img class="border" src="images/pc20iii-checkit-speed.png" alt="Emulator fake CPU speed benchmark." />
+      <p>
+        <br />
+        You can download the updated <a href="supplies/pc20iii-0.2.tar.gz">version 0.2</a> here or check the <a href="https://github.com/kobolt/pc20iii">Git</a> repository.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        03/05-2024, 
+        <a href="article-234.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
