@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Commodore PC 20-III Emulator Network Support</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore PC 20-III Emulator Network Support</h1>
+      <p>
+        It is now possible to access the network with my <a href="article-234.html">pc20iii</a> emulator. This is accomplished by emulating the <a href="https://en.wikipedia.org/wiki/NE1000">NE2000</a> compatible DP8390 Ethernet NIC chip as well as managing an internal TCP/IP network stack. The DP8390 is assigned to IRQ 3 which is usually reserved for the COM2 port but that secondary port not present on a PC 20-III.<br />
+        <br />
+        The internal network stack is similar to the user mode network stack in <a href="https://www.qemu.org/docs/master/system/devices/net.html">QEMU</a> so no root privileges are needed. In this emulated network the emulator acts as the remote host and gateway at IP address 10.0.0.1 with Ethernet MAC address 11:11:11:11:11:11, and the local IP address for the application(s) running within is expected to be 10.0.0.2 with MAC address 22:22:22:22:22:22. These hardcoded addresses can be changed through recompilation if needed. ARP and ICMP echo (ping) is handled internally while UDP and TCP opens sockets to the outside world. An internal DHCP server response is also generated to make autoconfiguration easier.<br />
+        <br />
+        The main purpose of the network support was to make the excellent <a href="http://www.brutman.com/mTCP/">mTCP</a> network stack for DOS usable inside the emulator. It was tested along with the NE2000 DOS packet driver from <a href="http://crynwr.com/">Crynwr</a>. The FTP and Telnet applications from mTCP should work fairly well. Note that the TCP/IP implementation in the emulator is rather simple and does not implement the proper TCP statemachine. In addition IP fragmenting and TCP window sizes are completely ignored. <a href="https://github.com/ghaerr/elks">ELKS</a> is also bootable and can connect on the network but large transfers causes its buffers to fill up.<br />
+        <br />
+        A bug was fixed with the configuration switch settings. In previous versions the &#34;floppy drives present&#34; bit was not actually set. DOS did not care about this but some other software (like ELKS) would report that no floppy drives were present. The emulated XT hard drive is now also writable, and the disk image can be saved from the debugger if any changes are made.<br />
+        <br />
+        Here is a screenshot of ELKS booted:<br />
+      </p>
+      <img class="border" src="images/pc20iii-elks-boot.png" alt="ELKS booted in pc20iii." />
+      <p>
+        <br />
+        And here is a screenshot of the mTCP telnet client:<br />
+      </p>
+      <img class="border" src="images/pc20iii-mtcp-telnet.png" alt="mTCP telnet client in pc20iii." />
+      <p>
+        <br />
+        You can download the updated <a href="supplies/pc20iii-0.3.tar.gz">version 0.3</a> here or check the <a href="https://github.com/kobolt/pc20iii">Git</a> repository.<br />
+        <br />
+        Here is a <a href="https://www.youtube.com/watch?v=1M6w4Fwq4uA">video</a> showing mTCP FTP and Telnet usage.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        12/07-2024, 
+        <a href="article-237.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

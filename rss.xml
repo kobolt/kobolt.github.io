@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2024 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 28 Jun 2024 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 12 Jul 2024 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Commodore PC 20-III Emulator Network Support</title>
+    <category>Open Source</category>
+    <link>https://kobolt.github.io/article-237.html</link>
+    <guid>https://kobolt.github.io/article-237.html</guid>
+    <pubDate>Fri, 12 Jul 2024 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-237.html</description>
+  </item>
   <item>
     <title>Code Art</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-228.html</guid>
     <pubDate>Fri, 22 Dec 2023 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-228.html</description>
-  </item>
-  <item>
-    <title>M80 Framework Revisited</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-227.html</link>
-    <guid>https://kobolt.github.io/article-227.html</guid>
-    <pubDate>Fri, 08 Dec 2023 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-227.html</description>
   </item>
 </channel>
 </rss>
