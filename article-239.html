@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Commodore PC 20-III Emulator EtherDFS Integration</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore PC 20-III Emulator EtherDFS Integration</h1>
+      <p>
+        I have been researching how to provide easy &#34;file sharing&#34; between the emulator and the host Linux system when running <a href="https://en.wikipedia.org/wiki/DOS">DOS</a>. It is possible to simply use the floppy and hard disk images, but that requires additional operations to put or extract files on the Linux side. Since there is now network support in my <a href="article-237.html">pc20iii</a> emulator, that seems to be better alternative. FTP works with <a href="http://www.brutman.com/mTCP/">mTCP</a>, but I was looking for something more transparent.<br />
+        <br />
+        Using <a href="https://en.wikipedia.org/wiki/LAN_Manager">LAN Manager</a> with TCP/IP requires a 80286 CPU, which is not supported in the emulator. So instead of implementing a new back-end for the proprietary <a href="https://en.wikipedia.org/wiki/NetBIOS_Frames">NBF</a> protocol, a better choice was the open source <a href="https://etherdfs.sourceforge.net/">EtherDFS</a> protocol.<br />
+        <br />
+        I re-implemented the server portion of EtherDFS directly into the emulator so no additional software is required on the host side. Inside the emulator in DOS, the EtherDFS client driver must be loaded along with a <a href="http://crynwr.com/">NE2000 packet driver</a>. A command line argument to the emulator specifies the root directory to host files and directories from.<br />
+        <br />
+        Example AUTOEXEC.BAT portion to map C: to the host Linux system:<br />
+      </p>
+        <div class="box">
+          <pre>
+CRYNWR&#92;NE2000.COM 0x60 3 0x300
+ETHERDFS&#92;ETHERDFS.EXE 11:11:11:11:11:11 C-C
+          </pre>
+        </div>
+      <p>
+        <br />
+        Not everything has been fully tested and there are still some limitations in edge cases. There is a hardcoded upper limit on how many files and directories can be traversed, so keeping the root directory to a location with relevant files is a good idea. EtherDFS version 0.8.3 was used during development and testing.<br />
+        <br />
+        Here is a screenshot:<br />
+      </p>
+      <img class="border" src="images/pc20iii-etherdfs.png" alt="EtherDFS in in pc20iii." />
+      <p>
+        <br />
+        You can download the updated <a href="supplies/pc20iii-0.4.tar.gz">version 0.4</a> here or check the <a href="https://github.com/kobolt/pc20iii">Git</a> repository.<br />
+        <br />
+        Here is a <a href="https://www.youtube.com/watch?v=aXr2Xm-WAcA">video</a> showing Borland Turbo Assembler running on a remote EtherDFS share.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        16/08-2024, 
+        <a href="article-239.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
