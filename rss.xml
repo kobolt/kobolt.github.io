@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2024 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 16 Aug 2024 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 30 Aug 2024 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>lazyboNES Emulator Telnet Hacks</title>
+    <category>Open Source</category>
+    <link>https://kobolt.github.io/article-240.html</link>
+    <guid>https://kobolt.github.io/article-240.html</guid>
+    <pubDate>Fri, 30 Aug 2024 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-240.html</description>
+  </item>
   <item>
     <title>Commodore PC 20-III Emulator EtherDFS Integration</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-231.html</guid>
     <pubDate>Fri, 01 Mar 2024 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-231.html</description>
-  </item>
-  <item>
-    <title>CP/M Emulator C99 Compatibility</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-230.html</link>
-    <guid>https://kobolt.github.io/article-230.html</guid>
-    <pubDate>Fri, 16 Feb 2024 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-230.html</description>
   </item>
 </channel>
 </rss>

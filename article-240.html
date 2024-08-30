@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - lazyboNES Emulator Telnet Hacks</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>lazyboNES Emulator Telnet Hacks</h1>
+      <p>
+        Just for fun I made some special modifications to the <a href="article-216.html">lazyboNES emulator</a> to make it more usable over a <a href="https://en.wikipedia.org/wiki/Telnet">Telnet</a> connection from DOS in text mode! The changes are incorporated in the new version 0.7 that can be downloaded <a href="supplies/lazybones-0.7.tar.gz">here</a> or from the Git repositories. The &#34;SPECIAL_TERMINAL&#34; macro must be defined during compilation and a modified Telnet client is required to make use of the features.<br />
+        <br />
+        The first feature is that the emulator now accepts individual key press and key release events, which makes the game more playable. Normally a terminal will only send key presses, so in the regular mode lazyboNES will release the key on a timer.<br />
+        <br />
+        The second feature is sound support, which is transmitted as custom <a href="https://en.wikipedia.org/wiki/ANSI_escape_code">ANSI escape codes</a> to be interpreted by the Telnet client. Only the frequency from the second APU square wave generator is sent, which is the best choice to produces the distinct Super Mario Bros music.<br />
+        <br />
+        A third feature, also present in the regular mode, is automatic cropping of the display if the height is less than 30 rows on the terminal. This makes SMB playable also on more standard 80x24 or 80x25 text resolutions.<br />
+        <br />
+        I have tested with a modified version of the <a href="https://www.brutman.com/mTCP/mTCP_Telnet.html">mTCP Telnet</a> client for DOS. Hijacking the keyboard interrupt makes it possible to send key release events and the sound is sent to the PC speaker.<br />
+        <br />
+        Changes based on &#34;mTCP-src_2023-03-31.zip&#34;:<br />
+      </p>
+        <div class="box">
+          <pre>
+diff -ur mtcp-src_2023-03-31_orig/apps/telnet/keys.cpp mtcp-src_2023-03-31/apps/telnet/keys.cpp
+--- mtcp-src_2023-03-31_orig/apps/telnet/keys.cpp       2023-03-31 09:00:00.000000000 +0200
++++ mtcp-src_2023-03-31/apps/telnet/keys.cpp    2024-08-26 18:21:27.207217804 +0200
+@@ -31,6 +31,8 @@
+ 
+ 
+ #include &lt;stdio.h&gt;
++#include &lt;dos.h&gt;
++#include &lt;conio.h&gt;
+ 
+ #include &#34;inlines.h&#34;
+ #include &#34;keys.h&#34;
+@@ -49,6 +51,9 @@
+ 
+ #endif
+ 
++static void (__interrupt __far *prev_int_9)();
++static uint8_t releaseKey = 0;
++static bool releaseKeyEnabled = false;
+ 
+ Key_t getKey( void ) {
+ 
+@@ -159,4 +164,84 @@
+ 
+   return rc;
+ }
++
++void __interrupt __far keyboardIsr ( void )
++{
++  unsigned code = inp(0x60);
++  switch (code) {
++  case 0x91:
++    releaseKey = &#39;W&#39;;
++    break;
++  case 0x9E:
++    releaseKey = &#39;A&#39;;
++    break;
++  case 0x9F:
++    releaseKey = &#39;S&#39;;
++    break;
++  case 0xA0:
++    releaseKey = &#39;D&#39;;
++    break;
++  case 0xA3:
++    releaseKey = &#39;H&#39;;
++    break;
++  case 0xA4:
++    releaseKey = &#39;J&#39;;
++    break;
++  case 0xA5:
++    releaseKey = &#39;K&#39;;
++    break;
++  case 0xA6:
++    releaseKey = &#39;L&#39;;
++    break;
++  case 0xD2:
++    releaseKey = &#39;=&#39;;
++    break;
++  case 0xD3:
++    releaseKey = &#39;;&#39;;
++    break;
++  case 0x43: /* F9 */
++    releaseKeyEnabled = true;
++    releaseKey = 0; /* Clear possible pending key. */
++    break;
++  case 0x44: /* F10 */
++    releaseKeyEnabled = false;
++    break;
++  default:
++    releaseKey = 0;
++    break;
++  }
++  _chain_intr( prev_int_9 );
++}
++
++void keysInit ( void )
++{
++  prev_int_9 = _dos_getvect( 0x9 );
++  _dos_setvect( 0x9, keyboardIsr );
++}
++
++void keysExit ( void )
++{
++  _dos_setvect( 0x9, prev_int_9 );
++}
++
++bool releaseKeyReady ( void )
++{
++  if (releaseKeyEnabled &amp;&amp; releaseKey &gt; 0) {
++    return true;
++  } else {
++    return false;
++  }
++}
++
++Key_t getReleaseKey ( void )
++{
++  Key_t rc;
++
++  rc.action = K_NormalKey;
++  rc.local = 0;
++  rc.normalKey = releaseKey;
++  releaseKey = 0;
++
++  return rc;
++}
+ 
+diff -ur mtcp-src_2023-03-31_orig/apps/telnet/keys.h mtcp-src_2023-03-31/apps/telnet/keys.h
+--- mtcp-src_2023-03-31_orig/apps/telnet/keys.h 2023-03-31 09:00:00.000000000 +0200
++++ mtcp-src_2023-03-31/apps/telnet/keys.h      2024-08-26 18:21:27.207217804 +0200
+@@ -84,6 +84,10 @@
+ 
+ 
+ Key_t getKey( void );
++void keysInit( void );
++void keysExit( void );
++bool releaseKeyReady ( void );
++Key_t getReleaseKey ( void );
+ 
+ 
+ 
+diff -ur mtcp-src_2023-03-31_orig/apps/telnet/telnet.cpp mtcp-src_2023-03-31/apps/telnet/telnet.cpp
+--- mtcp-src_2023-03-31_orig/apps/telnet/telnet.cpp     2023-03-31 09:00:00.000000000 +0200
++++ mtcp-src_2023-03-31/apps/telnet/telnet.cpp  2024-08-26 18:21:27.220217805 +0200
+@@ -405,6 +405,7 @@
+     Strict_DOS_Mode = 1;
+   }
+   
++  keysInit();
+ 
+ 
+ 
+@@ -605,9 +606,17 @@
+ 
+     // If a keystroke is waiting process it
+ 
++    bool process = false;
++    Key_t key;
+     if ( biosIsKeyReady( ) ) {
++      key = getKey( );
++      process = true;
++    } else if ( releaseKeyReady( ) ) {
++      key = getReleaseKey( );
++      process = true;
++    }
+ 
+-      Key_t key = getKey( );
++    if ( process ) {
+ 
+       if ( key.action != K_NoKey ) {
+ 
+@@ -715,6 +724,7 @@
+ 
+   TcpSocketMgr::freeSocket( mySocket );
+ 
++  keysExit();
+   shutdown( 0 );
+ 
+   return 0;
+@@ -3096,6 +3106,17 @@
+ 
+     }
+ 
++    // Advanced Beep
++
++    case &#39;x&#39;: {
++      if ( parms[0] == CSI_DEFAULT_ARG ) {
++        nosound( );
++      } else {
++        sound( parms[0] );
++      }
++      break;
++    }
++
+     // case &#39;h&#39;: ANSI set options - not implemented
+     // case &#39;l&#39;: ANSI reset options - not implemented
+ 
+          </pre>
+        </div>
+      <p>
+        <br />
+        For a demonstration check this <a href="https://www.youtube.com/watch?v=rBhs5TBwTWY">video</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        30/08-2024, 
+        <a href="article-240.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
