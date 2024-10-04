@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - IBM P70 Hard Disk Imaging</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>IBM P70 Hard Disk Imaging</h1>
+      <p>
+        The IBM P70 luggable PS/2 computer is based on the <a href="https://en.wikipedia.org/wiki/Micro_Channel_architecture">Micro Channel Architecture</a> and uses the rare <a href="https://en.wikipedia.org/wiki/Enhanced_Small_Disk_Interface">ESDI</a> hard disk interface. I wanted to make a image of the hard disk, and in order to do this I booted a minimal custom Linux distribution and transferred the image over the network.<br />
+        <br />
+        I used the 3Com EtherLink/MC network card, also known as 3c523, and needed to patch two bugs in the Linux kernel version 2.4 to make this work properly. The first problem was that the card was detected eight times, as eth0 through eth7, which seemed to be caused by the driver being built-in instead of loaded as a kernel module. The second problem was a NULL-pointer dereference caused by a interrupt occurring before all data had been initialized.<br />
+        <br />
+        Here is the patch required for the 3c523 driver:<br />
+      </p>
+        <div class="box">
+          <pre>
+--- 3c523.c.orig	2024-09-16 20:36:35.921558858 +0200
++++ 3c523.c	2024-09-16 20:37:15.001557388 +0200
+@@ -415,6 +415,7 @@
+ int __init elmc_probe(struct net_device *dev)
+ {
+ 	static int slot;
++	static int found = 0;
+ 	int base_addr = dev-&gt;base_addr;
+ 	int irq = dev-&gt;irq;
+ 	u_char status = 0;
+@@ -428,6 +429,10 @@
+ 	if (MCA_bus == 0) {
+ 		return -ENODEV;
+ 	}
++	/* Prevent being found multiple times if module is built-in. */
++	if (found) {
++		return -ENODEV;
++	}
+ 	/* search through the slots for the 3c523. */
+ 	slot = mca_find_adapter(ELMC_MCA_ID, 0);
+ 	while (slot != -1) {
+@@ -585,6 +590,7 @@
+         dev-&gt;flags&amp;=~IFF_MULTICAST;     /* Multicast doesn&#39;t work */
+ #endif
+ 
++	found = 1;
+ 	return 0;
+ err_out:
+ 	release_region(dev-&gt;base_addr, ELMC_IO_EXTENT);
+@@ -685,7 +691,7 @@
+ 	p-&gt;scb-&gt;cbl_offset = make16(tdr_cmd);
+ 
+ 	p-&gt;scb-&gt;cmd = CUC_START;	/* cmd.-unit start */
+-	elmc_attn586();
++	elmc_id_attn586(); /* Interrupt can arrive here, so disable it! */
+ 
+ 	s = jiffies;
+ 	while (!(tdr_cmd-&gt;cmd_status &amp; STAT_COMPL)) {
+          </pre>
+        </div>
+      <p>
+        <br />
+        I based the Linux distribution on my <a href="article-153.html">earlier work</a> but added the necessary PS/2 hardware support for this task. You can download the build scripts, configuration and patches <a href="supplies/ps2-linux-scripts.tgz">here</a> or pre-built binaries for the kernel and root file system <a href="supplies/ps2-linux-bin.tgz">here</a>. The distribution can be easily booted with <a href="article-165.html">LOADLIN</a> directly from DOS or by making a <a href="article-182.html">floppy disk</a>.<br />
+        <br />
+        I used Netcat and DD to transfer the image. The receiving Linux host is set up with the following command, which will write all data to a file:<br />
+      </p>
+        <div class="box">
+          <pre>
+nc -l -p 31337 &gt; diskimage.dd
+          </pre>
+        </div>
+      <p>
+        <br />
+        Once the custom Linux distribution has been booted, a command like the following can be used to send the complete /dev/eda ESDI disk over the network:<br />
+      </p>
+        <div class="box">
+          <pre>
+dd if=/dev/eda bs=512 conv=noerror,sync | nc 192.168.0.111 31337
+          </pre>
+        </div>
+      <p>
+        <br />
+        In case you do not have a network card, it is also possible to use <a href="https://en.wikipedia.org/wiki/Serial_Line_Internet_Protocol">SLIP</a> to create a IP network on the serial port, but this is quite slow.<br />
+        <br />
+        One endpoint is typically setup like this, assuming /dev/ttyS0 is a working serial port:<br />
+      </p>
+        <div class="box">
+          <pre>
+slattach -s 115200 /dev/ttyS0 &amp;
+ifconfig sl0 10.0.0.1 pointopoint 10.0.0.2
+          </pre>
+        </div>
+      <p>
+        And the other endpoint with the IP addresses swapped:<br />
+      </p>
+        <div class="box">
+          <pre>
+slattach -s 115200 /dev/ttyS0 &amp;
+ifconfig sl0 10.0.0.2 pointopoint 10.0.0.1
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a &#34;screenshot&#34; of the nice orange gas plasma screen of the P70 after the finished disk transfer:<br />
+      </p>
+      <img class="border" src="images/ps2-linux-esdi-transfer.jpg" alt="IBM P70 gas plasma screen." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        04/10-2024, 
+        <a href="article-242.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
