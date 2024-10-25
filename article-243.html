@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - AE-GraphicLCD-M Control Program</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>AE-GraphicLCD-M Control Program</h1>
+      <p>
+        At the second floor of the <a href="https://akizukidenshi.com/catalog/default.aspx">Akizuki Denshi</a> store in Akihabara I found a &#34;AE-GraphicLCD-M&#34; board in one of the bargain bins. It has a SG12232C LCD module, a PIC16F877A microcontroller, a DE-9 serial port connector and absolutely no documentation. It seems there existed a PC software to control it at some point, but this is no longer anywhere to be found. By extracting the PIC program and reverse engineering the disassembled code I was eventually able to figure out how the serial protocol works. At least the important commands that are used to store and display images on the LCD.<br />
+        <br />
+        The &#34;JP1 DEMO&#34; jumper will control whether or not the board runs in &#34;demo mode&#34; to display images as a slide show, or to be able to accept commands. I found out that there is a tiny 32K I2C flash chip that actually holds the images, slotted 0 through 55. The EEPROM inside the PIC has information on what slots shall be displayed and for how long in the &#34;demo mode&#34;.<br />
+        <br />
+      </p>
+      <img class="border" src="images/ae-graphiclcd-m.jpg" alt="AE-GraphicLCD-M" />
+      <p>
+        <br />
+        Here is a Python program that implements some of the commands I found:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python3
+
+import serial
+import argparse
+from PIL import Image
+
+class GraphicLCD(object):
+    def __init__(self, port):
+        self.s = serial.Serial()
+        self.s.port = port
+        self.s.baudrate = 38400
+        self.s.bytesize = serial.EIGHTBITS
+        self.s.parity = serial.PARITY_NONE
+        self.s.stopbits = serial.STOPBITS_ONE
+        self.s.xonxoff = False
+        self.s.rtscts = False
+        self.s.dsrdtr = False
+        self.s.timeout = 1
+
+        self.s.open()
+        self.s.flushInput()
+        self.s.flushOutput()
+
+    def __del__(self):
+        self.s.close()
+
+    def _image_load(self, filename):
+        return Image.open(filename).resize((122,32)).convert(&#39;1&#39;)
+
+    def _command(self, cmd):
+        reply = str()
+        self.s.write(b&#39;&#92;x1B&#39; + cmd.encode() + b&#39;&#92;x0D&#39;)
+        while True:
+            c = self.s.read(1)
+            if c == b&#39;@&#39;:
+                break
+            else:
+                reply += c.decode()
+        return reply
+
+    def version(self):
+        return self._command(&#34;V&#34;)
+
+    def erase(self, pattern=0x00):
+        self._command(&#34;E%02X&#34; % (pattern &amp; 0xFF))
+
+    def draw(self, pattern, length=1):
+        self._command(&#34;I%02X%03X&#34; % (pattern, length))
+    
+    def backlight(self, state):
+        if state == True:
+            self._command(&#34;B1&#34;)
+        else:
+            self._command(&#34;B0&#34;)
+
+    def led1(self, state):
+        if state == True:
+            self._command(&#34;L1&#34;)
+        else:
+            self._command(&#34;L0&#34;)
+
+    def display_filename(self, filename):
+        img = self._image_load(filename)
+        self.erase()
+        for i in range(0, 488):
+            b = 0
+            for y in range(0, 8):
+                if img.getpixel((i % 122, y + (8 * (i // 122)))) == 0:
+                    b += 2 ** y
+            self.draw(b)
+
+    def read_eeprom(self):
+        cmd = &#34;YR&#34;
+        self.s.write(b&#39;&#92;x1B&#39; + cmd.encode() + b&#39;&#92;x0D&#39;)
+        data = self.s.read(56)
+        c = self.s.read(1) # Consume the resulting @.
+        return data
+
+    def write_eeprom(self, data):
+        if (len(data) != 56):
+            raise ValueError(&#34;Expected 56 bytes of data&#34;)
+        cmd = &#34;YW&#34;
+        self.s.write(b&#39;&#92;x1B&#39; + cmd.encode() + b&#39;&#92;x0D&#39;)
+        c = self.s.read(1) # Consume the first @.
+        for d in data:
+            self.s.write(d.to_bytes(1, &#39;big&#39;))
+        c = self.s.read(1) # Consume the second @.
+
+    def display_slot(self, slot=0):
+        if (slot &gt; 55 or slot &lt; 0):
+            raise ValueError(&#34;Invalid slot&#34;)
+        self._command(&#34;D%02d&#34; % (slot))
+
+    def read_i2c_flash(self, address, length=64):
+        cmd = &#34;MR%04X%04X&#34; % (address, length)
+        self.s.write(b&#39;&#92;x1B&#39; + cmd.encode() + b&#39;&#92;x0D&#39;)
+        data = self.s.read(length)
+        c = self.s.read(1) # Consume the resulting @.
+        return data
+
+    def read_slot(self, slot=0):
+        if (slot &gt; 55 or slot &lt; 0):
+            raise ValueError(&#34;Invalid slot&#34;)
+        address = 0x1000 + (slot * 0x200)
+        return self.read_i2c_flash(address, 488)
+
+    def write_slot(self, filename, slot=0):
+        if (slot &gt; 55 or slot &lt; 0):
+            raise ValueError(&#34;Invalid slot&#34;)
+        img = self._image_load(filename)
+        image_data = []
+        for i in range(0, 488):
+            b = 0
+            for y in range(0, 8):
+                if img.getpixel((i % 122, y + (8 * (i // 122)))) == 0:
+                    b += 2 ** y
+            image_data.append(b)
+
+        for i in range(488, 512):
+            image_data.append(0xFF) # Padding.
+
+        address = 0x1000 + (slot * 0x200)
+
+        for i, d in enumerate(image_data):
+            if (i % 64 == 0):
+                cmd = &#34;MW%04X0040&#34; % (address + i)
+                self.s.write(b&#39;&#92;x1B&#39; + cmd.encode() + b&#39;&#92;x0D&#39;)
+            self.s.write(d.to_bytes(1, &#39;big&#39;))
+            c = self.s.read(1) # Consume Echo.
+            if (i % 64 == 63):
+                c = self.s.read(1) # Consume the resulting @.
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(&#34;-p&#34;, &#34;--port&#34;, default=&#34;/dev/ttyS2&#34;, help=&#34;port/tty to use when connecting&#34;)
+    parser.add_argument(&#34;-v&#34;, &#34;--version&#34;, action=&#39;store_true&#39;, help=&#34;display firmware version&#34;)
+    parser.add_argument(&#34;-e&#34;, &#34;--eeprom&#34;, action=&#39;store_true&#39;, help=&#34;dump EEPROM data&#34;)
+    parser.add_argument(&#34;-l&#34;, &#34;--led&#34;, metavar=&#39;1|0&#39;, help=&#34;turn on or off LED1&#34;)
+    parser.add_argument(&#34;-b&#34;, &#34;--backlight&#34;, metavar=&#39;1|0&#39;, help=&#34;turn on or off LCD backlight&#34;)
+    parser.add_argument(&#34;-i&#34;, &#34;--image&#34;, metavar=&#34;FILENAME&#34;, help=&#34;draw and display image file&#34;)
+    parser.add_argument(&#34;-d&#34;, &#34;--display&#34;, action=&#39;store_true&#39;, help=&#34;display image in slot&#34;)
+    parser.add_argument(&#34;-r&#34;, &#34;--read&#34;, action=&#39;store_true&#39;, help=&#34;read image data from slot&#34;)
+    parser.add_argument(&#34;-w&#34;, &#34;--write&#34;, metavar=&#34;FILENAME&#34;, help=&#34;image file to write to slot&#34;)
+    parser.add_argument(&#34;-s&#34;, &#34;--slot&#34;, default=0, type=int, help=&#34;slot number to use instead of 0&#34;)
+    parser.add_argument(&#34;-t&#34;, &#34;--time&#34;, type=int, help=&#34;time each image should be shown in demo mode&#34;)
+    args = parser.parse_args()
+
+    g = GraphicLCD(args.port)
+
+    if (args.version):
+        print(g.version())
+    elif (args.eeprom):
+        print(g.read_eeprom())
+    elif (args.led):
+        g.led1(not args.led == &#34;0&#34;)
+    elif (args.backlight):
+        g.backlight(not args.backlight == &#34;0&#34;)
+    elif (args.image):
+        g.display_filename(args.image)
+    elif (args.display):
+        g.display_slot(args.slot)
+    elif (args.read):
+        print(g.read_slot(args.slot))
+    elif (args.write):
+        g.write_slot(args.write, args.slot)
+    elif (args.time != None):
+        g.write_eeprom(((args.time + 0x10) &amp; 0xFF).to_bytes(1, &#39;big&#39;) * 56)
+    else:
+        parser.print_help()
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        25/10-2024, 
+        <a href="article-243.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
