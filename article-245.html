@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - DTK PEM-3301 Mainboard Repair</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>DTK PEM-3301 Mainboard Repair</h1>
+      <p>
+        I acquired a custom PC with the large DTK PEM-3301 mainboard, which has a Intel 80386DX CPU running at 33MHz. The board however was almost completely dead; no video on the VGA card and no beeps from the speaker. I connected a <a href="https://en.wikipedia.org/wiki/POST_card">POST card</a> which displayed no <a href="https://en.wikipedia.org/wiki/Power-on_self-test">POST</a> codes at all, but interestingly showed that the ISA reset signal went low after around 1 second.<br />
+        <br />
+        After a while I found the that even though the ISA reset was lowered, the CPU was still held in reset. No circuit diagram exists for this mainboard so I tried reverse engineering the reset circuit by looking at the traces, but I gave up since this has multiple layers.<br />
+        <br />
+        I later acquired a FLIR thermal camera and when looking around I noticed this:<br />
+      </p>
+      <img class="border" src="images/dtk_pem-3301_flir_8042.jpg" alt="FLIR image of DTK PEM-3301 8042 chip." />
+      <p>
+        The 8042 keyboard controller was the hottest component on the board, reaching around 60 to 70 degrees Celsius, which was a little suspicious. After some research I discovered that the 8042 is actually partially responsible for the CPU reset signal on some mainboards! Specifically pin 21 on the 8042 can sometimes be used to reset the CPU, and I measured that this was low all the time. But worse, the 8042 had no clock signal!<br />
+        <br />
+        I traced the clock through some circuits, among them a 74F74 chip that acts as a clock divider, all the way to a 20MHz crystal oscillator. This crystal oscillator was completely dead, so I removed it and soldered on a home-made socket made from a wide DIP socket:<br />
+      </p>
+      <img class="border" src="images/dtk_pem-3301_crystal_socket.jpg" alt="New DTK PEM-3301 crystal socket." />
+      <p>
+        <br />
+        I did not have any spare 20MHz crystal oscillators, but I was able to use a 14.31818MHz to get the board to complete POST and boot. Due to the clock divider the 8042 now runs at ~7MHz instead of the supposed 10MHz.<br />
+        <br />
+        Moral of the story: When troubleshooting mainboards, check ALL the clocks, not just the CPU clock!<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        06/12-2024, 
+        <a href="article-245.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
