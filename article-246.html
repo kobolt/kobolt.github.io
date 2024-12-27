@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - GCC Toolchain for the DEMO9S12NE64 Board</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>GCC Toolchain for the DEMO9S12NE64 Board</h1>
+      <p>
+        I found a Freescale DEMO9S12NE64 board which is used for evaluation for a HCS12 compatible microcontroller. The board is around 20 years old now and support ended a long time ago. Nevertheless I was able to get it up and running with a uIP network stack compiled with a GCC toolchain using only open source software.<br />
+        <br />
+        To compile the m68hc11 toolchain from scratch you will need to use a patch on an set of an existing GCC source and associated tools. The specific patch I used is <a href="http://m68hc11.serveftp.org/m68hc11_src.php">m68hc1x-builder-3.1.tar.gz</a> which needs GCC 3.3.6, binutils 2.15, GDB 6.4a and newlib 1.12.0.<br />
+        <br />
+        I made a script to help automate the process of building the toolchain:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/bash
+set -e
+
+tar -xvjf binutils-2.15.tar.bz2
+tar -xvzf gcc-3.3.6.tar.gz
+tar -xvjf gdb-6.4a.tar.bz2
+tar -xvzf newlib-1.12.0.tar.gz
+tar -xvzf m68hc1x-builder-3.1.tar.gz
+
+patch -p0 -i m68hc1x-builder-3.1/binutils-2.15-m68hc1x-20040801.diffs
+patch -p0 -i m68hc1x-builder-3.1/gcc-3.3.6-m68hc1x-20060122.diffs
+patch -p0 -i m68hc1x-builder-3.1/gdb-6.4-m68hc1x-20060122.diffs
+patch -p0 -i m68hc1x-builder-3.1/newlib-1.12.0-m68hc1x-20040801.diffs
+
+# Some nice defines
+export BINUTILS=binutils-2.15
+export GCC=gcc-3.3.6
+export GDB=gdb-6.4
+export NEWLIB=newlib-1.12.0
+export TARGET=m6811-elf
+export PROGRAM_PREFIX=m6811-elf-
+export INSTALLDIR=/opt/gcc-$TARGET
+export MAKE=gmake
+
+# Build binutils
+cd $BINUTILS
+sh ./configure --target=$TARGET &#92;
+               --prefix=$INSTALLDIR &#92;
+               --program-prefix=$PROGRAM_PREFIX
+$MAKE
+$MAKE install
+cd ..
+
+# Further steps require the binutils we just built
+export PATH=$INSTALLDIR/bin:$PATH
+
+# Build gcc
+cd $GCC
+sh ./configure --target=$TARGET &#92;
+               --prefix=$INSTALLDIR &#92;
+               --program-prefix=$PROGRAM_PREFIX &#92;
+               --enable-languages=c
+$MAKE
+$MAKE install
+cd ..
+
+# Build gdb
+cd $GDB
+sh ./configure --target=$TARGET &#92;
+               --prefix=$INSTALLDIR &#92;
+               --program-prefix=$PROGRAM_PREFIX
+$MAKE
+$MAKE install
+cd ..
+
+# Build newlib
+mkdir build-newlib
+cd build-newlib
+sh ../$NEWLIB/configure &#92;
+   --target=$TARGET &#92;
+   --prefix=$INSTALLDIR &#92;
+   --program-prefix=$PROGRAM_PREFIX
+$MAKE
+$MAKE install
+cd ..
+          </pre>
+        </div>
+      <p>
+        <br />
+        Note that this script does NOT work on modern Linux distributions due to later GCC versions being incompatible with the source. I ran this on a Slackware 11.0 installation with GCC 3.4.6 inside a QEMU virtual machine.<br />
+        <br />
+        Someone ported <a href="https://en.wikipedia.org/wiki/UIP_(software)">uIP</a> to this architecture a long time ago and I found the source as &#34;uIP-HCS12NE-release-1.0.zip&#34; somewhere on the Internet. To utilize the newly built toolchain to build this, just change the top three lines in the &#34;uip-ne64.mak&#34; makefile to:<br />
+      </p>
+        <div class="box">
+          <pre>
+OC = /opt/gcc-m6811-elf/bin/m6811-elf-objcopy
+CC = /opt/gcc-m6811-elf/bin/m6811-elf-gcc
+RM = /bin/rm
+          </pre>
+        </div>
+      <p>
+        <br />
+        And compile it:<br />
+      </p>
+        <div class="box">
+          <pre>
+make -f uip-ne64.mak
+          </pre>
+        </div>
+      <p>
+        <br />
+        The resulting &#34;uip-ne64.s19&#34; S-record can be loaded on the DEMO9S12NE64 board with the <a href="https://sourceforge.net/projects/hcs12mem/">hcs12mem</a> tool in &#34;Serial Monitor&#34; mode like so:<br />
+      </p>
+        <div class="box">
+          <pre>
+./hcs12mem -i sm -t ../target/mc9s12ne64.dat -p /dev/ttyS0 -b 115200 --flash-erase
+./hcs12mem -i sm -t ../target/mc9s12ne64.dat -p /dev/ttyS2 -b 115200 --flash-write uip-ne64.s19
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        27/12-2024, 
+        <a href="article-246.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
