@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - lazyboNES Emulator Famicom BASIC Support</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>lazyboNES Emulator Famicom BASIC Support</h1>
+      <p>
+        A new feature has been added in the <a href="article-240.html">lazyboNES emulator</a> which has nothing to do with playing Super Mario Bros in a Linux terminal. It is now possible to run the Famicom Family BASIC cartridges, which means there is support to emulate both the HVC-007 &#34;Famicom Keyboard&#34; and the HVC-008 &#34;Famicom Data Recorder&#34;. The changes have been implemented in version 0.8 that can be downloaded <a href="supplies/lazybones-0.8.tar.gz">here</a> or from the public <a href="https://github.com/kobolt/lazyboNES">Git</a> <a href="https://gitlab.com/kobolt/lazyboNES">repositories</a>.<br />
+        <br />
+        A new command line option is required to activate the &#34;BASIC mode&#34; since the keyboard overrides the keyboard-based controller and the graphics map is completely different from SMB. The HVC-007 keyboard is supported in both curses and SDL but behaves slightly different. Curses maps to the character value while SDL uses scancodes. The HVC-008 cassette data recorder is accessed through the debugger and it is possible to both load or save WAV files in mono unsigned 8-bit 44100 Hz format. The WAV file can also be played back to a real Famicom system! Correspondingly a WAV file recorded from a real Famicom (in that format) can also be loaded by lazyboNES!<br />
+        <br />
+        It is also possible to inject a text file as keyboard input from the debugger, this is meant to easily load BASIC programs from text files. Note however that the Famicom BASIC is quite limited compared to other variants, here are some of the limitations I found when trying to port existing BASIC programs from other platforms:<br />
+        * Strings can just be 31 characters long.<br />
+        * LET statement is not supported, but it can be skipped.<br />
+        * DEF statement is missing so new functions cannot be defined.<br />
+        * INT() function does not exist.<br />
+        * Screen column output is just 28 characters.<br />
+        * Only 2K or 4K of RAM available depending on the cartridge version.<br />
+        <br />
+        However, Famicom BASIC is geared towards making simple games using the Famicom&#39;s unique tile graphics and sound support. A few of these games made by &#34;Hawk&#34; can be found at the <a href="https://web.archive.org/web/20151117043410/http://page.freett.com/familybasic/familybasic_download.html">wayback machine</a>. These are in a bit-stream format called &#34;tpr&#34; which is used by the <a href="http://nesterj.22web.org/en/index.html">NesterJ</a> emulator.<br />
+        <br />
+        Here is a simple Python script to convert those &#34;tpr&#34; files into WAV files:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python3
+
+def tpr2wav(in_file, out_file):
+    fh = open(in_file, &#34;rb&#34;)
+    tpr = fh.read()
+    fh.close()
+
+    fh = open(out_file, &#34;wb&#34;)
+    # Generate dummy WAV header.
+    fh.write(bytes.fromhex(&#39;52 49 46 46 ff ff ff ff  57 41 56 45 66 6d 74 20&#39;))
+    fh.write(bytes.fromhex(&#39;10 00 00 00 01 00 01 00  44 ac 00 00 44 ac 00 00&#39;))
+    fh.write(bytes.fromhex(&#39;01 00 08 00 64 61 74 61  ff ff ff ff 00 00 00 00&#39;))
+
+    for byte in tpr:
+        # Use and invert 2 bits from each byte.
+        for bit_no in range(0,8,4):
+            if (byte &gt;&gt; bit_no) &amp; 1:
+                fh.write(b&#39;&#92;x00&#39;)
+            else:
+                fh.write(b&#39;&#92;xFF&#39;)
+    fh.close()
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+
+    if len(sys.argv) &lt; 3:
+        print(&#34;Usage: %s &lt;in-tpr-file&gt; &lt;out-wav-file&gt;&#34; % (sys.argv[0]))
+        sys.exit(1)
+
+    tpr2wav(sys.argv[1], sys.argv[2])
+          </pre>
+        </div>
+      <p>
+        The resulting WAV files can be loaded by lazyboNES or played back to a real Famicom system.<br />
+        <br />
+        For a demonstration check this <a href="https://www.youtube.com/watch?v=r433SpSR-e4">video</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        03/01-2025, 
+        <a href="article-247.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
