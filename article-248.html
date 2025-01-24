@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Intel SDK-85 MAX232 Modification</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Intel SDK-85 MAX232 Modification</h1>
+      <p>
+        The <a href="https://en.wikipedia.org/wiki/Intel_system_development_kit#SDK-85">Intel MCS-85 System Design Kit</a> has a serial interface, but since it was introduced in the late 1970&#39;s it runs at 110 baud and on a <a href="https://en.wikipedia.org/wiki/Digital_current_loop_interface">current loop</a>. The user manual for the kit describes how to convert this to a more modern <a href="https://en.wikipedia.org/wiki/RS-232">RS-232</a> interface, but using the somewhat obsolete MC1488/MC1489 chip pair which in this case require -10 volts.<br />
+        <br />
+        A better replacement for MC1488/MC1489 is the <a href="https://en.wikipedia.org/wiki/MAX232">MAX232</a> which is a single chip that can run on just +5 volts. The serial interface directly on the <a href="https://en.wikipedia.org/wiki/Intel_8085">Intel 8085</a> is TTL-level so I first thought about using a common TTL-level UART to USB converter, but none that I could find supports baud rates down to 110, only 300. The traditional <a href="https://en.wikipedia.org/wiki/8250_UART">8250-based UARTs</a> found on older PCs can run fine on 110 baud so I can use that to talk to the MAX232 using regular RS-232 signalling.<br />
+        <br />
+        One additional challenge is that the transmit signal from the Intel 8085 needs to be inverted before being sent to the MAX232, but only the transmit signal and not the receive signal! I used a common 74HCT14 inverter with Schmitt-trigger for this purpose.<br />
+        <br />
+        Here is a photo of the modification:<br />
+      </p>
+      <img class="border" src="images/mcs-85_max232.jpg" alt="MAX232 and 74HCT14 added to MCS-85 SDK." />
+      <p>
+        <br />
+        A DE-9 D-Sub breakout is used to complete the connection:<br />
+      </p>
+      <img class="border" src="images/mcs-85_dsub_breakout.jpg" alt="D-Sub breakout connection." />
+      <p>
+        <br />
+        Here is a how the different transmit signal levels should look like:<br />
+      </p>
+      <img class="border" src="images/mcs-85_tx_signal_level.jpg" alt="Transmit signal levels." />
+      <p>
+        1) From the Intel 8085.<br />
+        2) Inverted through the 74HCT14.<br />
+        3) Level-shifted through the MAX232.<br />
+        <br />
+        When using Linux on a PC with a null-modem cable to the MCS-85 SDK, the &#34;cu&#34; command can then be used to connect to the serial interface like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+cu -l /dev/ttyS0 -s 110 --parity=none
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a schematic of the modification:<br />
+      </p>
+      <img class="border" src="images/mcs-85_max232_schematic.png" alt="MAX232 and 74HCT14 schematic." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        24/01-2025, 
+        <a href="article-248.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
