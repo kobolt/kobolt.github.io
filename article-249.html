@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Linux 2.6 Distribution for LOADLIN</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Linux 2.6 Distribution for LOADLIN</h1>
+      <p>
+        I have done some experiments and changed the <a href="article-165.html">earlier distribution</a> from Linux 2.4 to Linux 2.6. The goal is still to be able to load the kernel and root filesystem with LOADLIN from DOS on a 386 system.<br />
+        <br />
+        A notable change is that the /dev filesystem is now populated automatically by the kernel using devtmpfs. The VGA/VESA framebuffer console has also been enabled. It seems it is not possible to use the newer &#34;libata&#34; drivers for IDE/ATA hard drive access on a 386 so the older drivers are used. By default the latest 2.6 kernels also try to load the kernel at 16MB address, but this has been changed to 1MB to support systems with less RAM.<br />
+        <br />
+        The following specific software versions are used:<br />
+        * linux-2.6.39.4<br />
+        * gcc-4.9.4<br />
+        * busybox-1.37.0<br />
+        * uClibc-ng-1.0.51<br />
+        * binutils-2.32<br />
+        <br />
+        Note that I have ran the compilation on a modern Slackware 15.0 system with GCC 11.2 and some adjustments were required to force usage of older C++ when building the GCC 4.9 cross toolchain. I also added the $MAKE_JOBS variable to significantly speed up compilation time for modern multi-core CPUs.<br />
+        <br />
+        Get the necessary scripts, configuration and patches <a href="supplies/linux-2.6-loadlin-scripts.tar.gz">here</a> to make it yourself. Or just get the completed kernel and root filesystem <a href="supplies/linux-2.6-loadlin-bin.tar.gz">here</a>.<br />
+        <br />
+        Once again, for easy reference, here is the script to compile everything:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/bash
+set -e
+
+TARGET=&#34;i386-linux-uclibc&#34;
+# PREFIX=&#34;${HOME}/opt/gcc-${TARGET}/&#34;
+PREFIX=&#34;`pwd`/gcc-${TARGET}/&#34;
+SYSROOT=&#34;${PREFIX}/${TARGET}/sysroot&#34;
+MAKE_JOBS=&#34;-j32&#34;
+
+GCC_SRC=&#34;gcc-4.9.4.tar.bz2&#34;
+BINUTILS_SRC=&#34;binutils-2.32.tar.xz&#34;
+UCLIBC_SRC=&#34;uClibc-ng-1.0.51.tar.xz&#34;
+LINUX_SRC=&#34;linux-2.6.39.4.tar.xz&#34;
+BUSYBOX_SRC=&#34;busybox-1.37.0.tar.bz2&#34;
+
+export PATH=&#34;${PREFIX}bin:$PATH&#34;
+
+# Prepare Prefix and System Root
+if [ -d &#34;$SYSROOT&#34; ]; then
+  echo &#34;Old system root directory detected, please remove it.&#34;
+  exit 1
+else
+  mkdir -p &#34;$SYSROOT/usr&#34;
+fi
+
+# Prepare Build Directories:
+if [ -d build ]; then
+  echo &#34;Old build directory detected, please remove it.&#34;
+  exit 1
+else
+  mkdir -p build/binutils
+  mkdir -p build/gcc-stage1
+  mkdir -p build/gcc-stage2
+  mkdir -p build/uclibc
+  mkdir -p build/linux
+  mkdir -p build/busybox
+fi
+
+# Unpack Sources:
+if [ -d source ]; then
+  cd source
+  tar -xvjf &#34;$GCC_SRC&#34;
+  tar -xvJf &#34;$BINUTILS_SRC&#34;
+  tar -xvJf &#34;$UCLIBC_SRC&#34; -C ../build/uclibc
+  tar -xvJf &#34;$LINUX_SRC&#34; -C ../build/linux
+  tar -xvjf &#34;$BUSYBOX_SRC&#34; -C ../build/busybox
+  cd -
+else
+  echo &#34;No source directory, please download sources.&#34;
+  exit 1
+fi
+
+# Patch Linux 2.6 timeconst.pl
+cd build/linux/linux-*/kernel
+if fgrep --silent &#34;defined(@val)&#34; timeconst.pl; then
+  patch -p 0 &lt; ../../../../timeconst.pl.patch
+fi
+cd -
+
+# Patch Linux 2.6 ptrace.h
+cd build/linux/linux-*/arch/x86/include/asm
+if fgrep --silent &#34;extern long syscall_trace_enter&#34; ptrace.h; then
+  patch -p 0 &lt; ../../../../../../../ptrace.h.patch
+fi
+cd -
+
+# Install Linux 2.6 Headers:
+cd build/linux/linux-*
+make ARCH=i386 defconfig
+make ARCH=i386 INSTALL_HDR_PATH=&#34;$SYSROOT/usr&#34; headers_install
+cd -
+
+# Build binutils:
+cd build/binutils
+../../source/binutils-*/configure --target=&#34;$TARGET&#34; --prefix=&#34;$PREFIX&#34; --with-sysroot=&#34;$SYSROOT&#34; --disable-werror --enable-languages=c,c++ --enable-shared --without-newlib --disable-libgomp --enable-fast-install=N/A
+make all-{binutils,gas,ld} $MAKE_JOBS
+make install-{binutils,ld,gas}
+cd -
+
+# Build Stage 1 GCC4 (Without libgcc):
+cd build/gcc-stage1
+CXXFLAGS=&#34;--std=c++03 -g -O2&#34; ../../source/gcc-*/configure --target=$TARGET --prefix=$PREFIX --with-sysroot=$SYSROOT --with-cpu=i386 --disable-fast-install --disable-werror --disable-multilib --enable-languages=c --without-headers --disable-shared --disable-libssp --disable-libmudflap --with-newlib --disable-c99 --disable-libgomp
+CXXFLAGS=&#34;--std=c++03 -g -O2&#34; make all-gcc $MAKE_JOBS
+make install-gcc
+cd -
+
+# Install uClibc headers:
+cd build/uclibc/uClibc-*
+cp -v ../../../config-uclibc .config
+sed -i -e &#34;s%KERNEL_HEADERS=.*%KERNEL_HEADERS=&#92;&#34;$SYSROOT/usr/include/&#92;&#34;%&#34; .config
+make ARCH=i386 PREFIX=&#34;$SYSROOT&#34; install_headers
+cd -
+
+# Build Stage 1 GCC4 (libgcc):
+cd build/gcc-stage1
+CXXFLAGS=&#34;--std=c++03 -g -O2&#34; make all-target-libgcc $MAKE_JOBS
+make install-target-libgcc
+cd -
+
+# Build uClibc:
+cd build/uclibc/uClibc-*
+make ARCH=i386 PREFIX=&#34;$SYSROOT&#34; $MAKE_JOBS
+make ARCH=i386 PREFIX=&#34;$SYSROOT&#34; install
+cd -
+
+# Build Stage 2 GCC4:
+cd build/gcc-stage2
+CXXFLAGS=&#34;--std=c++11 -g -O2&#34; ../../source/gcc-*/configure --target=$TARGET --prefix=$PREFIX --with-sysroot=$SYSROOT --with-cpu=i386 --enable-fast-install=N/A --disable-werror --enable-languages=c,c++ --enable-shared --without-newlib --disable-libgomp
+CXXFLAGS=&#34;--std=c++11 -g -O2&#34; make all-{gcc,target-libgcc,target-libstdc++-v3} $MAKE_JOBS
+make install-{gcc,target-libgcc,target-libstdc++-v3}
+cd -
+
+# Build Linux 2.6:
+cd build/linux/linux-*
+cp -v ../../../config-linux .config
+make ARCH=i386 CROSS_COMPILE=i386-linux-uclibc- bzImage $MAKE_JOBS
+cp -v ./arch/x86/boot/bzImage ../../../bzImage
+cd -
+
+# Build Busybox:
+cd build/busybox/busybox-*
+cp -v ../../../config-busybox .config
+make CROSS_COMPILE=i386-linux-uclibc- $MAKE_JOBS
+cd -
+          </pre>
+        </div>
+      <p>
+        <br />
+        Once again, here is the script to make the root filesystem:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/bin/bash
+set -e
+
+ROOTFS=&#34;`pwd`/rootfs/&#34;
+
+TARGET=&#34;i386-linux-uclibc&#34;
+# PREFIX=&#34;${HOME}/opt/gcc-${TARGET}/&#34;
+PREFIX=&#34;`pwd`/gcc-${TARGET}/&#34;
+SYSROOT=&#34;${PREFIX}/${TARGET}/sysroot&#34;
+
+export PATH=&#34;${PREFIX}bin:$PATH&#34;
+
+if [ -d &#34;$ROOTFS&#34; ]; then
+  echo &#34;Old root FS directory detected, please remove it.&#34;
+  exit 1
+fi
+mkdir -p &#34;$ROOTFS&#34;
+
+# Install Busybox:
+cd build/busybox/busybox-*
+make CROSS_COMPILE=i386-linux-uclibc- CONFIG_PREFIX=&#34;$ROOTFS&#34; install
+cd -
+
+# Create some essential directories:
+cd &#34;$ROOTFS&#34;
+mkdir -v etc
+mkdir -v etc/init.d
+mkdir -v lib
+mkdir -v proc
+mkdir -v sys
+mkdir -v tmp
+mkdir -v root
+mkdir -v dev
+cd -
+
+# Initial rc.S:
+cat &gt; rcS &lt;&lt;EOF
+#!/bin/sh
+mount -t proc /proc /proc
+mount -t tmpfs /tmp /tmp
+loadkmap &lt; /etc/no-latin1.bmap
+hostname busybox
+EOF
+mv -v rcS &#34;$ROOTFS/etc/init.d/&#34;
+
+# Initial inittab:
+cat &gt; inittab &lt;&lt;EOF
+::sysinit:/etc/init.d/rcS
+::respawn:-/bin/sh
+::ctrlaltdel:/sbin/reboot
+::shutdown:/bin/umount -a -r
+::restart:/sbin/init
+EOF
+mv -v inittab &#34;$ROOTFS/etc/&#34;
+
+# Copy this system&#39;s keymap:
+loadkeys -b /usr/share/kbd/keymaps/i386/qwerty/no-latin1.map.gz &gt; &#34;$ROOTFS/etc/no-latin1.bmap&#34;
+
+# Make everything root user:
+sudo chown -v -R root:root &#34;$ROOTFS&#34;
+
+# SetUID on busybox binary:
+sudo chmod +s &#34;$ROOTFS/bin/busybox&#34;
+
+# Make rcS executable:
+sudo chmod +x &#34;$ROOTFS/etc/init.d/rcS&#34;
+
+# Make Compressed ROM archive:
+mkfs.cramfs rootfs rootfs.cramfs
+          </pre>
+        </div>
+      <p>
+        <br />
+        LOADLIN is typically used like this, after renaming the files to DOS format:<br />
+      </p>
+        <div class="box">
+          <pre>
+loadlin.exe bzimage initrd=rootfs
+          </pre>
+        </div>
+      <p>
+        <br />
+        QEMU also works, in graphical mode:<br />
+      </p>
+        <div class="box">
+          <pre>
+qemu-system-i386 -kernel bzImage -initrd rootfs.cramfs
+          </pre>
+        </div>
+      <p>
+        <br />
+        Or QEMU using the serial console directly to the terminal:<br />
+      </p>
+        <div class="box">
+          <pre>
+qemu-system-i386 -kernel bzImage -initrd rootfs.cramfs -append &#34;earlycon=uart8250,io,0x3f8,115200n8 console=ttyS0&#34; -serial mon:stdio -nographic
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is also a <a href="https://www.youtube.com/watch?v=W-tY7LZFKT8">demo video</a>.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        02/02-2025, 
+        <a href="article-249.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
