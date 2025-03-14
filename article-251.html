@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Apple IIc Emulator</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Apple IIc Emulator</h1>
+      <p>
+        In the ongoing effort to create curses-based emulators that can run in a Linux termal, the <a href="https://en.wikipedia.org/wiki/Apple_IIc">Apple IIc</a> is now implemented. I chose the IIc specifically, as opposed to the Apple II/II+/IIe, because I have a real IIc for comparison.<br />
+        <br />
+        40 and 80 column text modes are displayed as-is in the terminal. LoRes graphics are also supported and uses 256-color mode at 80 columns by 48 lines. HiRes graphics will be approximately displayed but too blocky to be useful. However, it is possible to output the HiRes graphics on a <a href="https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer">SDL window</a> in parallel, but no input is recognized there. Due to these limitations most games are unplayable, and the emulator is mostly useful for text-based applications.<br />
+        <br />
+        The Apple IIc uses a NCR variant of the <a href="https://en.wikipedia.org/wiki/MOS_Technology_6502#variants">65C02</a>, but I choose to emulate the more common <a href="https://en.wikipedia.org/wiki/WDC_65C02">WDC 65C02</a> instead since it is compatible and also easier to verify with external tools. The WDC variant might also be used in other projects in the future.<br />
+        <br />
+        The floppy disk image situation with Apple II is quite messy, where disk images floating around on the Internet have different sector interleaving depending on if it is a <a href="https://en.wikipedia.org/wiki/Apple_DOS">DOS</a> image, <a href="https://en.wikipedia.org/wiki/Apple_ProDOS">ProDOS image</a> or something else. The emulator will try to guess the type based on the extension or a signature, but if that fails the type and be forced with a command line option.<br />
+        <br />
+        All Apple IIc ROM variants, FF, 00, 03 or 04 can be used, and the internal diagnostics present in some of the ROMs should also pass. Both ACIA serial chips are emulated, and the second one, normally used for a modem, can also be redirected to a real TTY on Linux.<br />
+        <br />
+        You can download <a href="supplies/a2c-0.1.tar.gz">version 0.1</a> here or check out the <a href="https://github.com/kobolt/a2c">GitHub</a> or <a href="https://gitlab.com/kobolt/a2c">GitLab</a> repositories.<br />
+        <br />
+        &#34;VisiCalc&#34; in 40 column text mode:<br />
+      </p>
+      <img class="border" src="images/a2c-visicalc.png" alt="Screenshot of VisiCalc." />
+      <p>
+        <br />
+        &#34;FreeWriter&#34; in 80 column text mode:<br />
+      </p>
+      <img class="border" src="images/a2c-freewriter.png" alt="Screenshot of FreeWriter." />
+      <p>
+        <br />
+        &#34;Lemonade Stand&#34; in LoRes graphics mixed mode:<br />
+      </p>
+      <img class="border" src="images/a2c-lemonade_stand.png" alt="Screenshot of Lemonade Stand." />
+      <p>
+        <br />
+        Here is a <a href="https://www.youtube.com/watch?v=qiS9BPXTqXg">demo video</a> showing coding in Applesoft BASIC and booting of ProDOS.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        14/03-2025, 
+        <a href="article-251.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
