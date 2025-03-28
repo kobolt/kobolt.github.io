@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Intel SDK-85 Computer Game</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Intel SDK-85 Computer Game</h1>
+      <p>
+        I was considering a new coding project for the <a href="https://en.wikipedia.org/wiki/Intel_system_development_kit#SDK-85">Intel MCS-85 System Design Kit</a> and I ended up creating a game that is utilizing the available hardware; 256 bytes of RAM, 6 digit display and hexadecimal keyboard.<br />
+        <br />
+        The goal of the game is to enter the 4 digit random hexadecimal number that appears in the display before the timer runs out. Each successful entry will increment a score counter which is displayed when the game ends, which is whenever the timer runs out or a wrong number is entered. The &#34;Go&#34; button be used to try again. The speed of the timer countdown (the difficulty) can be adjusted by changing the input argument to the DELAY routine. The random number is generated with the help of a <a href="https://en.wikipedia.org/wiki/Linear-feedback_shift_register">LFSR</a> and it&#39;s seed can be changed to get another random sequence.<br />
+        <br />
+        Here is the source code:<br />
+      </p>
+        <div class="box">
+          <pre>
+UPDAD equ $0363
+UPDDT equ $036e
+DELAY equ $05f1
+OUTPT equ $02b7
+RDKBD equ $02e7
+
+  org $2000 ; RAM Start.
+start:
+  ; Set stack pointer:
+  lxi sp,$20c2
+
+lfsr_next:
+  ; Step LFSR:
+  mvi c,8
+  mvi b,$bd
+lfsr_step:
+  lxi h,lfsr_high
+  mov a,m
+  rlc
+  mov m,a
+  lxi h,lfsr_low
+  mov a,m
+  rar
+  mov m,a
+  jnc lfsr_nomask
+  lxi h,lfsr_high
+  mov a,m
+  xra b
+  mov m,a
+lfsr_nomask:
+  dcr c
+  jnz lfsr_step
+
+  ; Display LFSR value on address part of display:
+  lxi h,lfsr_low
+  mov d,m
+  lxi h,lfsr_high
+  mov e,m
+  call UPDAD
+
+  ; Reset and begin countdown:
+  lxi h,countdown
+  mvi a,$ff
+  mov m,a
+countdown_next:
+  ; Display countdown on data part of display:
+  call UPDDT
+
+  ; Make sure interrupts are enabled:
+  ei
+  mvi a,$08 ; Unmask all RST interrupts.
+  db $30 ; 8085 &#34;SIM&#34; instruction, use machine code directly for zmac assembler.
+
+  ; Delay a while:
+  ; $ffff = ~134 seconds
+  ; $0fff = ~8.5 seconds
+  lxi d,$0fff ; Lower this to increase the difficulty!
+  call DELAY
+
+  ; Non-blocking RDKBD:
+  lxi h,$20fe ; Input buffer.
+  mov a,m
+  ora a ; Check if MSB is set.
+  jp key_pressed
+  jmp countdown_decrement
+key_pressed:
+  mvi m,$80 ; Set the empty flag.
+  push a ; Push pressed key onto the stack.
+
+  ; Check if four stack pushes has occurred:
+  lxi h,$df44
+  dad sp ; Sets the carry flag if SP is higher than $20ba.
+  jnc got_four_keys
+  jmp countdown_decrement
+
+got_four_keys:
+  lxi h,lfsr_high
+check_byte:
+  ; Check low nibble/digit:
+  mov a,m
+  ani $0f
+  mov b,a
+  pop a
+  cmp b
+  jnz end ; Wrong, game ends.
+
+  ; Check high nibble/digit:
+  mov a,m
+  rrc
+  rrc
+  rrc
+  rrc
+  ani $0f
+  mov b,a
+  pop a
+  cmp b
+  jnz end ; Wrong, game ends.
+
+  ; Check if four stack pops has occurred:
+  lxi h,$df3e
+  dad sp ; Sets the carry flag if SP is back at $20c2.
+  lxi h,lfsr_low
+  jnc check_byte
+
+  ; All four digits correctly guessed, increase the score:
+  lxi h,score
+  inr m
+  jmp lfsr_next ; Proceed to next number.
+
+  ; Continue countdown:
+countdown_decrement:
+  lxi h,countdown
+  dcr m
+  mov a,m
+  jnz countdown_next
+  ; Countdown timed out if got here, game ends.
+
+end:
+  ; Blank out address part of display.
+  mvi a,0
+  mvi b,0
+  lxi h,blank
+  call OUTPT
+
+  ; Display score on data part of display:
+  lxi h,score
+  mov a,m
+  call UPDDT
+
+  ; Clear the score:
+  lxi h,score
+  mvi a,0
+  mov m,a
+
+  ; Wait for &#39;Go&#39; key before starting:
+wait_for_go:
+  call RDKBD
+  mvi b,$12 ; &#39;Go&#39; key.
+  cmp b
+  jnz wait_for_go
+  jmp start ; This forces the stack pointer to get reset as well.
+ 
+  ; Data area:
+lfsr_low:
+  db $aa ; Low seed byte, change it to start with a different random number!
+lfsr_high:
+  db $ee ; High seed byte, change it to start with a different random number!
+countdown:
+  db $ff
+score:
+  db $00
+blank:
+  db $15
+  db $15
+  db $15
+  db $15
+          </pre>
+        </div>
+      <p>
+        <br />
+        I ended up using the <a href="http://48k.ca/zmac.html">zmac assembler</a> for this project, since it can also generate 8080 compatible code. A single 8085 specific instruction is used but that is specified directly as machine code.<br />
+        <br />
+        Assemble the game like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+zmac -8 game.asm --od . --oo cim,lst
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is also the assembled machine code in hexadecimal for convenience:<br />
+      </p>
+        <div class="box">
+          <pre>
+31 C2 20 0E 08 06 BD 21 AC 20 7E 07 77 21 AB 20
+7E 1F 77 D2 1C 20 21 AC 20 7E A8 77 0D C2 07 20
+21 AB 20 56 21 AC 20 5E CD 63 03 21 AD 20 3E FF
+77 CD 6E 03 FB 3E 08 30 11 FF 0F CD F1 05 21 FE
+20 7E B7 F2 49 20 C3 80 20 36 80 F5 21 44 DF 39
+D2 56 20 C3 80 20 21 AC 20 7E E6 0F 47 F1 B8 C2
+88 20 7E 0F 0F 0F 0F E6 0F 47 F1 B8 C2 88 20 21
+3E DF 39 21 AB 20 D2 59 20 21 AE 20 34 C3 03 20
+21 AD 20 35 7E C2 31 20 3E 00 06 00 21 AF 20 CD
+B7 02 21 AE 20 7E CD 6E 03 21 AE 20 3E 00 77 CD
+E7 02 06 12 B8 C2 9F 20 C3 00 20 AA EE FF 00 15
+15 15 15
+          </pre>
+        </div>
+      <p>
+        <br />
+        This machine code can theoretically be entered manually using the SDK-85 monitor, but that will take quite a lot of time. An alternative solution is to start the board in serial mode and inject the program from an external PC, then switch to display/keyboard mode and run the game. This works since the contents of the RAM on the board is retained on a CPU reset.<br />
+        <br />
+        Here is a C program made for Linux that can inject the binary file over the serial interface, but note that it requires a UART that can run at 110 baud:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+
+static unsigned char to_hex(int n)
+{
+  switch (n) {
+  case 0:
+  case 1:
+  case 2:
+  case 3:
+  case 4:
+  case 5:
+  case 6:
+  case 7:
+  case 8:
+  case 9:
+    return n + 0x30;
+  case 10:
+  case 11:
+  case 12:
+  case 13:
+  case 14:
+  case 15:
+    return n + 0x37;
+  }
+  return &#39;?&#39;;
+}
+
+static int transmit(int fd, unsigned char byte, unsigned char expect) 
+{
+  if (write(fd, &amp;byte, 1) == -1) {
+    fprintf(stderr, &#34;write() failed with errno: %d&#92;n&#34;, errno);
+    return -1;
+  }
+
+  do {
+    if (read(fd, &amp;byte, 1) != 1) {
+      fprintf(stderr, &#34;read() failed with errno: %d&#92;n&#34;, errno);
+      return -1;
+    }
+    putc(byte, stderr);
+  } while (byte != expect);
+
+  usleep(200000); /* Prevent overloading the target system. */
+
+  return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  int fd;
+  FILE *fh;
+  int c;
+  struct termios tios;
+
+  if (argc != 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;file&gt; &lt;tty&gt;&#92;n&#34;, argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  fd = open(argv[2], O_RDWR | O_NOCTTY);
+  if (fd == -1) {
+    fprintf(stderr, &#34;open() failed with errno: %d&#92;n&#34;, errno);
+    return EXIT_FAILURE;
+  }
+
+  if (tcgetattr(fd, &amp;tios) == -1) {
+    fprintf(stderr, &#34;tcgetattr() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return EXIT_FAILURE;
+  }
+
+  cfmakeraw(&amp;tios);
+  cfsetispeed(&amp;tios, B110);
+  cfsetospeed(&amp;tios, B110);
+  tios.c_iflag |= ISTRIP; /* Strip off eighth bit. */
+
+  if (tcsetattr(fd, TCSANOW, &amp;tios) == -1) {
+    fprintf(stderr, &#34;tcsetattr() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return EXIT_FAILURE;
+  }
+
+  fh = fopen(argv[1], &#34;rb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;fopen() failed with errno: %d&#92;n&#34;, errno);
+    close(fd);
+    return EXIT_FAILURE;
+  }
+
+  /* Initial check, should respond with a dot: */
+  transmit(fd, &#39;&#92;r&#39;, &#39;.&#39;);
+
+  /* Send substitute memory command: */
+  transmit(fd, &#39;S&#39;, &#39;S&#39;);
+  transmit(fd, &#39;2&#39;, &#39;2&#39;);
+  transmit(fd, &#39;0&#39;, &#39;0&#39;);
+  transmit(fd, &#39;0&#39;, &#39;0&#39;);
+  transmit(fd, &#39;0&#39;, &#39;0&#39;);
+  transmit(fd, &#39; &#39;, &#39;-&#39;);
+
+  /* Send the data: */
+  while ((c = fgetc(fh)) != EOF) {
+    transmit(fd, to_hex(c / 16), to_hex(c / 16)); /* Wait for echo. */
+    transmit(fd, to_hex(c % 16), to_hex(c % 16)); /* Wait for echo. */
+    transmit(fd, &#39; &#39;, &#39;-&#39;); /* Wait for next byte marker. */
+  }
+
+  /* Finish the command: */
+  transmit(fd, &#39;&#92;r&#39;, &#39;.&#39;);
+
+  fclose(fh);
+  close(fd);
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        For development I used my <a href="article-250.html">Intel SDK-85 emulator</a> which helps tremendously, and I added a new function to inject input in the display/keyboard mode so the assembled program can be tested quickly. I also restricted the RAM to 256 bytes which is standard on real hardware. These updates are present in <a href="supplies/sdk85emu-0.2.tar.gz">version 0.2</a>. The <a href="https://github.com/kobolt/sdk85emu">Git</a> repository has also been updated.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        28/03-2025, 
+        <a href="article-252.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
