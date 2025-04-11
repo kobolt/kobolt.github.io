@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Toshiba T6400DXC Capacitor Replacement</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Toshiba T6400DXC Capacitor Replacement</h1>
+      <p>
+        This is a follow up on the <a href="article-241.html">Toshiba T6400DXC</a> luggable PC. There were quite a lot of leaking capacitors on the mainboard and in the LCD panel. Here is an overview of what needed to be replaced.<br />
+        <br />
+        An example of a leaky SMD capacitor on the mainboard:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_mainboard_leaky_cap.jpg" alt="Toshiba T6400DXC leaky SMD capacitor." />
+      <p>
+        <br />
+        Here is a list of capacitors on the mainboard:<br />
+      </p>
+        <div class="box">
+          <pre>
+|------|-----------|--------|
+| ID   | Value     | Type   |
+|------|-----------|--------|
+| C448 | 10uF 6.3V | Square |
+| C969 | 10uF 6.3V | Square |
+| C903 | 33uF 16V  | Square |
+| C421 | 47uF 6.3V | Square |
+| C444 | 47uF 6.3V | Square |
+| C45  | 47uF 6.3V | Square |
+| C443 | 100 6V    | SMD    |
+| C905 | 100 6V    | SMD    |
+| C912 | 100 6V    | SMD    |
+| C968 | 100 6V    | SMD    |
+| C974 | 100 6V    | SMD    |
+| ?    | 100 6V    | SMD    |
+| C446 | 47 16V    | SMD    |
+| C447 | 47 16V    | SMD    |
+| C77  | 47 16V    | SMD    |
+| C970 | 47 16V    | SMD    |
+| C971 | 47 16V    | SMD    |
+| C973 | 47 16V    | SMD    |
+| ?    | 10 50V    | SMD    |
+|------|-----------|--------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a photo of the mainboard capacitor locations, the red ones are SMD and the purple ones the square ones:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_mainboard_cap_locations.png" alt="Toshiba T6400DXC mainboard capacitor locations." />
+      <p>
+        <br />
+        A working LCD panel will have white text on a black background. With leaking capacitors the LCD panel looks &#34;inverted&#34; with black text on a white background like this:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_lcd_panel_bad.jpg" alt="Toshiba T6400DXC bad inverted LCD panel." />
+      <p>
+        <br />
+        Here is a list of capacitors on the LCD panel which are located across several locations:<br />
+      </p>
+        <div class="box">
+          <pre>
+|----------|-----|-----------|---------------------|
+| Location | ID  | Value     | Type, Height x Diam |
+|----------|-----|-----------|---------------------|
+| Cluster  | C7  | 10uF 16V  | Square              |
+| Cluster  | C5  | 10uF 16V  | Square              |
+| Cluster  | C4  | 10uF 25V  | Square              |
+| Cluster  | C6  | 10uF 50V  | Square              |
+| Cluster  | C3  | 10uF 50V  | Square              |
+|----------|-----|-----------|---------------------|
+| Edge     | ?   | 3,3uF 16V | Square              |
+| Edge     | ?   | 3,3uF 16V | Square              |
+|----------|-----|-----------|---------------------|
+| C2006    | C1  | 22uF 16V  | Radial, 7mm x 5mm   |
+| C2006    | C2  | 22uF 16V  | Radial, 7mm x 5mm   |
+| C2006    | C3  | 4,7uF 35V | Radial, 7mm x 4mm   |
+| C2006    | C4  | 10uF 16V  | Radial, 7mm x 4mm   |
+| C2006    | C5  | 10uF 16V  | Radial, 7mm x 4mm   |
+|----------|-----|-----------|---------------------|
+| C2007    | C1  | 100uF 10V | Radial, 7mm x 6mm   |
+| C2007    | C2  | 4,7uF 25V | Radial, 6mm x 4mm   |
+|----------|-----|-----------|---------------------|
+| Main     | CA  | 100uF 25V | Radial, 9mm x 6mm   |
+| Main     | CB  | 100uF 10V | Radial, 9mm x 5mm   |
+| Main     | CC  | 47uF 16V  | Radial, 9mm x 5mm   |
+| Main     | CD  | 47uF 16V  | Radial, 9mm x 5mm   |
+| Main     | CE  | 47uF 16V  | Radial, 9mm x 5mm   |
+| Main     | CF  | 47uF 25V  | Radial, 9mm x 5mm   |
+|----------|-----|-----------|---------------------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        The &#34;cluster&#34; before replacement:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_lcd_cluster_before.jpg" alt="Toshiba T6400DXC LCD panel capacitor cluster before" />
+      <p>
+        <br />
+        The &#34;cluster&#34; after replacement, with MLCC equivalents:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_lcd_cluster_after.jpg" alt="Toshiba T6400DXC LCD panel capacitor cluster after" />
+      <p>
+        <br />
+        The C2006 sub-board before replacement:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_lcd_2006_before.jpg" alt="Toshiba T6400DXC LCD panel C2006 sub-board before." />
+      <p>
+        <br />
+        The C2006 sub-board after replacement, note that the new capacitors needs to be bent in certain directions to fit:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_lcd_2006_after.jpg" alt="Toshiba T6400DXC LCD panel C2006 sub-board after." />
+      <p>
+        <br />
+        The C2007 sub-board before replacement, removed:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_lcd_2007_before.jpg" alt="Toshiba T6400DXC LCD panel C2007 sub-board before." />
+      <p>
+        <br />
+        The C2007 sub-board after replacement, installed:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_lcd_2007_after.jpg" alt="Toshiba T6400DXC LCD panel C2007 sub-board after." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        11/04-2025, 
+        <a href="article-253.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
