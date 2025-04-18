@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Toshiba T6400DXC LCD Panel Backlight Replacement</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Toshiba T6400DXC LCD Panel Backlight Replacement</h1>
+      <p>
+        This is part 3 of the <a href="article-253.html">Toshiba T6400DXC</a> luggable PC repair series. Even after replacing all the leaking capacitors in the LCD panel there were still problems with it sometimes going dark after power on. This is caused by the aging fluorescent lamps that are used for the backlight.<br />
+        <br />
+        Instead of trying to find replacement fluorescent tubes and dealing with the dangerous high voltage involved I choose to replace them with modern LED strips instead. On a trip to Japan I found some 15cm strips at <a href="https://www.akiba-led.jp/product/406">Akiba LED</a> that could work, which happens to run at 12V DC.<br />
+        <br />
+        There are two additional circuit boards inside the T6400DXC screen besides the main panel itself. The board on the left is the inverter to generate the AC voltage for the fluorescent tubes, but the other one is a 24V to 12V converter. I was able to power the LED strip by using that power 12V supply directly:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_led_strip_test.jpg" alt="Toshiba T6400DXC LED strip test." />
+      <p>
+        <br />
+        After removing the old fluorescent tubes the LED strips can be placed as follows:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_led_strip_replacement.jpg" alt="Toshiba T6400DXC LED strip replacement." />
+      <p>
+        <br />
+        Both LED strips can be connected to the 12V supply board in parallel at this connector using Dupont connectors:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_led_strip_connection.jpg" alt="Toshiba T6400DXC LED strip connection." />
+      <p>
+        <br />
+        This is the end result, it is not perfect, but a whole lot better than a dark screen:<br />
+      </p>
+      <img class="border" src="images/t6400dxc_lcd_panel_fixed.jpg" alt="Toshiba T6400DXC LCD panel repair result." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        18/04-2025, 
+        <a href="article-254.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
