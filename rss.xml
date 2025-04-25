@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2025 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 18 Apr 2025 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 25 Apr 2025 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Citizen V1DA-31A Floppy Drive Repair</title>
+    <category>Repair</category>
+    <link>https://kobolt.github.io/article-255.html</link>
+    <guid>https://kobolt.github.io/article-255.html</guid>
+    <pubDate>Fri, 25 Apr 2025 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-255.html</description>
+  </item>
   <item>
     <title>Toshiba T6400DXC LCD Panel Backlight Replacement</title>
     <category>Repair</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-246.html</guid>
     <pubDate>Fri, 27 Dec 2024 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-246.html</description>
-  </item>
-  <item>
-    <title>DTK PEM-3301 Mainboard Repair</title>
-    <category>Repair</category>
-    <link>https://kobolt.github.io/article-245.html</link>
-    <guid>https://kobolt.github.io/article-245.html</guid>
-    <pubDate>Fri, 06 Dec 2024 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-245.html</description>
   </item>
 </channel>
 </rss>
