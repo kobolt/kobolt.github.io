@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Linux 6.15 for 486</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Linux 6.15 for 486</h1>
+      <p>
+        Rumors were circulating that <a href="https://en.wikipedia.org/wiki/I486">i486</a> support would be dropped for the Linux kernel with <a href="https://lkml.org/lkml/2025/5/25/345">version 6.15</a> that was released some days ago. It seems the support still remains, since I was able to build and run a 6.15 kernel on a 486DX system.<br />
+        <br />
+        I used nearly the same steps as in my <a href="article-249.html">earlier experiments</a>. Once again using Slackware 15.0 with GCC 11.2 as the base for building the toolchain. One important thing I needed to include this time was system wide support for 64-bit time_t. Initially using 32-bit time_t with this setup was a source of some strange bugs and weird behaviour.<br />
+        <br />
+        I tried to use up-to-date versions of software for the toolchain and ended up with the following specific versions for everything:<br />
+        * linux-6.15<br />
+        * gcc-15.1.0<br />
+        * busybox-1.37.0<br />
+        * uClibc-ng-1.0.52<br />
+        * binutils-2.44<br />
+        <br />
+        The necessary scripts and configuration to build everything can be downloaded <a href="supplies/linux-6.15-486-scripts.tar.gz">here</a>. This time I have also included a script to build <a href="https://invisible-island.net/ncurses/announce.html">ncurses</a> version 6.5 and the <a href="article-50.html">snake game</a> I made a long time ago. There is also a script to conveniently launch QEMU for test.<br />
+        <br />
+        The scripts should be executed in the following order:<br />
+      </p>
+        <div class="box">
+          <pre>
+./build-base.sh
+./ncurses-build.sh
+./snake-build.sh
+./rootfs-cramfs.sh
+./qemu-test.sh
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a screenshot:<br />
+      </p>
+      <img class="border" src="images/linux-6.15-486-qemu.png" alt="Linux 6.15 on an emulated 486 in QEMU." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        01/06-2025, 
+        <a href="article-257.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
