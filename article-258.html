@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Commodore 1084 Monitor Flyback Replacement</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Commodore 1084 Monitor Flyback Replacement</h1>
+      <p>
+      </p>
+     <p class="warning">
+Warning: Be careful when working with CRT monitors, they can contain dangerous voltages even when in powered off state.</p>
+      <p>
+        <br />
+        I have a Commodore 1084 CRT monitor that failed some years ago by suddenly making a squealing noise. I later discovered that this is one of the symptoms of a failing <a href="https://en.wikipedia.org/wiki/Flyback_transformer">flyback transformer</a>. Getting replacement parts for CRT equipment is not easy nowadays, but luckily some people are still selling flyback replacements online, so I bought a replacement this spring.<br />
+        <br />
+        My monitor is the PAL type 1084S-P and the old flyback was marked &#34;E39144 TYPE AT2079 30102 TY8850&#34;. The new flybacks are made by a company called <a href="https://hrdiemen.com/">HR Diemen</a> and the new model needed for this monitor is the HR7506.<br />
+        <br />
+        Old flyback, still connected to the neck board:<br />
+      </p>
+      <img class="border" src="images/commodore_1084_old_flyback.jpg" alt="Commodore 1084 Old Flyback" />
+      <p>
+        <br />
+        New flyback, made in 2023:<br />
+      </p>
+      <img class="border" src="images/commodore_1084_new_flyback.jpg" alt="Commodore 1084 New Flyback" />
+      <p>
+        <br />
+        Note that the holes in the PCB for the new flyback does not align perfectly so some of the pins needs to be bent a millimeter. Also the GND pin is too far away so I ended up making a bodge wire underneath to connect it.<br />
+        <br />
+        When replacing the flyback I also noticed signs of <a href="https://en.wikipedia.org/wiki/Electric_arc#Undesired_arcing">carbon tracking</a>:<br />
+      </p>
+      <img class="border" src="images/commodore_1084_carbon_tracking.jpg" alt="Commodore 1084 Carbon Tracking" />
+      <p>
+        Not sure if this was caused by the old failing flyback or not, but it cleaned up with isopropyl alcohol.<br />
+        <br />
+        The screen voltage adjustment on the flyback needs to be turned almost completely off before powering on the monitor, then slowly adjusted back up to the correct level right before the raster gets visible. The focus adjustment will probably also be way off.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        13/06-2025, 
+        <a href="article-258.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

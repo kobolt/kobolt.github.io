@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2025 Kjetil Erga</copyright>
-  <lastBuildDate>Sun, 01 Jun 2025 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 13 Jun 2025 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Commodore 1084 Monitor Flyback Replacement</title>
+    <category>Repair</category>
+    <link>https://kobolt.github.io/article-258.html</link>
+    <guid>https://kobolt.github.io/article-258.html</guid>
+    <pubDate>Fri, 13 Jun 2025 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-258.html</description>
+  </item>
   <item>
     <title>Linux 6.15 for 486</title>
     <category>Configuration</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-249.html</guid>
     <pubDate>Sun, 02 Feb 2025 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-249.html</description>
-  </item>
-  <item>
-    <title>Intel SDK-85 MAX232 Modification</title>
-    <category>Configuration</category>
-    <link>https://kobolt.github.io/article-248.html</link>
-    <guid>https://kobolt.github.io/article-248.html</guid>
-    <pubDate>Fri, 24 Jan 2025 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-248.html</description>
   </item>
 </channel>
 </rss>
