@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Terminominal Update and lazyboNES Hack</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Terminominal Update and lazyboNES Hack</h1>
+      <p>
+        I have made a small update to <a href="article-198.html">Terminominal</a> to fix some bugs. Version 0.2 can be downloaded <a href="supplies/terminominal-0.2.tar.gz">here</a> and the <a href="https://github.com/kobolt/terminominal">Git repo</a> has been updated.<br />
+        <br />
+        The first bug was handling of repeating horizontal tabs which are supposed to move the cursor each time, but that did not happen. The second bug was incorrectly parsing unknown set/reset mode parameters, which I noticed because <a href="https://en.wikipedia.org/wiki/Bash_(Unix_shell)">bash</a> or <a href="https://en.wikipedia.org/wiki/GNU_Readline">readline</a> sent some unsupported codes even though the terminal was set to VT100. The third bug was printing of incoming NUL bytes which are better left ignored.<br />
+        <br />
+        Just for fun I also made a hack to support the <a href="article-240.html">lazyboNES emulator hacks</a> to send key release events and produce sound. This has not been included in the source code directly since it is too specific, so here is a patch of how it can be done:<br />
+      </p>
+        <div class="box">
+          <pre>
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0d084b6..2e74444 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -32,6 +32,8 @@ target_link_libraries(terminominal PRIVATE
+         pico_multicore
+         hardware_pio
+         hardware_dma
++        hardware_gpio
++        hardware_pwm
+         )
+ 
+ pico_add_extra_outputs(terminominal)
+diff --git a/ps2kbd.c b/ps2kbd.c
+index 341c739..7f604d5 100644
+--- a/ps2kbd.c
++++ b/ps2kbd.c
+@@ -38,6 +38,8 @@ static uint ps2kbd_prog_offset;
+ static bool key_pressed[UINT8_MAX + 1];
+ static bool key_ext_pressed[UINT8_MAX + 1];
+ 
++static bool release_mode = false;
++
+ 
+ 
+ #ifdef KEYBOARD_NORWEGIAN
+@@ -224,19 +226,25 @@ static void ps2kbd_handle_scancode(uint8_t scancode)
+           break;
+ 
+         case 0x01: /* F9 */
++          release_mode = true;
++          /*
+           eia_send(0x1B);
+           eia_send(&#39;[&#39;);
+           eia_send(&#39;2&#39;);
+           eia_send(&#39;0&#39;);
+           eia_send(&#39;~&#39;);
++          */
+           break;
+ 
+         case 0x09: /* F10 */
++          release_mode = false;
++          /*
+           eia_send(0x1B);
+           eia_send(&#39;[&#39;);
+           eia_send(&#39;2&#39;);
+           eia_send(&#39;1&#39;);
+           eia_send(&#39;~&#39;);
++          */
+           break;
+ 
+         case 0x78: /* F11 */
+@@ -360,6 +368,40 @@ static void ps2kbd_handle_scancode(uint8_t scancode)
+ 
+   case PS2KBD_STATE_BREAK:
+     key_pressed[scancode] = false;
++    if (release_mode) {
++      switch (key_to_byte[scancode]) {
++      case &#39;w&#39;:
++        eia_send(&#39;W&#39;);
++        break;
++      case &#39;a&#39;:
++        eia_send(&#39;A&#39;);
++        break;
++      case &#39;s&#39;:
++        eia_send(&#39;S&#39;);
++        break;
++      case &#39;d&#39;:
++        eia_send(&#39;D&#39;);
++        break;
++      case &#39;h&#39;:
++        eia_send(&#39;H&#39;);
++        break;
++      case &#39;j&#39;:
++        eia_send(&#39;J&#39;);
++        break;
++      case &#39;k&#39;:
++        eia_send(&#39;K&#39;);
++        break;
++      case &#39;l&#39;:
++        eia_send(&#39;L&#39;);
++        break;
++      case &#39;0&#39;:
++        eia_send(&#39;=&#39;);
++        break;
++      case &#39;,&#39;:
++        eia_send(&#39;;&#39;);
++        break;
++      }
++    }
+     ps2kbd_state = PS2KBD_STATE_IDLE;
+     break;
+ 
+diff --git a/terminal.c b/terminal.c
+index 1a93434..c0d8f85 100644
+--- a/terminal.c
++++ b/terminal.c
+@@ -6,6 +6,11 @@
+ #include &#34;eia.h&#34;
+ #include &#34;error.h&#34;
+ 
++#ifndef __linux__
++#include &#34;pico/stdlib.h&#34;
++#include &#34;hardware/pwm.h&#34;
++#endif /* !__linux__ */
++
+ #define PARAM_MAX 8
+ #define PARAM_LEN 12
+ 
+@@ -60,6 +65,42 @@ static bool mode_line_feed         = false;
+ 
+ 
+ 
++#ifndef __linux__
++void sound_play(int freq)
++{
++  uint slice_num;
++  uint chan;
++
++  slice_num = pwm_gpio_to_slice_num(11);
++  chan = pwm_gpio_to_channel(11);
++
++  if (freq &gt; 0) {
++    uint32_t clock = 125000000;
++    uint32_t divider16 = clock / freq / 4096 + (clock % (freq * 4096) != 0);
++    if (divider16 / 16 == 0) {
++      divider16 = 16;
++    }
++    uint32_t wrap = clock * 16 / divider16 / freq - 1;
++    pwm_set_clkdiv_int_frac(slice_num, divider16 / 16, divider16 &amp; 0xF);
++    pwm_set_wrap(slice_num, wrap);
++    pwm_set_chan_level(slice_num, chan, wrap * 50 / 100);
++    pwm_set_enabled(slice_num, true);
++
++  } else {
++    pwm_set_enabled(slice_num, false);
++  }
++}
++
++
++
++void sound_init(void)
++{
++  gpio_set_function(11, GPIO_FUNC_PWM);
++}
++#endif /* !__linux__ */
++
++
++
+ static inline int col_max(void)
+ {
+   return (mode_column_132) ? 131 : 79; /* 0-Indexed */
+@@ -341,6 +382,10 @@ static inline void cursor_deactivate(void)
+ 
+ void terminal_init(void)
+ {
++#ifndef __linux__
++  sound_init();
++#endif /* !__linux__ */
++
+   cursor_row = 0;
+   cursor_col = 0;
+   cursor_print_attribute = 0;
+@@ -604,6 +649,14 @@ void terminal_handle_escape_csi(uint8_t byte)
+     escape = ESCAPE_NONE;
+     break;
+ 
++#ifndef __linux__
++  case &#39;x&#39;: /* Sound */
++    param_int = (param_used) ? atoi(param[0]) : 0;
++    sound_play(param_int);
++    escape = ESCAPE_NONE;
++    break;
++#endif /* !__linux__ */
++
+   case &#39;;&#39;:
+     param_index++;
+     if (param_index &gt;= PARAM_MAX) {
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a <a href="https://www.youtube.com/watch?v=_E0GaCzyyXk">video</a> of this in action.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        11/07-2025, 
+        <a href="article-260.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
