@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - XOR Crack Kit</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>XOR Crack Kit</h1>
+      <p>
+        This article is about 15 years too late, but nevertheless here it is. It is a compilation of techniques to crack <a href="https://en.wikipedia.org/wiki/XOR_cipher">XOR encrypted</a> text files that I made a long time ago, but cleaned up and combined into one program executable. This is meant to be used on files of English plaintext origin. For binary files, check out this <a href="article-73.html">older article</a>.<br />
+        <br />
+        Here is the C code:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;math.h&gt;
+#include &lt;ctype.h&gt;
+#include &lt;unistd.h&gt;
+
+#define XC_CIPHERTEXT_BUFFER_SIZE 16384
+#define XC_FREQUENCY_TABLE_SIZE 26
+#define XC_MIN_KEY_LEN 3
+#define XC_MAX_KEY_LEN 32
+#define XC_NO_OF_GUESSES 10
+#define XC_LOW_PROXIMITY 1.0
+
+typedef struct key_guess_s {
+  char key[XC_MAX_KEY_LEN];
+  float proximity;
+} xc_key_guess_t;
+
+static xc_key_guess_t xc_key_guess[XC_NO_OF_GUESSES];
+static unsigned char xc_ciphertext[XC_CIPHERTEXT_BUFFER_SIZE];
+static unsigned int xc_ciphertext_size;
+static unsigned int xc_probable_key_len[XC_MAX_KEY_LEN + 1];
+
+/* Frequency of A to Z in typical English text. */
+static const float xc_frequency_table[XC_FREQUENCY_TABLE_SIZE] = {
+  00.0812, 00.0149, 00.0271, 00.0432, 00.1203, 00.0230, 00.0203, 00.0592,
+  00.0731, 00.0010, 00.0069, 00.0398, 00.0261, 00.0695, 00.0768, 00.0182,
+  00.0011, 00.0602, 00.0628, 00.0910, 00.0288, 00.0111, 00.0209, 00.0017,
+  00.0211, 00.0007,
+};
+
+static int xc_read_ciphertext(char *filename)
+{
+  FILE *fh;
+  int c;
+
+  fh = fopen(filename, &#34;r&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;Error: fopen(%s) failed: %d&#92;n&#34;, filename, errno);
+    return -1;
+  }
+
+  xc_ciphertext_size = 0;
+  while ((c = fgetc(fh)) != EOF) {
+    if (xc_ciphertext_size &gt;= XC_CIPHERTEXT_BUFFER_SIZE)
+      break;
+    xc_ciphertext[xc_ciphertext_size] = c;
+    xc_ciphertext_size++;
+  }
+  
+  fclose(fh);
+  return 0;
+}
+
+static void xc_guess_probable_key_len(void)
+{
+  unsigned int n;
+  unsigned int key_len;
+  unsigned int equal_count;
+  unsigned int average = 0;
+
+  /* Key length is guessed by counting coincidences in the ciphertext. */
+  for (key_len = XC_MIN_KEY_LEN; key_len &lt;= XC_MAX_KEY_LEN; key_len++) {
+    equal_count = 0;
+    for (n = 0; n &lt; (xc_ciphertext_size - key_len); n++) {
+      if ((xc_ciphertext[n] ^ xc_ciphertext[n + key_len]) == 0) {
+        equal_count++;
+      }
+    }
+    average += equal_count;
+    xc_probable_key_len[key_len] = equal_count;
+  }
+
+  average = average / (XC_MAX_KEY_LEN - XC_MIN_KEY_LEN);
+
+  printf(&#34;Probable key lengths: &#34;);
+  for (key_len = XC_MIN_KEY_LEN; key_len &lt;= XC_MAX_KEY_LEN; key_len++) {
+    if (xc_probable_key_len[key_len] &lt;= average) {
+      xc_probable_key_len[key_len] = 0; /* Don&#39;t use it. */
+    } else {
+      printf(&#34;%d &#34;, key_len);
+    }
+  }
+  printf(&#34;&#92;n&#34;);
+}
+
+static void xc_key_guess_clear(void)
+{
+  int i;
+
+  for (i = 0; i &lt; XC_NO_OF_GUESSES; i++) {
+    xc_key_guess[i].key[0] = &#39;&#92;0&#39;;
+    xc_key_guess[i].proximity = XC_LOW_PROXIMITY;
+  }
+}
+
+static void xc_key_guess_add(char *key, float proximity)
+{
+  int i;
+
+  for (i = 0; i &lt; XC_NO_OF_GUESSES; i++) {
+    if (proximity &lt; xc_key_guess[i].proximity) {
+      xc_key_guess[i].proximity = proximity;
+      strncpy(xc_key_guess[i].key, key, XC_MAX_KEY_LEN);
+      break;
+    }
+  }
+}
+
+static void xc_key_guess_display(void)
+{
+  int i;
+
+  printf(&#34;Top guessed keys:&#92;n&#34;);
+  for (i = 0; i &lt; XC_NO_OF_GUESSES; i++) {
+    if (xc_key_guess[i].proximity &lt; XC_LOW_PROXIMITY) {
+      printf(&#34;%d) %s (%.2f%%)&#92;n&#34;,
+        i + 1, xc_key_guess[i].key, (1 - xc_key_guess[i].proximity) * 100);
+    }
+  }
+}
+
+static int xc_proximity_from_key_list(char *filename)
+{
+  FILE *fh;
+  unsigned int n;
+  unsigned int key_len;
+  unsigned char c;
+  char key[XC_MAX_KEY_LEN];
+  unsigned int count[XC_FREQUENCY_TABLE_SIZE];
+  unsigned int read_size;
+  float frequency;
+  float proximity;
+
+  if (filename == NULL) {
+    fh = stdin;
+  } else {
+    fh = fopen(filename, &#34;r&#34;);
+    if (fh == NULL) {
+      fprintf(stderr, &#34;Error: fopen(%s) failed: %d&#92;n&#34;, filename, errno);
+      return -1;
+    }
+  }
+
+  while (fgets(key, XC_MAX_KEY_LEN, fh) != NULL) {
+    key[strlen(key) - 1] = &#39;&#92;0&#39;; /* Remove newline. */
+    key_len = strlen(key);
+
+    if (key_len &lt;= XC_MIN_KEY_LEN) {
+      continue;
+    }
+
+    if (key_len &gt; XC_MAX_KEY_LEN) {
+      continue;
+    }
+
+    if (xc_probable_key_len[key_len] == 0) {
+      continue;
+    }
+
+    /* Clear the array before use. */
+    for (n = 0; n &lt; XC_FREQUENCY_TABLE_SIZE; n++) {
+      count[n] = 0;
+    }
+
+    /* Decrypt and count amount of each character. */
+    proximity = 0;
+    read_size = 0;
+    for (n = 0; n &lt; xc_ciphertext_size; n++) {
+      c = xc_ciphertext[n] ^ key[n % key_len];
+      if (c &gt;= 0x41 &amp;&amp; c &lt;= 0x5A) { /* Uppercase A -&gt; Z */
+        count[c - 0x41]++;
+        read_size++;
+      } else if (c &gt;= 0x61 &amp;&amp; c &lt;= 0x7A) { /* Lowercase A -&gt; Z */
+        count[c - 0x61]++;
+        read_size++;
+      }
+    }
+
+    /* Generate the frequency of each character, compare and get proximity. */
+    for (n = 0; n &lt; XC_FREQUENCY_TABLE_SIZE; n++) {
+      frequency = count[n] / (float)read_size;
+      proximity += fabsf(frequency - xc_frequency_table[n]);
+    }
+
+    if (proximity &gt; 0) {
+      xc_key_guess_add(key, proximity);
+    }
+  }
+
+  if (fh != stdin) {
+    fclose(fh);
+  }
+
+  return 0;
+}
+
+static void display_help(char *progname)
+{
+  fprintf(stderr, &#34;Usage: %s &lt;options&gt;&#92;n&#34;, progname);
+  fprintf(stderr, &#34;Options:&#92;n&#34;
+     &#34;  -h            Display this help and exit.&#92;n&#34;
+     &#34;  -v            Verbose output.&#92;n&#34;
+     &#34;  -c FILENAME   Read ciphertext from FILENAME.&#92;n&#34;
+     &#34;  -k FILENAME   Read key list from FILENAME instead of stdin.&#92;n&#34;
+     &#34;&#92;n&#34;);
+}
+
+int main(int argc, char *argv[])
+{
+  int c;
+  char *key_list_filename = NULL;
+  char *ciphertext_filename = NULL;
+
+  while ((c = getopt(argc, argv, &#34;hc:k:&#34;)) != -1) {
+    switch (c) {
+    case &#39;h&#39;:
+      display_help(argv[0]);
+      return 0;
+
+    case &#39;c&#39;:
+      ciphertext_filename = optarg;
+      break;
+
+    case &#39;k&#39;:
+      key_list_filename = optarg;
+      break;
+
+    case &#39;?&#39;:
+    default:
+      display_help(argv[0]);
+      return 1;
+    }
+  }
+
+  if (ciphertext_filename == NULL) {
+    fprintf(stderr, &#34;Error: No ciphertext specified!&#92;n&#34;);
+    display_help(argv[0]);
+    return 1;
+  }
+
+  if (xc_read_ciphertext(ciphertext_filename) != 0) {
+    return 1;
+  }
+
+  xc_key_guess_clear();
+  xc_guess_probable_key_len();
+
+  if (xc_proximity_from_key_list(key_list_filename) != 0) {
+    return 1;
+  }
+
+  xc_key_guess_display();
+
+  return 0;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Example usage:<br />
+      </p>
+        <div class="box">
+          <pre>
+$ ./xor-crypt hidden &lt; plaintext &gt; ciphertext
+$ ./xor-crack -c ciphertext -k /usr/share/dict/words
+Probable key lengths: 6 12 18 24 30
+Top guessed keys:
+1) hidden (90.05%)
+2) ridden (88.58%)
+3) sadden (80.49%)
+4) sudden (75.99%)
+5) redder (72.73%)
+6) sadder (72.40%)
+7) sicken (71.77%)
+8) silken (70.16%)
+9) seeder (66.67%)
+10) solder (66.61%)
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        25/07-2025, 
+        <a href="article-261.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

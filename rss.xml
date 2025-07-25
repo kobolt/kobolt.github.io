@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2025 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 11 Jul 2025 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 25 Jul 2025 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>XOR Crack Kit</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-261.html</link>
+    <guid>https://kobolt.github.io/article-261.html</guid>
+    <pubDate>Fri, 25 Jul 2025 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-261.html</description>
+  </item>
   <item>
     <title>Terminominal Update and lazyboNES Hack</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-252.html</guid>
     <pubDate>Fri, 28 Mar 2025 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-252.html</description>
-  </item>
-  <item>
-    <title>Apple IIc Emulator</title>
-    <category>Open Source</category>
-    <link>https://kobolt.github.io/article-251.html</link>
-    <guid>https://kobolt.github.io/article-251.html</guid>
-    <pubDate>Fri, 14 Mar 2025 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-251.html</description>
   </item>
 </channel>
 </rss>
