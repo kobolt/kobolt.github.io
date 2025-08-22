@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - XSPF Tag Playlist Generator</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>XSPF Tag Playlist Generator</h1>
+      <p>
+        Once again I am working with <a href="http://www.xspf.org/">XSPF playlists</a> to organize music. I have made two new Python 3 scripts to handle tagging, so that files can be tagged (with multiple tags if needed) and then playlists can be generated based on this data. A <a href="https://en.wikipedia.org/wiki/JSON">JSON</a> file serves as the database for the tags and is the link between the two scripts.<br />
+        <br />
+        First script, for tagging files and manipulating the JSON database:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python3
+
+import os
+import json
+
+class TagDB(object):
+    def __init__(self, db_file):
+        self._db_file = db_file
+        try:
+            db_fh = open(db_file, &#34;r&#34;)
+            self._db = json.load(db_fh)
+            db_fh.close()
+        except:
+            self._db = dict()
+    
+    def apply(self, filename, tags):
+        local = tags.copy()
+        if filename in self._db:
+            local.extend(self._db[filename])
+        self._db[filename] = list(dict.fromkeys(local)) # Remove duplicates!
+
+    def delete(self, filename, tags):
+        deleted = list()
+        if filename in self._db:
+            for t in tags:
+                try:
+                    self._db[filename].remove(t)
+                    deleted.append(t)
+                except:
+                    pass
+        return deleted
+
+    def retrieve(self, filename):
+        if filename in self._db:
+            return self._db[filename]
+        else:
+            return list()
+
+    def all_tags(self):
+        tags = dict()
+        for v in self._db.values():
+            for t in v:
+                tags[t] = True
+        return list(tags.keys())
+
+    def save(self):
+        untagged = list()
+        for filename in self._db:
+            if len(self._db[filename]) == 0:
+                untagged.append(filename)
+        for filename in untagged:
+            del self._db[filename]
+
+        db_fh = open(self._db_file, &#34;w&#34;)
+        json.dump(self._db, db_fh)
+        db_fh.close()
+
+def usage(progname):
+    print(&#34;%s &lt;options&gt; &lt;files&gt;&#34; % (progname))
+    print(&#34;-h       Help!&#34;)
+    print(&#34;-r       Recursively go through directories.&#34;)
+    print(&#34;-l       List previously used tags.&#34;)
+    print(&#34;-d       Delete tag instead of applying.&#34;)
+    print(&#34;-f DB    Database file to use.&#34;)
+    print(&#34;-t TAG   Tag to apply (or delete).&#34;)
+    print(&#34;&#34;)
+    print(&#34;The -t can be specified multiple times for multiple tags.&#34;)
+    print(&#34;If -t is omitted, current tags are listed for found files.&#34;)
+    print(&#34;&#34;)
+
+if __name__ == &#34;__main__&#34;:
+    import sys
+    import getopt
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], &#34;hrldf:t:&#34;)
+    except getopt.GetoptError as err:
+        print(err)
+        usage(sys.argv[0])
+        sys.exit(1)
+
+    recursive = False
+    list_tags = False
+    delete = False
+    database = None
+    tags = list()
+
+    for o, a in opts:
+        if o == &#34;-h&#34;:
+            usage(sys.argv[0])
+            sys.exit(0)
+        elif o == &#34;-r&#34;:
+            recursive = True
+        elif o == &#34;-l&#34;:
+            list_tags = True
+        elif o == &#34;-d&#34;:
+            delete = True
+        elif o == &#34;-f&#34;:
+            database = a
+        elif o == &#34;-t&#34;:
+            tags.append(a)
+
+    if not database:
+        print(&#34;Please specify the database file!&#34;)
+        usage(sys.argv[0])
+        sys.exit(1)
+
+    db = TagDB(database)
+
+    if list_tags:
+        print(&#34;Previously used tags from database:&#34;)
+        for t in db.all_tags():
+            print(&#34;  &#39;%s&#39;&#34; % t)
+        print(&#34;&#34;)
+
+    filenames = list()
+    for a in args:
+        if os.path.isfile(a):
+            filenames.append(os.path.abspath(a))
+        if os.path.isdir(a) and recursive:
+            for root, dirs, files in os.walk(a):
+                for name in files:
+                    filenames.append(os.path.abspath(os.path.join(root, name)))
+
+    for filename in filenames:
+        if len(tags) == 0:
+            actual = db.retrieve(filename)
+            if len(actual) &gt; 0:
+                print(filename, &#34;===&#34;, actual)
+        else:
+            if delete:
+                actual = db.delete(filename, tags)
+                if len(actual) &gt; 0:
+                    print(filename, &#34;---&#34;, actual)
+            else:
+                db.apply(filename, tags)
+                print(filename, &#34;+++&#34;, tags)
+    
+    if len(tags) &gt; 0:
+        db.save()
+          </pre>
+        </div>
+      <p>
+        <br />
+        Second script, for generating the XSPF playlist from the JSON database:<br />
+      </p>
+        <div class="box">
+          <pre>
+#!/usr/bin/python3
+
+import json
+import sys
+from urllib.parse import quote
+
+if len(sys.argv) != 2:
+    print(&#34;Usage: %s &lt;database&gt;&#34; % (sys.argv[0]))
+    sys.exit(1)
+
+fh = open(sys.argv[1], &#34;r&#34;)
+db = json.load(fh)
+fh.close()
+
+playlist = dict()
+
+for filename in db:
+    for tag in db[filename]:
+        if not tag in playlist:
+            playlist[tag] = list()
+        playlist[tag].append(filename)
+
+for tag in playlist:
+    fh = open(&#34;%s.xspf&#34; % (tag), &#34;w&#34;)
+    fh.write(&#39;&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;&#92;n&#39;)
+    fh.write(&#39;&lt;playlist version=&#34;1&#34; xmlns=&#34;http://xspf.org/ns/0/&#34;&gt;&#92;n&#39;)
+    fh.write(&#39;  &lt;title&gt;%s&lt;/title&gt;&#92;n&#39; % (tag))
+    fh.write(&#39;  &lt;trackList&gt;&#92;n&#39;)
+    for filename in sorted(playlist[tag]):
+        fh.write(&#39;    &lt;track&gt;&#92;n&#39;)
+        fh.write(&#39;      &lt;location&gt;file://%s&lt;/location&gt;&#92;n&#39; % (quote(filename)))
+        fh.write(&#39;    &lt;/track&gt;&#92;n&#39;)
+    fh.write(&#39;  &lt;/trackList&gt;&#92;n&#39;)
+    fh.write(&#39;&lt;/playlist&gt;&#92;n&#39;)
+    fh.close()
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        22/08-2025, 
+        <a href="article-262.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
