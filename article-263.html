@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Apple IIc RAM Replacement</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Apple IIc RAM Replacement</h1>
+      <p>
+        As part of restoring an <a href="https://en.wikipedia.org/wiki/Apple_IIc">Apple IIc</a> I decided to test the RAM since I&#39;ve experienced some unexplained freezing when testing.<br />
+        <br />
+        First I used the floppy based RAM test utility found <a href="https://www.ivanhogan.com/kfest/MemUtil/">here</a> and it actually reported a bad bit 7:<br />
+      </p>
+      <img class="border" src="images/apple_iic_ram_check_fail.jpg" alt="Apple IIc RAM Check Failed" />
+      <p>
+        <br />
+        My Apple IIc had the original 0xFF ROM version, but I wanted to upgrade to version 0x04 so I could run the built-in diagnostics to double check. Upgrading the ROM involves some hardware modifications that are explained <a href="https://www.bigmessowires.com/2015/05/29/apple-iic-rom-upgrade/">here</a>.<br />
+        <br />
+        Sure enough, after entering built-in diagnostics with the new ROM it reported:<br />
+      </p>
+        <div class="box">
+          <pre>
+*RAM    1 0 0 0 0 0 0 0
+          </pre>
+        </div>
+      <p>
+        The star means it is the auxiliary RAM, and once again bit 7 is marked with a &#39;1&#39;. This means that the chip at location &#34;ARD7&#34; on the mainboard needs to be replaced.<br />
+        <br />
+        After some deliberation I finally ordered some &#34;new&#34; 4164-15 RAM chips from a random seller at eBay. The chips failed the acetone test, meaning they have been re-badged and are possibly fake:<br />
+      </p>
+      <img class="border" src="images/apple_iic_ram_acetone.jpg" alt="4164-15 RAM Acetone Test" />
+      <p>
+        <br />
+        I decided to test them anyway and replaced the old RAM chip with a socket:<br />
+      </p>
+      <img class="border" src="images/apple_iic_ram_new.jpg" alt="Replaced ARD7 RAM" />
+      <p>
+        <br />
+        Luckily the re-badged chips works and both RAM tests pass. Notice that the old chips are of the dreaded MT branding which are known to fail a lot.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#repair">Repair</a>,
+        by
+        Kjetil
+        @ 
+        19/09-2025, 
+        <a href="article-263.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

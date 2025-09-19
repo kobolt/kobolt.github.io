@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2025 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 22 Aug 2025 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 19 Sep 2025 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Apple IIc RAM Replacement</title>
+    <category>Repair</category>
+    <link>https://kobolt.github.io/article-263.html</link>
+    <guid>https://kobolt.github.io/article-263.html</guid>
+    <pubDate>Fri, 19 Sep 2025 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-263.html</description>
+  </item>
   <item>
     <title>XSPF Tag Playlist Generator</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-254.html</guid>
     <pubDate>Fri, 18 Apr 2025 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-254.html</description>
-  </item>
-  <item>
-    <title>Toshiba T6400DXC Capacitor Replacement</title>
-    <category>Repair</category>
-    <link>https://kobolt.github.io/article-253.html</link>
-    <guid>https://kobolt.github.io/article-253.html</guid>
-    <pubDate>Fri, 11 Apr 2025 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-253.html</description>
   </item>
 </channel>
 </rss>
