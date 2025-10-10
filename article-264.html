@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - CP/M-68K and Motorola 68000 Emulator</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CP/M-68K and Motorola 68000 Emulator</h1>
+      <p>
+        Earlier this year I started coding on a <a href="https://en.wikipedia.org/wiki/Motorola_68000">Motorola 68000</a> emulator. The original plan was to just add an MMU and do some minor changes to convert it to a <a href="https://en.wikipedia.org/wiki/Motorola_68010">Motorola 68010</a> after the base 68000 work had finished. But I discovered that the 68010 is not that widely supported software wise compared to the later <a href="https://en.wikipedia.org/wiki/Motorola_68020">Motorola 68020</a> which even more advanced. So instead I focused on pure 68000 support and adapted the emulator to run <a href="https://en.wikipedia.org/wiki/CP/M#16-bit_versions">CP/M-68K</a> instead, which I have <a href="article-210.html">used before</a>.<br />
+        <br />
+        Get the first <a href="supplies/cpm68emu-0.1.tar.gz">version 0.1</a> here or check out the <a href="https://github.com/kobolt/cpm68emu">GitHub</a> or <a href="https://gitlab.com/kobolt/cpm68emu">GitLab</a> repositories.<br />
+        <br />
+        A custom CP/M BIOS was written that is tied together with the emulator to handle console and RAM disk access. I followed Digital Research&#39;s advice and placed the TPA (Transient Program Area) at address 0x400 and the CP/M system and BIOS at the far end of the 24-bit address space at 0xFF0000 which means most programs should work. Only programs with the &#34;.68K&#34; extension are dependent on a specific TPA, while programs with the &#34;.REL&#34; extension are relocatable and should run on all systems.<br />
+        <br />
+        The console portion of the emulator does not depend on <a href="https://en.wikipedia.org/wiki/Curses_(programming_library)">curses</a> unlike many of my other emulators, only regular stdin/stdout is used. Some CP/M programs however may emit terminal control codes which are simply passed through. On the input side LF (Line Feed) is converted to CR (Carriage Return) and DEL (Delete) is converted to BS (Backspace) to improve compatibility.<br />
+        <br />
+        It is probably most convenient to use <a href="http://www.moria.de/~michael/cpmtools/">cpmtools</a> to manage the RAM disk images used by the emulator, but there are also some custom CP/M commands that can read and write files from/to the host system, similar to <a href="http://www.mathematik.uni-ulm.de/users/ag/yaze-ag/">YAZE</a>. Additional technical details can be found in the README file included with the source code.<br />
+        <br />
+        Here is a screenshot of compiling a <a href="https://en.wikipedia.org/wiki/CBASIC">CBASIC</a> &#34;Hello World&#34; program:<br />
+      </p>
+      <img class="border" src="images/cpm68emu-cbasic68.png" alt="Screenshot of CBASIC68." />
+      <p>
+        <br />
+        And here is a screenshot of compiling the <a href="https://en.wikipedia.org/wiki/Fortran#FORTRAN_77">FORTRAN 77</a> &#34;Heron&#34; program:<br />
+      </p>
+      <img class="border" src="images/cpm68emu-fortran77.png" alt="Screenshot of FORTRAN77." />
+      <p>
+        <br />
+        Here is also a <a href="https://www.youtube.com/watch?v=OsRkhFyflAo">video</a> showing some more programs being run.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        10/10-2025, 
+        <a href="article-264.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
