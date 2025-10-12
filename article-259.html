@@ -66,7 +66,7 @@
       <p>
         I started getting problems with one of the USB ports on my 13 year old <a href="article-235.html">Asus Zenbook UX31A</a>. Specifically the one on the left side, while the one on the right side worked as normal. After some initial troubleshooting I noticed that only USB 1.1 (tested with a keyboard) and USB 2.0 (tested with a USB memory stick) would refuse to work, while a USB 3.0 device worked OK. Devices would still get powered though, regardless of USB version, which led me to suspect the <a href="https://en.wikipedia.org/wiki/USB#Signaling">D+/D-</a> used by USB 1.1/2.0.<br />
         <br />
-        The broken USB port is located on a separate smaller &#34;AUDIO_BD&#34; board inside the laptop. I read in a circuit diagram that both the D+ and D- data signals typically go from the connector through a Common Mode Choke (CMD) filter before going further into the chipset. This is true for this board as well, and the CMC can be seen here:<br />
+        The broken USB port is located on a separate smaller &#34;AUDIO_BD&#34; board inside the laptop. I read in a circuit diagram that both the D+ and D- data signals typically go from the connector through a Common Mode Choke (CMC) filter before going further into the chipset. This is true for this board as well, and the CMC can be seen here:<br />
       </p>
       <img class="border" src="images/zenbook_ux31a_board.jpg" alt="Board with CMC underneath." />
       <p>
