@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - ASCII Express VT52 Emulation to Linux</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>ASCII Express VT52 Emulation to Linux</h1>
+      <p>
+        There is a serial terminal emulator program for the Apple II called <a href="https://en.wikipedia.org/wiki/ASCII_Express">ASCII Express</a> which can run in 80 columns text mode. Also interesting is that it can emulate several real terminals including the <a href="https://en.wikipedia.org/wiki/VT52">DEC VT52</a>.<br />
+        <br />
+        I wanted to communicate to a Linux host but I found that several things needed to be configured for everything to work. On the Linux a local serial line is setup like follows in /etc/inittab:<br />
+      </p>
+        <div class="box">
+          <pre>
+s3:12345:respawn:/sbin/agetty -L ttyS2 4800 vt52
+          </pre>
+        </div>
+      <p>
+        <br />
+        In addition <a href="https://www.gnu.org/software/bash/">Bash</a> needs to behave differently with VT52 (compared to the usual XTerm usage) so something like the following was added to the ~/.bashrc configuration file:<br />
+      </p>
+        <div class="box">
+          <pre>
+if [ &#34;$TERM&#34; = &#34;vt52&#34; ]; then
+  unset PROMPT_COMMAND
+  alias ls=&#34;ls --color=none -F --quoting-style=literal&#34;
+  bind &#39;set enable-bracketed-paste off&#39;
+fi
+          </pre>
+        </div>
+      <p>
+        This makes sure that no unwanted XTerm escape codes are sent.<br />
+        <br />
+        On the Apple II side ASCII Express needs to be configured, which is done by using Control+Q to be able to enter configuration commands. The baud rate needs to be set to 4800, &#34;Emulation&#34; needs to be turned ON and &#34;Show control characters&#34; needs to be turned OFF. But the most important thing is configuring the actual emulation, which is done in the macro sub menus. The input terminal should be set to &#34;DEC VT-52&#34; and the output terminal to &#34;Datamedia&#34;. This is still not enough! For some reason the backspace key is missing in the mapping, so this must be added manually by mapping incoming &#34;C4&#34; to outgoing &#34;08&#34;. The mapping should look like this when fully configured:<br />
+      </p>
+        <div class="box">
+          <pre>
+  Function        Incoming            Outgoing
+
+A  XY coord offst    20                  20
+B  XY Xmit order     YX                  XY
+C  Lead-in           1B                  00
+D  Clear screen      0C                  0C
+E  Clear to EOS      CA                  0B
+F  Clear to EOL      CB                  1D
+G  Hi lite           00                  0E
+H  Lo lite           00                  0F
+I  Home cursor       C8                  19
+J  Address cursor    D9                  1E
+K  Cursor up         C1                  1F
+L  Cursor forward    C3                  1C
+M  Cursor down       C2                  0A
+N  Extra             C4                  08
+O  Extra             00                  00
+P  Printer on        00                  00
+Q  Printer off       00                  00
+          </pre>
+        </div>
+      <p>
+        <br />
+        The &#34;C4&#34; represents the Escape-D sent to VT52 terminals perform a backspace or cursor backwards movement. The &#34;08&#34; represents a ASCII backspace character.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        06/11-2025, 
+        <a href="article-265.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
