@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Epson HX-20 Binary WAV File Creator</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Epson HX-20 Binary WAV File Creator</h1>
+      <p>
+        In order to simplify the creation of audio files that can be played to a <a href="https://en.wikipedia.org/wiki/Epson_HX-20">Epson HX-20</a> I have reverse engineered the format used for binary files and created a C program. The binary files are meant to be played back when in the MONITOR and not in BASIC and they contain just raw data to be loaded at different memory addresses.<br />
+        <br />
+        I previously used my <a href="article-218.html">hex20</a> emulator to create such audio files by saving them to the &#34;external cassette&#34; interface in the MONITOR.<br />
+        <br />
+        The offset must be specified when creating the WAV file and this should be the same as the &#34;Top address&#34; specified with the address command in the MONITOR. It might be difficult to know which &#34;Last address&#34; to specify, but this can actually be set to just FFFF when loading from the external cassette interface.<br />
+        <br />
+        Here is the C program:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+#include &lt;limits.h&gt;
+
+#define BITSTREAM_MAX 0x80000
+#define DATA_MAX 0x4000
+#define CHUNK_SIZE 0x40
+#define DATA_BLOCK_SIZE 256
+#define INFO_BLOCK_SIZE 80
+
+#define SAMPLE_RATE 44100
+#define SAMPLE_LEN 12
+
+
+
+static uint8_t bitstream[BITSTREAM_MAX];
+static int bitstream_n = 0;
+static uint8_t data[DATA_MAX];
+static uint8_t info[INFO_BLOCK_SIZE];
+static uint16_t crc16 = 0;
+
+
+
+static void crc16_update(uint8_t byte)
+{
+  int i;
+  crc16 ^= byte;
+  for(i = 0; i &lt; 8; i++) {
+    if (crc16 &amp; 0x0001) {
+      crc16 &gt;&gt;= 1;
+      crc16 ^= 0x8408; /* Reverse 0x1021 */
+    } else {
+      crc16 &gt;&gt;= 1;
+    }
+  }
+}
+
+
+
+static void wav_generate(FILE *fh)
+{
+  int i;
+  int j;
+  uint32_t sample_count;
+  uint32_t chunk_size;
+  uint32_t sample_rate;
+  uint32_t subchunk2_size;
+
+  sample_count = 0;
+  for (i = 0; i &lt; bitstream_n; i++) {
+    if (bitstream[i] == &#39;0&#39;) {
+      sample_count += (SAMPLE_LEN * 2);
+    } else if (bitstream[i] == &#39;1&#39;) {
+      sample_count += (SAMPLE_LEN * 4);
+    }
+  }
+
+  subchunk2_size = sample_count;
+  chunk_size = subchunk2_size + 36;
+  sample_rate = SAMPLE_RATE;
+
+  /* Header: */
+  fwrite(&#34;RIFF&#34;, sizeof(char), 4, fh);
+  fwrite(&amp;chunk_size, sizeof(uint32_t), 1, fh);
+  fwrite(&#34;WAVE&#34;, sizeof(char), 4, fh);
+  fwrite(&#34;fmt &#34;, sizeof(char), 4, fh);
+  fwrite(&#34;&#92;x10&#92;x00&#92;x00&#92;x00&#34;, sizeof(char), 4, fh); /* Subchunk1Size = 16 */
+  fwrite(&#34;&#92;x01&#92;x00&#34;, sizeof(char), 2, fh); /* AudioFormat = 1 = PCM */
+  fwrite(&#34;&#92;x01&#92;x00&#34;, sizeof(char), 2, fh); /* Channels = 1 = Mono */
+  fwrite(&amp;sample_rate, sizeof(uint32_t), 1, fh);
+  fwrite(&amp;sample_rate, sizeof(uint32_t), 1, fh); /* ByteRate */
+  fwrite(&#34;&#92;x01&#92;x00&#34;, sizeof(char), 2, fh); /* BlockAlign = 1 */
+  fwrite(&#34;&#92;x08&#92;x00&#34;, sizeof(char), 2, fh); /* BitsPerSample = 8 */
+  fwrite(&#34;data&#34;, sizeof(char), 4, fh);
+  fwrite(&amp;subchunk2_size, sizeof(uint32_t), 1, fh);
+
+  /* Samples: */
+  for (i = 0; i &lt; bitstream_n; i++) {
+    if (bitstream[i] == &#39;0&#39;) {
+      for (j = 0; j &lt; SAMPLE_LEN; j++) {
+        fputc(UINT8_MAX, fh);
+      }
+      for (j = 0; j &lt; SAMPLE_LEN; j++) {
+        fputc(0, fh);
+      }
+
+    } else if (bitstream[i] == &#39;1&#39;) {
+      for (j = 0; j &lt; (SAMPLE_LEN * 2); j++) {
+        fputc(UINT8_MAX, fh);
+      }
+      for (j = 0; j &lt; (SAMPLE_LEN * 2); j++) {
+        fputc(0, fh);
+      }
+    }
+  }
+}
+
+
+
+static void bitstream_byte(uint8_t byte)
+{
+  int i;
+  crc16_update(byte);
+  for (i = 0; i &lt; 8; i++) {
+    bitstream[bitstream_n++] = ((byte &amp; 1) == 0) ? &#39;0&#39; : &#39;1&#39;;
+    byte &gt;&gt;= 1;
+  }
+  bitstream[bitstream_n++] = &#39;1&#39;; /* Stop Bit */
+}
+
+
+
+static void bitstream_bit(int bit)
+{
+  bitstream[bitstream_n++] = (bit == 0) ? &#39;0&#39; : &#39;1&#39;;
+}
+
+
+
+static void block_generate(uint8_t block_type, uint16_t block_number,
+  size_t block_size, uint8_t payload[])
+{
+  size_t i;
+  uint8_t block_id;
+  uint16_t block_bcc;
+
+  for (block_id = 0; block_id &lt; 2; block_id++) {
+    for (i = 0; i &lt; 240; i++) {
+      bitstream_bit(1);
+    }
+    for (i = 0; i &lt; 80; i++) {
+      bitstream_bit(0); /* Sync Field */
+    }
+    bitstream_bit(1);
+    bitstream_byte(0xFF); /* Preamble */
+    bitstream_byte(0xAA);
+    crc16 = 0x0000; /* Initialize CRC and start from here. */
+    bitstream_byte(block_type);
+    bitstream_byte(block_number &gt;&gt; 8);
+    bitstream_byte(block_number &amp; 0xFF);
+    bitstream_byte(block_id);
+    for (i = 0; i &lt; block_size; i++) {
+      bitstream_byte(payload[i]);
+    }
+    block_bcc = crc16; /* Save CRC until here. */
+    bitstream_byte(block_bcc &amp; 0xFF);
+    bitstream_byte(block_bcc &gt;&gt; 8);
+    bitstream_byte(0xAA); /* Postamble */
+    bitstream_byte(0x00);
+  }
+}
+
+
+
+int main(int argc, char *argv[])
+{
+  int c;
+  int i;
+  int data_n;
+  uint16_t offset;
+  uint8_t checksum;
+  uint16_t block_number;
+  int data_index;
+  size_t name_len;
+  FILE *fh;
+
+  if (argc != 5) {
+    fprintf(stderr, &#34;Usage: %s &lt;in&gt; &lt;out&gt; &lt;offset&gt; &lt;name&gt;&#92;n&#34;, argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  sscanf(argv[3], &#34;%hx&#34;, &amp;offset);
+  name_len = strlen(argv[4]);
+  if (name_len &gt; 8) {
+    name_len = 8;
+  }
+
+  /* Setup initial info used for header and EOF blocks: */
+  for (i = 0; i &lt; INFO_BLOCK_SIZE; i++) {
+    info[i] = &#39; &#39;;
+  }
+  memcpy(&amp;info[4], argv[4], name_len);
+  memcpy(&amp;info[12], &#34;BIN&#34;, 3);
+  info[15] = 0x02;
+  info[16] = 0x00;
+  info[17] = 0x00;
+  info[18] = 0x2A;
+  info[20] = 0x32;
+  info[21] = 0x53;
+  memcpy(&amp;info[24], &#34;256&#34;, 3);
+  memcpy(&amp;info[32], &#34;010100000000&#34;, 12);
+  memcpy(&amp;info[52], &#34;HX-20&#34;, 5);
+  info[76] = 0x00;
+  info[77] = 0x00;
+  info[78] = 0x00;
+  info[79] = 0x00;
+
+  fh = fopen(argv[1], &#34;rb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;Error: Cannot open &#39;%s&#39; for reading!&#92;n&#34;, argv[1]);
+    return EXIT_FAILURE;
+  }
+
+  /* Convert binary input to 68-byte chunks: */
+  data_n = 0;
+  while (1) {
+    if (feof(fh)) {
+      break;
+    }
+    if (data_n &gt;= (DATA_MAX - CHUNK_SIZE)) {
+      break;
+    }
+
+    /* Chunk header: */
+    checksum = 0;
+    data[data_n] = CHUNK_SIZE;
+    checksum += data[data_n];
+    data_n++;
+    data[data_n] = offset &gt;&gt; 8;
+    checksum += data[data_n];
+    data_n++;
+    data[data_n] = offset &amp; 0xFF;
+    checksum += data[data_n];
+    data_n++;
+
+    /* Chunk data: */
+    for (i = 0; i &lt; CHUNK_SIZE; i++) {
+      c = fgetc(fh);
+      if (c == EOF) {
+        c = 0x00;
+      }
+      data[data_n] = c;
+      data_n++;
+      checksum += c;
+    }
+
+    /* Chunk checksum: */
+    data[data_n++] = 0x100 - checksum;
+
+    offset += CHUNK_SIZE;
+  }
+  fclose(fh);
+
+  /* Leading bits: */
+  for (i = 0; i &lt; 5000; i++) {
+    bitstream_bit(1);
+  }
+
+  /* Generate header blocks: */
+  block_number = 0;
+  memcpy(&amp;info[0], &#34;HDR1&#34;, 4);
+  block_generate(&#39;H&#39;, block_number, INFO_BLOCK_SIZE, info);
+  block_number++;
+
+  /* Pause bits between header and data: */
+  for (i = 0; i &lt; 880; i++) {
+    bitstream_bit(1);
+  }
+
+  /* Generate data blocks: */
+  data_index = 0;
+  while (data_index &lt; data_n) {
+    block_generate(&#39;D&#39;, block_number, DATA_BLOCK_SIZE, &amp;data[data_index]);
+    block_number++;
+    data_index += DATA_BLOCK_SIZE;
+  }
+
+  /* Pause bits between data and EOF: */
+  for (i = 0; i &lt; 880; i++) {
+    bitstream_bit(1);
+  }
+
+  /* Generate EOF blocks: */
+  memcpy(&amp;info[0], &#34;EOF &#34;, 4);
+  block_generate(&#39;E&#39;, block_number, INFO_BLOCK_SIZE, info);
+
+  /* Final bits: */
+  for (i = 0; i &lt; 5000; i++) {
+    bitstream_bit(1);
+  }
+
+  /* Convert bitstream to WAV file: */
+  fh = fopen(argv[2], &#34;wb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;Error: Cannot open &#39;%s&#39; for writing!&#92;n&#34;, argv[2]);
+    return EXIT_FAILURE;
+  }
+  wav_generate(fh);
+  fclose(fh);
+
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        The motivation was mostly to be able to more easily transfer <a href="https://en.wikipedia.org/wiki/CHIP-8">CHIP-8</a> programs to be used with my <a href="article-267.html">interpreter</a> running on the HX-20, so this code has also been added to the <a href="https://github.com/kobolt/chip8-hx20">GitHub</a> and <a href="https://gitlab.com/kobolt/chip-8-hx-20">GitLab</a> repositories and is part of the build process there.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        16/01-2026, 
+        <a href="article-268.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

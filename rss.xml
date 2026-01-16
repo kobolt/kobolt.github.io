@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2026 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 02 Jan 2026 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 16 Jan 2026 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Epson HX-20 Binary WAV File Creator</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-268.html</link>
+    <guid>https://kobolt.github.io/article-268.html</guid>
+    <pubDate>Fri, 16 Jan 2026 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-268.html</description>
+  </item>
   <item>
     <title>CHIP-8 Interpreter for Epson HX-20</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-259.html</guid>
     <pubDate>Fri, 27 Jun 2025 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-259.html</description>
-  </item>
-  <item>
-    <title>Commodore 1084 Monitor Flyback Replacement</title>
-    <category>Repair</category>
-    <link>https://kobolt.github.io/article-258.html</link>
-    <guid>https://kobolt.github.io/article-258.html</guid>
-    <pubDate>Fri, 13 Jun 2025 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-258.html</description>
   </item>
 </channel>
 </rss>
