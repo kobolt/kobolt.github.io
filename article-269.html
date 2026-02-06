@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - CHIP-8 Interpreter using Curses</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/users/kobolt/projects">https://gitlab.com/kobolt</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>CHIP-8 Interpreter using Curses</h1>
+      <p>
+        This is kind of like a follow up on the <a href="article-267.html">CHIP-8 Interpreter for Epson HX-20</a> that I posted about earlier. To help with development of that implementation I also made an implementation in C using <a href="https://en.wikipedia.org/wiki/Curses_(programming_library)">curses</a> that can run in a Linux terminal.<br />
+        <br />
+        This implementation in C can be compiled with trace support which on exit dumps the last CHIP-8 instructions executed. Just for fun, the code also aims to be <a href="https://en.wikipedia.org/wiki/ANSI_C#C89">ANSI C</a> compatible, so it can be compiled on older platforms.<br />
+        <br />
+        This interpreter can be downloaded <a href="supplies/chip8-curses.tar.gz">here</a> or from the <a href="https://github.com/kobolt/chip8-curses">GitHub</a> or <a href="https://gitlab.com/kobolt/chip-8-curses">GitLab</a> repositories.<br />
+        <br />
+      </p>
+      <img class="border" src="images/chip8-curses-quriks.png" alt="Passing the Quirks test..." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        06/02-2026, 
+        <a href="article-269.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
