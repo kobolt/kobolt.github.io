@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Parallel Port Loopback Test in Linux</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/kobolt">https://gitlab.com/kobolt</a><br />
+        <a href="https://codeberg.org/kobolt">https://codeberg.org/kobolt</a><br />
+        <a href="https://www.youtube.com/@xetil">https://www.youtube.com/@xetil</a><br />
+        <a href="https://kobolt.website">https://kobolt.website</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Parallel Port Loopback Test in Linux</h1>
+      <p>
+        I had trouble with a PCI express <a href="https://en.wikipedia.org/wiki/Parallel_port">parallel port</a> card in a modern Linux box not behaving as it should, so I decided to make a test setup. It is based on loopbacking 5 data output signals to 5 status input signals, which is the same as was done in some older DOS software.<br />
+        <br />
+        Loopback on the parallel port plug follows the <a href="https://www.passmark.com/products/loopback/specifications.php">PassMark</a> standard:<br />
+      </p>
+        <div class="box">
+          <pre>
+|-----------|---------|---------|
+| Signal    | Out Pin | In Pin  |
+|-----------|---------|---------|
+| Error     | 2       | 15      |
+| Select    | 3       | 13      |
+| Paper Out | 4       | 12      |
+| Ack Sync  | 5       | 10      |
+| Busy      | 6       | 11      |
+|-----------|---------|---------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a photo of a finished plug:<br />
+      </p>
+      <img class="border" src="images/parallel_port_loopback.jpg" alt="Parallel port loopback plug" />
+      <p>
+        <br />
+        Here is the program written in C for Linux, which uses the more modern <a href="http://www.linuxfocus.org/common/src/article205/ppdev.html">&#34;ppdev&#34;</a> API instead of just writing to I/O ports directly:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;linux/parport.h&gt;
+#include &lt;linux/ppdev.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;unistd.h&gt;
+
+#define DEFAULT_DEVICE &#34;/dev/parport0&#34;
+
+
+
+static unsigned char get_status_pins(int fd)
+{
+  unsigned char data;
+
+  if (ioctl(fd, PPRSTATUS, &amp;data) == -1) {
+    fprintf(stderr, &#34;ioctl(PPRSTATUS) failed: %s&#92;n&#34;, strerror(errno));
+    close(fd);
+    exit(EXIT_FAILURE);
+  }
+
+  return data;
+}
+
+
+
+static void set_data_pins(int fd, unsigned char data)
+{
+  if (ioctl(fd, PPWDATA, &amp;data) == -1) {
+    fprintf(stderr, &#34;ioctl(PPWDATA) failed: %s&#92;n&#34;, strerror(errno));
+    close(fd);
+    exit(EXIT_FAILURE);
+  }
+}
+
+
+
+static void print_status_pins(unsigned char data)
+{
+  fprintf(stdout, &#34;ERR: %d  &#34;, (data &amp; PARPORT_STATUS_ERROR)    ? 1 : 0);
+  fprintf(stdout, &#34;SEL: %d  &#34;, (data &amp; PARPORT_STATUS_SELECT)   ? 1 : 0);
+  fprintf(stdout, &#34;PPO: %d  &#34;, (data &amp; PARPORT_STATUS_PAPEROUT) ? 1 : 0);
+  fprintf(stdout, &#34;ACK: %d  &#34;, (data &amp; PARPORT_STATUS_ACK)      ? 1 : 0);
+  fprintf(stdout, &#34;BUS: %d&#92;n&#34;, (data &amp; PARPORT_STATUS_BUSY)     ? 1 : 0);
+}
+
+
+
+static bool evaluate_status_pins(unsigned char data, int expected)
+{
+  int pin_value;
+  bool error = false;
+
+  pin_value = ((data &amp; PARPORT_STATUS_ERROR) ? 1 : 0);
+  if (pin_value != expected) {
+    fprintf(stdout, &#34;ERROR is %d, but expected %d!&#92;n&#34;, pin_value, expected);
+    error = true;
+  }
+
+  pin_value = ((data &amp; PARPORT_STATUS_SELECT) ? 1 : 0);
+  if (pin_value != expected) {
+    fprintf(stdout, &#34;SELECT is %d, but expected %d!&#92;n&#34;, pin_value, expected);
+    error = true;
+  }
+
+  pin_value = ((data &amp; PARPORT_STATUS_PAPEROUT) ? 1 : 0);
+  if (pin_value != expected) {
+    fprintf(stdout, &#34;PAPEROUT is %d, but expected %d!&#92;n&#34;, pin_value, expected);
+    error = true;
+  }
+
+  pin_value = ((data &amp; PARPORT_STATUS_ACK) ? 1 : 0);
+  if (pin_value != expected) {
+    fprintf(stdout, &#34;ACK is %d, but expected %d!&#92;n&#34;, pin_value, expected);
+    error = true;
+  }
+
+  /* NOTE: BUSY pin is inverted. */
+  expected = (expected == 0) ? 1 : 0;
+  pin_value = ((data &amp; PARPORT_STATUS_BUSY) ? 1 : 0);
+  if (pin_value != expected) {
+    fprintf(stdout, &#34;BUSY is %d, but expected %d!&#92;n&#34;, pin_value, expected);
+    error = true;
+  }
+
+  return error;
+}
+
+
+
+static void display_help(const char *progname)
+{
+  fprintf(stdout, &#34;Usage: %s &lt;options&gt;&#92;n&#34;, progname);
+  fprintf(stdout, &#34;Options:&#92;n&#34;
+    &#34;  -h       Display this help.&#92;n&#34;
+    &#34;  -v       Increase verbosity.&#92;n&#34;
+    &#34;  -d DEV   Use parallel port DEV instead of default.&#92;n&#34;);
+  fprintf(stdout, &#34;Default parallel port device: %s&#92;n&#34;, DEFAULT_DEVICE);
+}
+
+
+
+int main(int argc, char *argv[])
+{
+  int c;
+  int fd;
+  int control;
+  char *device = DEFAULT_DEVICE;
+  bool verbose = false;
+  bool error = false;
+  unsigned char data;
+
+  while ((c = getopt(argc, argv, &#34;hvd:&#34;)) != -1) {
+      switch (c) {
+    case &#39;h&#39;:
+      display_help(argv[0]);
+      return EXIT_SUCCESS;
+
+    case &#39;v&#39;:
+      verbose = true;
+      break;
+
+    case &#39;d&#39;:
+      device = optarg;
+      break;
+
+    case &#39;?&#39;:
+    default:
+      display_help(argv[0]);
+      return EXIT_FAILURE;
+    }
+  }
+
+  fd = open(device, O_RDWR);
+  if (fd == -1) {
+    fprintf(stderr, &#34;open() device &#39;%s&#39; failed: %s&#92;n&#34;, device, strerror(errno));
+    return EXIT_FAILURE;
+  }
+
+  if (ioctl(fd, PPCLAIM) == -1) {
+    fprintf(stderr, &#34;ioctl(PPCLAIM) failed: %s&#92;n&#34;, strerror(errno));
+    close(fd);
+    return EXIT_FAILURE;
+  }
+
+  control = 0; /* Forward Direction */
+  if (ioctl(fd, PPDATADIR, &amp;control) == -1) {
+    fprintf(stderr, &#34;ioctl(PPDATADIR) failed: %s&#92;n&#34;, strerror(errno));
+    close(fd);
+    return EXIT_FAILURE;
+  }
+
+  if (verbose) {
+    fprintf(stdout, &#34;Using device: %s&#92;n&#34;, device);
+  }
+
+  /* First set all pins to 0 and check. */
+  if (verbose) {
+    fprintf(stdout, &#34;&#92;nSetting all data pins to 0.&#92;n&#34;);
+  }
+  set_data_pins(fd, 0);
+  data = get_status_pins(fd);
+  if (verbose) {
+    print_status_pins(data);
+  }
+  error |= evaluate_status_pins(data, 0);
+
+  /* Then set all pins to 1 and check. */
+  if (verbose) {
+    fprintf(stdout, &#34;&#92;nSetting all data pins to 1.&#92;n&#34;);
+  }
+  set_data_pins(fd, 0xFF);
+  data = get_status_pins(fd);
+  if (verbose) {
+    print_status_pins(data);
+  }
+  error |= evaluate_status_pins(data, 1);
+
+  /* Finally set all pins back to 0 and check. */
+  if (verbose) {
+    fprintf(stdout, &#34;&#92;nSetting all data pins to 0.&#92;n&#34;);
+  }
+  set_data_pins(fd, 0);
+  data = get_status_pins(fd);
+  if (verbose) {
+    print_status_pins(data);
+  }
+  error |= evaluate_status_pins(data, 0);
+
+  if (error) {
+    fprintf(stdout, &#34;&#92;nTest FAILED due to errors!&#92;n&#34;);
+  } else {
+    fprintf(stdout, &#34;&#92;nTest PASSED without errors.&#92;n&#34;);
+  }
+
+  close(fd);
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is an example of the test failing:<br />
+      </p>
+        <div class="box">
+          <pre>
+Using device: /dev/parport0
+
+Setting all data pins to 0.
+ERR: 0  SEL: 0  PPO: 0  ACK: 0  BUS: 1
+
+Setting all data pins to 1.
+ERR: 1  SEL: 1  PPO: 1  ACK: 0  BUS: 0
+ACK is 0, but expected 1!
+
+Setting all data pins to 0.
+ERR: 0  SEL: 0  PPO: 0  ACK: 0  BUS: 1
+
+Test FAILED due to errors!
+          </pre>
+        </div>
+      <p>
+        Indeed the &#34;Ack&#34; signal is faulty on this parallel port card...<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        06/03-2026, 
+        <a href="article-270.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
