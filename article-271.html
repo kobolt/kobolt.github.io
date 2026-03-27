@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - PDP-11 Emulator</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/kobolt">https://gitlab.com/kobolt</a><br />
+        <a href="https://codeberg.org/kobolt">https://codeberg.org/kobolt</a><br />
+        <a href="https://www.youtube.com/@xetil">https://www.youtube.com/@xetil</a><br />
+        <a href="https://kobolt.website">https://kobolt.website</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>PDP-11 Emulator</h1>
+      <p>
+        I started a new emulator experiment, this time a <a href="https://en.wikipedia.org/wiki/PDP-11">PDP-11</a>. The goal is to eventually be able to run <a href="https://en.wikipedia.org/wiki/Unix">Unix</a> but that requires additional emulated hardware support. This first released version is able to run the original <a href="https://en.wikipedia.org/wiki/Tetris">Tetris</a> which is good enough for now. The result is an emulator that is kind of like a PDP-11/40, with the EIS and FIS instruction sets, but without the MMU support.<br />
+        <br />
+        In order to run Tetris and other games for the <a href="https://en.wikipedia.org/wiki/RT-11">RT-11</a> operating system, there is an emulated <a href="https://en.wikipedia.org/wiki/VT52">VT52</a> implementation which translates escape codes to curses calls. This VT52 implementation also has support for displaying <a href="https://en.wikipedia.org/wiki/KOI-7">KOI-7</a> Cyrillic characters as well as the VT52 special graphical characters, if Unicode is detected on the host system.<br />
+        <br />
+        Instead of using VT52 emulation, a simpler LA36 (DECwriter) console can also be used which only uses basic ASCII control characters. This is useful when not running games and instead things like the plentiful MAINDEC-11 and XXDP tests. Storage wise, the emulator supports RL02 hard disk images, RX01 floppy disk images and loading paper tapes with a built-in &#39;Absolute Loader&#39; mechanism.<br />
+        <br />
+        The emulator is not cycle accurate. If programs are running too fast the speed can be slowed down by adjusting the rate of which stdin is polled, where a timeout of 1ms is used.<br />
+        <br />
+        Find the code for <a href="supplies/edp11-0.1.tar.gz">version 0.1</a> here or check the <a href="https://github.com/kobolt/edp11">GitHub</a>, <a href="https://gitlab.com/kobolt/edp11">GitLab</a> or <a href="https://codeberg.org/kobolt/edp11">Codeberg</a> repositories.<br />
+        <br />
+        Here is a screenshot of the original Tetris version:<br />
+      </p>
+      <img class="border" src="images/edp11-tetris.png" alt="Screenshot original Tetris" />
+      <p>
+        <br />
+        Here is a screenshot of RT-11 v4.0 booted from RX01 floppy disk:<br />
+      </p>
+      <img class="border" src="images/edp11-rt11.png" alt="Screenshot of RT-11 v4.0" />
+      <p>
+        <br />
+        Here is a screenshot of XXDP booted from RL02 hard disk:<br />
+      </p>
+      <img class="border" src="images/edp11-xxdp.png" alt="Screenshot of XXDP" />
+      <p>
+        <br />
+        In all the screenshots, the terminal is using the <a href="http://viznut.fi/unscii/">Unscii</a> font.<br />
+        <br />
+        Here&#39;s also a <a href="https://www.youtube.com/watch?v=3BK1fnIuhdo">video</a> showing several RT-11 games.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        27/03-2026, 
+        <a href="article-271.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
