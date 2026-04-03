@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Apple IIc Emulator Update</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        <a href="https://github.com/kobolt">https://github.com/kobolt</a><br />
+        <a href="https://gitlab.com/kobolt">https://gitlab.com/kobolt</a><br />
+        <a href="https://codeberg.org/kobolt">https://codeberg.org/kobolt</a><br />
+        <a href="https://www.youtube.com/@xetil">https://www.youtube.com/@xetil</a><br />
+        <a href="https://kobolt.website">https://kobolt.website</a><br />
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Apple IIc Emulator Update</h1>
+      <p>
+        I have made a minor update to my <a href="article-251.html">a2c</a> emulator. The version has been bumped to 0.2 and can be downloaded <a href="supplies/a2c-0.2.tar.gz">here</a> or from the <a href="https://github.com/kobolt/a2c">GitHub</a>, <a href="https://gitlab.com/kobolt/a2c">GitLab</a> or <a href="https://codeberg.org/kobolt/a2c">Codeberg</a> repositories.<br />
+        <br />
+        Firstly I discovered a bug. When booting AppleDOS 3.3 it is loading <a href="https://en.wikipedia.org/wiki/Integer_BASIC">Integer BASIC</a> into RAM which can be used instead of <a href="https://en.wikipedia.org/wiki/Applesoft_BASIC">Applesoft BASIC</a> by typing the &#34;INT&#34; command. Except that loading never happened because those RAM writes were ignored. This has now been fixed.<br />
+        <br />
+        Secondly I noticed the performance of floppy disk operations were kind of sluggish compared to the real hardware. I tracked this down to a fault in the emulated <a href="https://en.wikipedia.org/wiki/Integrated_Woz_Machine">IWM</a> implementation where the disk access routines thought that the drive motor was not enabled, resulting in long timeouts. Performance should now be improved.<br />
+        <br />
+        Finally I added support for the secondary floppy disk drive, which can now be loaded with an image from the command line arguments or the debugger. The &#34;CATALOG,D2&#34; command can be used to access the secondary drive from AppleDOS.<br />
+        <br />
+      </p>
+      <img class="border" src="images/a2c-dos33.png" alt="Screenshot of AppleDOS 3.3." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        03/04-2026, 
+        <a href="article-272.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
