@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kjetil's Information Center - Terminal Mode Commodore 64 Emulator Unicode Support</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Links:</b>
+      <p>
+        <a href="https://github.com/kobolt">GitHub</a><br />
+        <a href="https://gitlab.com/kobolt">GitLab</a><br />
+        <a href="https://codeberg.org/kobolt">Codeberg</a><br />
+        <a href="https://www.youtube.com/@xetil">YouTube</a><br />
+        <a href="https://kobolt.no">Homepage Mirror</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Terminal Mode Commodore 64 Emulator Unicode Support</h1>
+      <p>
+        I have added <a href="https://en.wikipedia.org/wiki/Unicode">Unicode</a> text support to my <a href="article-212.html">tmce64</a> emulator and bumped the version number to &#34;0.5&#34;. This is to support drawing characters in the terminal that resembles <a href="https://en.wikipedia.org/wiki/PETSCII">PETSCII</a> instead of just approximate <a href="https://en.wikipedia.org/wiki/ASCII">ASCII</a>. There are support for two different variants of this. The first variant is using symbols from the standard Unicode blocks &#34;Box Drawing&#34;, &#34;Geometric Shapes&#34;, &#34;Block Elements&#34; and &#34;Symbols for Legacy Computing&#34; which are pretty close to PETSCII. The other variant is using the <a href="https://style64.org/c64-truetype">style64.org</a> TrueType PETSCII font, which has it&#39;s own private Unicode block.<br />
+        <br />
+        The included Makefile will attempt to set the UNICODE define if Unicode support is detected in the running terminal when building the binary. This only enables support for the first variant. Using the second variant, the &#34;style64.org&#34; TTF font, requires additionally setting the C64_TTF define manually in the Makefile before building the binary.<br />
+        <br />
+        If not using the &#34;style64.org&#34; TTF font, I recommend using the excellent <a href="http://viznut.fi/unscii/">unscii</a> font, which has support for all the necessary Unicode blocks and also correctly displays the U+25E4 and U+25E5 triangles which looks weird with many other fonts.<br />
+        <br />
+        Example on how to run an xterm in Unicode mode with the &#34;unscii&#34; font:<br />
+      </p>
+        <div class="box">
+          <pre>
+LC_ALL=&#34;en_US.UTF-8&#34; xterm -en UTF-8 -fa &#34;unscii&#34; -fs 12
+export TERM=xterm-256color
+          </pre>
+        </div>
+      <p>
+        Which looks like this:<br />
+      </p>
+      <img class="border" src="images/tmce64-unscii.png" alt="tmce64 with the unscii font." />
+      <p>
+        <br />
+        After running this BASIC program:<br />
+      </p>
+        <div class="box">
+          <pre>
+10 for i=32 to 127
+20 if (i and 15)=0 then print
+30 print chr$(i);
+40 next i
+45 print
+50 for i=160 to 255
+60 if (i and 15)=0 then print
+70 print chr$(i);
+80 next i
+85 print
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is another example on how run <a href="https://software.schmorp.de/pkg/rxvt-unicode.html">rxvt-unicode</a> with the &#34;style64.org&#34; TTF font:<br />
+      </p>
+        <div class="box">
+          <pre>
+LC_ALL=&#34;en_US.UTF-8&#34; urxvt256c -fn &#34;xft:C64 Pro:pixelsize=16&#34;
+          </pre>
+        </div>
+      <p>
+        Which looks like this:<br />
+      </p>
+      <img class="border" src="images/tmce64-style64-ttf.png" alt="tmce64 with the style64.org TTF font." />
+      <p>
+        <br />
+        I included some extra debug information in the screenshot, otherwise it would be easily mistaken for any other Commodore 64 emulator!<br />
+        <br />
+        Version 0.5 can be downloaded <a href="supplies/tmce64-0.5.tar.gz">here</a> but the <a href="https://github.com/kobolt/tmce64">GitHub</a>, <a href="https://gitlab.com/kobolt/tmce64">GitLab</a> and <a href="https://codeberg.org/kobolt/tmce64">Codeberg</a> repositories have also been updated.<br />
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        01/05-2026, 
+        <a href="article-274.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
