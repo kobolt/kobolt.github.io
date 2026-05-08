@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2026 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 01 May 2026 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 08 May 2026 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Bad Apple!! for Epson HX-20</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-275.html</link>
+    <guid>https://kobolt.github.io/article-275.html</guid>
+    <pubDate>Fri, 08 May 2026 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-275.html</description>
+  </item>
   <item>
     <title>Terminal Mode Commodore 64 Emulator Unicode Support</title>
     <category>Open Source</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-266.html</guid>
     <pubDate>Fri, 12 Dec 2025 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-266.html</description>
-  </item>
-  <item>
-    <title>ASCII Express VT52 Emulation to Linux</title>
-    <category>Configuration</category>
-    <link>https://kobolt.github.io/article-265.html</link>
-    <guid>https://kobolt.github.io/article-265.html</guid>
-    <pubDate>Thu, 06 Nov 2025 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-265.html</description>
   </item>
 </channel>
 </rss>
