@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="canonical" href="https://kobolt.github.io/article-280.html" />
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="text-and-data-mining" content="no" />
+    <meta name="description" content="Kjetil's Information Center (Mirror). No text and data mining, DSM-directive 2019/790 article 4(3)" />
+    <title>LCD Controller Program Update - Kjetil's Information Center (Mirror)</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Links:</b>
+      <p>
+        <a href="https://github.com/kobolt">GitHub</a><br />
+        <a href="https://gitlab.com/kobolt">GitLab</a><br />
+        <a href="https://codeberg.org/kobolt">Codeberg</a><br />
+        <a href="https://www.youtube.com/@xetil">YouTube</a><br />
+        <a href="https://kobolt.no">Blog Original</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+        <a href="https://notbyai.fyi">
+          <img class="noborder"
+            src="not-by-ai.png"
+            alt="Written By a Human Not By AI" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>LCD Controller Program Update</h1>
+      <p>
+        Around 18 years ago I made a <a href="article-11.html">program</a> to control a &#34;Cooltek&#34; LCD display over the parallel port from a PC. Since parallel ports are hard to come by these days I had to make an update. I happened to have a <a href="https://docs.arduino.cc/hardware/nano-r4/">Arduino Nano R4</a> lying around so I decided to use that one. Many of the Arduinos, including the Nano R4, uses 5V GPIO levels which makes things simpler since no level shifters are needed to interface with this LCD panel.<br />
+        <br />
+        Here is the sketch I created:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;hd44780.h&gt;
+#include &lt;hd44780ioClass/hd44780_pinIO.h&gt;
+
+const int LCD_RS =  D2;
+const int LCD_RW =  D3;
+const int LCD_EN =  D4;
+const int LCD_DB0 = D5; /* Not used. */
+const int LCD_DB1 = D6; /* Not used. */
+const int LCD_DB2 = D7; /* Not used. */
+const int LCD_DB3 = D8; /* Not used. */
+const int LCD_DB4 = D9;
+const int LCD_DB5 = D10;
+const int LCD_DB6 = D11;
+const int LCD_DB7 = D12;
+
+const int LCD_COLS = 20;
+const int LCD_ROWS = 4;
+
+const int BAUDRATE = 115200;
+
+hd44780_pinIO lcd(LCD_RS, LCD_EN, LCD_DB4, LCD_DB5, LCD_DB6, LCD_DB7);
+
+const uint8_t blank[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+
+void setup()
+{
+  int i;
+
+  Serial.begin(BAUDRATE);
+
+  /* Set R/W low to force write mode always: */
+  pinMode(LCD_RW, OUTPUT);
+  digitalWrite(LCD_RW, LOW);
+
+  lcd.begin(LCD_COLS, LCD_ROWS);
+  lcd.cursor();
+
+  /* Set line wrap and clear display to write rows in correct order: */
+  lcd.lineWrap();
+  lcd.clear();
+
+  /* Clear garbage data for custom characters and replace with blank: */
+  for (i = 0; i &lt; 8; i++) {
+    lcd.createChar(i, blank);
+  }
+}
+
+void loop()
+{
+  static bool escape = false;
+  static int escape_dca = 0;
+  static int escape_row = 0;
+  static int escape_col = 0;
+  char c;
+
+  while (Serial.available() &gt; 0) {
+    c = Serial.read();
+
+    /* Escape codes: */
+    if (escape_dca == 2) {
+      escape_row = c - 0x20;
+      escape_dca--;
+      continue;
+
+    } else if (escape_dca == 1) {
+      escape_col = c - 0x20;
+      escape_dca--;
+      lcd.setCursor(escape_col, escape_row);
+      continue;
+
+    } else if (escape == true) {
+      switch (c) {
+      case &#39;H&#39;:
+        lcd.home();
+        break;
+
+      case &#39;J&#39;:
+        lcd.clear();
+        break;
+
+      case &#39;L&#39;:
+        lcd.scrollDisplayLeft();
+        break;
+
+      case &#39;l&#39;:
+        lcd.moveCursorLeft();
+        break;
+
+      case &#39;R&#39;:
+        lcd.scrollDisplayRight();
+        break;
+
+      case &#39;r&#39;:
+        lcd.moveCursorRight();
+        break;
+      
+      case &#39;C&#39;:
+        lcd.cursor();
+        break;
+
+      case &#39;c&#39;:
+        lcd.noCursor();
+        break;
+
+      case &#39;B&#39;:
+        lcd.blink();
+        break;
+
+      case &#39;b&#39;:
+        lcd.noBlink();
+        break;
+
+      case &#39;A&#39;:
+        lcd.autoscroll();
+        break;
+
+      case &#39;a&#39;:
+        lcd.noAutoscroll();
+        break;
+
+      case &#39;W&#39;:
+        lcd.lineWrap();
+        break;
+
+      case &#39;w&#39;:
+        lcd.noLineWrap();
+        break;
+
+      case &#39;Y&#39;:
+        escape_dca = 2;
+        break;
+
+      default:
+        break;
+      }
+
+      escape = false;
+      continue;
+    }
+
+    /* Check for escape: */
+    if (c == 0x1B) {
+      escape = true;
+      continue;
+    }
+
+    /* Write all other characters: */
+    lcd.write(c);
+  }
+
+  delay(100);
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        It was based on the <a href="https://github.com/duinoWitchery/hd44780/blob/master/examples/ioClass/hd44780_pinIO/Serial2LCD/Serial2LCD.ino">Serial2LCD</a> example and uses the <a href="https://docs.arduino.cc/libraries/hd44780/">hd44780</a> library, but adapted heavily. To be able to control most LCD settings remotely I added support for some <a href="https://en.wikipedia.org/wiki/Escape_sequence">Escape codes</a> very loosely inspired by the DEC VT52 set.<br />
+        <br />
+        Here is a Makefile for convenience, to be placed in the same directory as the &#34;.ino&#34; sketch file:<br />
+      </p>
+        <div class="box">
+          <pre>
+.PHONY: compile
+compile:
+	cd .. &amp;&amp; arduino-cli compile -b arduino:renesas_uno:nanor4 cooltek
+
+.PHONY: upload
+upload:
+	cd .. &amp;&amp; arduino-cli upload -b arduino:renesas_uno:nanor4 cooltek
+          </pre>
+        </div>
+      <p>
+        <br />
+        The connections are as follows:<br />
+      </p>
+        <div class="box">
+          <pre>
+|-----|---------|---------|
+| LCD | LCD Pin | Nano R4 |
+|-----|---------|---------|
+| VSS | 1       | GND     |
+| VDD | 2       | +5V     |
+| V0  | 3       | GND     |
+| RS  | 4       | D2      |
+| R/W | 5       | D3      |
+| E   | 6       | D4      |
+| DB4 | 11      | D9      |
+| DB5 | 12      | D10     |
+| DB6 | 13      | D11     |
+| DB7 | 14      | D12     |
+| A   | 15      | +5V     |
+| K   | 16      | GND     |
+|-----|---------|---------|
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is a photo of the contraption:<br />
+      </p>
+      <img class="border" src="images/lcd-arduino.jpg" alt="LCD connected to Arduino." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        26/06-2026, 
+        <a href="article-280.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>

@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2026 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 19 Jun 2026 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 26 Jun 2026 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>LCD Controller Program Update</title>
+    <category>Scripts and Code</category>
+    <link>https://kobolt.github.io/article-280.html</link>
+    <guid>https://kobolt.github.io/article-280.html</guid>
+    <pubDate>Fri, 26 Jun 2026 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-280.html</description>
+  </item>
   <item>
     <title>Sega SG-1000 Corroded Cartridge</title>
     <category>Repair</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-271.html</guid>
     <pubDate>Fri, 27 Mar 2026 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-271.html</description>
-  </item>
-  <item>
-    <title>Parallel Port Loopback Test in Linux</title>
-    <category>Scripts and Code</category>
-    <link>https://kobolt.github.io/article-270.html</link>
-    <guid>https://kobolt.github.io/article-270.html</guid>
-    <pubDate>Fri, 06 Mar 2026 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-270.html</description>
   </item>
 </channel>
 </rss>
