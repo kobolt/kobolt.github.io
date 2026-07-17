@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="canonical" href="https://kobolt.github.io/article-282.html" />
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="text-and-data-mining" content="no" />
+    <meta name="description" content="Kjetil's Information Center (Mirror). No text and data mining, DSM-directive 2019/790 article 4(3)" />
+    <title>Web-based Paste Server Script - Kjetil's Information Center (Mirror)</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Links:</b>
+      <p>
+        <a href="https://github.com/kobolt">GitHub</a><br />
+        <a href="https://gitlab.com/kobolt">GitLab</a><br />
+        <a href="https://codeberg.org/kobolt">Codeberg</a><br />
+        <a href="https://www.youtube.com/@xetil">YouTube</a><br />
+        <a href="https://kobolt.no">Blog Original</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+        <a href="https://notbyai.fyi">
+          <img class="noborder"
+            src="not-by-ai.png"
+            alt="Written By a Human Not By AI" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Web-based Paste Server Script</h1>
+      <p>
+        Sometimes I need to transfer text from my Android smart phone to my Linux PC. There are many many ways to do this I guess, but I wanted something easy under my control. All phones have web browsers, so I settled on the classic solution of simply running a <a href="https://www.php.net/">PHP</a> script served by an <a href="https://httpd.apache.org/">Apache</a> HTTP server. The script just displays the input form, and on a POST request saves the contents to a timestamped file i the /tmp/ directory on the PC.<br />
+        <br />
+        Here is the XHTML compliant PHP script:<br />
+      </p>
+        <div class="box">
+          <pre>
+&lt;?php 
+  header(&#39;Content-type: application/xhtml+xml; charset=utf-8&#39;);
+  print &#34;&lt;?xml version=&#92;&#34;1.0&#92;&#34; encoding=&#92;&#34;UTF-8&#92;&#34;?&gt;&#92;n&#34;
+?&gt;
+&lt;!DOCTYPE html PUBLIC &#34;-//W3C//DTD XHTML 1.0 Strict//EN&#34;
+  &#34;http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd&#34;&gt;
+&lt;html xmlns=&#34;http://www.w3.org/1999/xhtml&#34; xml:lang=&#34;en&#34; lang=&#34;en&#34;&gt;
+  &lt;head&gt;
+    &lt;title&gt;Paste server!&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+&lt;?php
+  print &#34;      &lt;form action=&#92;&#34;$_SERVER[SCRIPT_NAME]&#92;&#34; method=&#92;&#34;post&#92;&#34;&gt;&#92;n&#34;;
+?&gt;
+        &lt;p&gt;
+          &lt;input type=&#34;submit&#34; value=&#34;submit&#34; /&gt;
+          &lt;br /&gt;
+          &lt;textarea id=&#34;content&#34; name=&#34;content&#34; rows=&#34;24&#34; cols=&#34;80&#34;&gt;&lt;/textarea&gt;
+        &lt;/p&gt;
+      &lt;/form&gt;
+    &lt;p&gt;
+&lt;?php
+  if (isset($_POST[&#34;content&#34;])) {
+    $filename = &#34;/tmp/paste_&#34; . date(&#34;H:i:s&#34;) . &#34;.txt&#34;;
+    $content = $_POST[&#34;content&#34;];
+    $fh = fopen($filename, &#34;a&#34;);
+    fwrite($fh, $content);
+    fclose($fh);
+    print &#34;      Pasted &#34; . strlen($content) . &#34; bytes to: &#34;. $filename . &#34;&#92;n&#34;;
+  }
+?&gt;
+    &lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        17/07-2026, 
+        <a href="article-282.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
