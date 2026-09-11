@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="canonical" href="https://kobolt.github.io/article-284.html" />
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="text-and-data-mining" content="no" />
+    <meta name="description" content="Kjetil's Information Center (Mirror). No text and data mining, DSM-directive 2019/790 article 4(3)" />
+    <title>Famicom Cartridge ROM Hack - Kjetil's Information Center (Mirror)</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Links:</b>
+      <p>
+        <a href="https://github.com/kobolt">GitHub</a><br />
+        <a href="https://gitlab.com/kobolt">GitLab</a><br />
+        <a href="https://codeberg.org/kobolt">Codeberg</a><br />
+        <a href="https://www.youtube.com/@xetil">YouTube</a><br />
+        <a href="https://kobolt.no">Blog Original</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+        <a href="https://notbyai.fyi">
+          <img class="noborder"
+            src="not-by-ai.png"
+            alt="Written By a Human Not By AI" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Famicom Cartridge ROM Hack</h1>
+      <p>
+        Just for fun I modified a <a href="https://en.wikipedia.org/wiki/Nintendo_Entertainment_System">Famicom</a> cartridge to use custom EPROMs, in order to run a ROM hack the old fashioned way.<br />
+        <br />
+        The sacrificial cartridge was an early version of <a href="https://en.wikipedia.org/wiki/Baseball_(1983_video_game)">&#34;Baseball&#34;</a> which has the &#34;HVC-NROM-02&#34; PCB and uses older style dual in-line Package ROMs. I could then add sockets and use regular 27C256 UV EPROMs as replacements.<br />
+        <br />
+        Opening up a Famicom cartridge is a challenge without breaking it. The best way seems to be to use quick grips and squeeze at a certain place that makes the internal plastic clips bend and pop open the cartridge:<br />
+      </p>
+      <img class="border" src="images/famicom_cart_open.jpg" alt="Opening a Famicom cartridge." />
+      <p>
+        <br />
+        I chose <a href="https://en.wikipedia.org/wiki/Super_Mario_Bros.">Super Mario Bros</a> as the target game for the ROM hack. There is a lot of ROM hacks for SMB but finding one that does not change the underlying <a href="https://www.nesdev.org/wiki/Mapper">Mapper</a> from mapper #0 reduced the selection. I ended up with <a href="https://www.romhacking.net/hacks/6507/">&#34;Super Mario Bros Cruise&#34;</a> which fits the criteria and changes both the program code (PRG ROM) and graphics (CHR ROM).<br />
+        <br />
+        The following steps was used to extract the binary parts that can be programmed onto EPROMs, by skipping the iNES header. The 8K CHR ROM was also repeated 4 times to be mirrored across the whole 32K ROM:<br />
+      </p>
+        <div class="box">
+          <pre>
+dd if=smbcc.nes bs=16 skip=1 count=2048 of=smbcc.prg
+dd if=smbcc.nes bs=16 skip=2049 count=512 of=smbcc.chr
+cat smbcc.chr smbcc.chr smbcc.chr smbcc.chr &gt; smbcc.chr4
+          </pre>
+        </div>
+      <p>
+        <br />
+        Since the original &#34;Baseball&#34; game uses a 16K PRG ROM I needed to make an additional modification to allow a 32K PRG ROM by mapping up the missing address line 14. This meant isolating pin 27 on the PRG ROM from +5V and instead adding a bodge wire to pin 35 on the cartridge connector. The end result looks like this:<br />
+      </p>
+      <img class="border" src="images/famicom_cart_eprom.jpg" alt="Custom EPROMs in a Famicom cartridge." />
+      <p>
+        <br />
+        With sockets in addition to EPROMs the PCB is too thick for the back cartridge shell to fit back on, but it can still be inserted into a console:<br />
+      </p>
+      <img class="border" src="images/famicom_cart_insert.jpg" alt="Modified cartridge inserted into a console." />
+      <p>
+        <br />
+        Here is what the ROM hack looks like on a real CRT:<br />
+      </p>
+      <img class="border" src="images/famicom_cart_crt.jpg" alt="ROM hack running on real hardware." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#configuration">Configuration</a>,
+        by
+        Kjetil
+        @ 
+        11/09-2026, 
+        <a href="article-284.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
