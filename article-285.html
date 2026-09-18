@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="canonical" href="https://kobolt.github.io/article-285.html" />
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="text-and-data-mining" content="no" />
+    <meta name="description" content="Kjetil's Information Center (Mirror). No text and data mining, DSM-directive 2019/790 article 4(3)" />
+    <title>Epson HX-20 Image View - Kjetil's Information Center (Mirror)</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Links:</b>
+      <p>
+        <a href="https://github.com/kobolt">GitHub</a><br />
+        <a href="https://gitlab.com/kobolt">GitLab</a><br />
+        <a href="https://codeberg.org/kobolt">Codeberg</a><br />
+        <a href="https://www.youtube.com/@xetil">YouTube</a><br />
+        <a href="https://kobolt.no">Blog Original</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+        <a href="https://notbyai.fyi">
+          <img class="noborder"
+            src="not-by-ai.png"
+            alt="Written By a Human Not By AI" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Epson HX-20 Image View</h1>
+      <p>
+        Here is a set of programs to easily display an image on the LCD screen of the <a href="https://en.wikipedia.org/wiki/Epson_HX-20">Epson HX-20</a>. The image needs to be 120x32, the resolution of the HX-20 LCD screen, and monochrome. It should be converted to the <a href="https://en.wikipedia.org/wiki/Netpbm">PBM</a> format so it can be easily converted to pixel data which is embedded into the resulting HX-20 binary program.<br />
+        <br />
+        Here is the assembly program part, to be assembled with <a href="https://dasm-assembler.github.io/">dasm</a>:<br />
+      </p>
+        <div class="box">
+          <pre>
+        processor hd6303
+
+; Hardware registers:
+LCDSEL  equ $26
+LCDDAT  equ $2A
+GATEB   equ $28
+
+; Kernel routines:
+DSPLCN  equ $FF49
+KEYIN   equ $FF9A
+MENU    equ $FF25
+
+        org $1000 ; Run from HX-20 RAM.
+; Program:
+start:
+        ; Initialize variables:
+        ldab #0
+        stab lcd_col
+        stab lcd_row
+        stab px_byte
+        stab px_byte+1
+        ldab #%00001000
+        stab lcd_no
+        ldab #$ff
+        stab px_bit
+
+        ; Clear the whole LCD screen:
+        ldab #0
+        jsr DSPLCN
+
+next_lcd:
+        ; Check if reached the last LCD:
+        ldaa lcd_no
+        cmpa #%00001110
+        bne continue
+        jmp end
+
+continue:
+        inc lcd_no
+        ldaa #$80
+        staa lcd_col
+
+next_col:
+        ldaa #$40
+        staa lcd_row
+
+next_row:
+        jsr px_inc
+        ldd px_byte
+        addd #pixels
+        xgdx
+        ldaa 0,x
+        ldab px_bit
+
+px_shift:
+        beq px_shift_done
+        asra
+        decb
+        jmp px_shift
+px_shift_done:
+        anda #1
+        beq px_skip_draw ; Change to &#39;bne&#39; to invert image.
+
+        ; Draw one pixel:
+        ldaa lcd_no
+        staa LCDSEL
+        ldaa lcd_col
+        staa LCDDAT
+        sei
+lcd_busy_1:
+        tst GATEB
+        bpl lcd_busy_1
+        ldx LCDDAT ; Clock LCD SCK signal.
+        ldx LCDDAT
+        ldx LCDDAT
+        ldx LCDDAT
+        cli
+        ldaa lcd_row
+        staa LCDDAT
+        sei
+lcd_busy_2:
+        tst GATEB
+        bpl lcd_busy_2
+        ldx LCDDAT ; Clock LCD SCK signal.
+        ldx LCDDAT
+        ldx LCDDAT
+        ldx LCDDAT
+        cli
+
+px_skip_draw:
+        ldaa lcd_row
+        adda #4
+        staa lcd_row
+        suba #$60 ; Subtract to compare.
+        bne next_row
+        ldaa lcd_col
+        inca
+        staa lcd_col
+        cmpa #$E8
+        beq next_lcd
+        cmpa #$A8
+        bne next_col
+        adda #$18 ; Will be 0xA8 here.
+        staa lcd_col ; Store as 0xC0.
+        jmp next_col
+
+end:
+        ; Wait for keypress and go back to main menu.
+        jsr KEYIN
+        jmp MENU
+
+; Pixel increment subroutine:
+px_inc: ldaa px_bit
+        inca
+        staa px_bit
+        cmpa #8
+        bne px_rts
+        ldd px_byte
+        addd #1
+        std px_byte
+        ldaa #0
+        staa px_bit
+px_rts: rts
+
+; Variables:
+lcd_no:  dc.b
+lcd_col: dc.b
+lcd_row: dc.b
+px_byte: dc.w
+px_bit:  dc.b
+
+; Imported pixel data:
+pixels:
+        incbin &#34;img.bin&#34;
+          </pre>
+        </div>
+      <p>
+        <br />
+        Here is the C program to convert PBM images to binary pixel data:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;errno.h&gt;
+#include &lt;stdbool.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+static bool image[32][120];
+
+static int pbm_read(const char *path)
+{
+  FILE *fh;
+  char line[128];
+  int c;
+  int x;
+  int y;
+
+  fh = fopen(path, &#34;rb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;fopen() failed with errno: %d&#92;n&#34;, errno);
+    return -1;
+  }
+
+  fgets(line, sizeof(line), fh); /* Header */
+  if (line[0] != &#39;P&#39; &amp;&amp; line[1] != &#39;4&#39;) {
+    fprintf(stderr, &#34;Not a binary PBM image!&#92;n&#34;);
+    fclose(fh);
+    return -1;
+  }
+
+reread:
+  fgets(line, sizeof(line), fh); /* Additional Headers */
+  if (line[0] == &#39;#&#39;) {
+    goto reread;
+  }
+
+  if (strncmp(line, &#34;120 32&#34;, 6) != 0) {
+    fprintf(stderr, &#34;Dimensions must be 120x32!&#92;n&#34;);
+    fclose(fh);
+    return -1;
+  }
+
+  x = 0;
+  y = 0;
+  while ((c = fgetc(fh)) != EOF) {
+    image[y][x]   = (c &gt;&gt; 7) &amp; 1;
+    image[y][x+1] = (c &gt;&gt; 6) &amp; 1;
+    image[y][x+2] = (c &gt;&gt; 5) &amp; 1;
+    image[y][x+3] = (c &gt;&gt; 4) &amp; 1;
+    image[y][x+4] = (c &gt;&gt; 3) &amp; 1;
+    image[y][x+5] = (c &gt;&gt; 2) &amp; 1;
+    image[y][x+6] = (c &gt;&gt; 1) &amp; 1;
+    image[y][x+7] =  c       &amp; 1;
+    x += 8;
+    if (x == 120) {
+      x = 0;
+      y++;
+      if (y == 32) {
+        break;
+      }
+    }
+  }
+
+  fclose(fh);
+  return 0;
+}
+
+static int pixels_write(const char *path)
+{
+  FILE *fh;
+  int c;
+  int x;
+  int y;
+  int base_x;
+  int base_y;
+  int lcd_no;
+
+  fh = fopen(path, &#34;wb&#34;);
+  if (fh == NULL) {
+    fprintf(stderr, &#34;fopen() failed with errno: %d&#92;n&#34;, errno);
+    return -1;
+  }
+
+  for (lcd_no = 0; lcd_no &lt; 6; lcd_no++) {
+    base_y = lcd_no / 3 * 16;
+    base_x = (lcd_no * 40) % 120;
+    for (y = 0; y &lt; 16; y += 8) {
+      for (x = 0; x &lt; 40; x++) {
+        c  = (image[base_y+y]  [base_x+x]       );
+        c |= (image[base_y+y+1][base_x+x] &lt;&lt; 1);
+        c |= (image[base_y+y+2][base_x+x] &lt;&lt; 2);
+        c |= (image[base_y+y+3][base_x+x] &lt;&lt; 3);
+        c |= (image[base_y+y+4][base_x+x] &lt;&lt; 4);
+        c |= (image[base_y+y+5][base_x+x] &lt;&lt; 5);
+        c |= (image[base_y+y+6][base_x+x] &lt;&lt; 6);
+        c |= (image[base_y+y+7][base_x+x] &lt;&lt; 7);
+        fputc(c, fh);
+      }
+    }
+  }
+
+  fclose(fh);
+  return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  if (argc != 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;in&gt; &lt;out&gt;&#92;n&#34;, argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  if (pbm_read(argv[1]) != 0) {
+    return EXIT_FAILURE;
+  }
+
+  if (pixels_write(argv[2]) != 0) {
+    return EXIT_FAILURE;
+  }
+
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        And here is a Makefile to tie it all together:<br />
+      </p>
+        <div class="box">
+          <pre>
+all: hx20img.srec hx20img.wav
+
+hx20img.srec: hx20img.bin
+	srec_cat hx20img.bin -binary -offset 0x1000 -o hx20img.srec -motorola
+
+hx20img.wav: hx20img.bin
+	bin2hxwav hx20img.bin hx20img.wav 1000 hx20img
+
+hx20img.bin: hx20img.asm img.bin
+	dasm hx20img.asm -ohx20img.bin -f3 -lhx20img.lst
+
+img.pbm: img.png
+	convert img.png img.pbm
+
+pbm2bin: pbm2bin.c
+	gcc -o pbm2bin pbm2bin.c -Wall -Wextra
+
+img.bin: pbm2bin img.pbm
+	./pbm2bin img.pbm img.bin
+
+.PHONY: clean
+clean:
+	rm -f pbm2bin img.pbm *.wav *.srec *.bin *.lst
+          </pre>
+        </div>
+      <p>
+        <br />
+        Running make will produce both an S-record and a WAV file as long as the proper tools are installed and an &#34;img.png&#34; image file is present. Check <a href="article-268.html">here</a> for the special &#34;bin2hxwav&#34; program. The S-record can be loaded into the <a href="article-276.html">hex20</a> emulator.<br />
+        <br />
+        The WAV file can be played to a real Epson HX-20 using the external cassette interface. Enter the MONITOR and type these commands:<br />
+      </p>
+        <div class="box">
+          <pre>
+A
+1000
+FFFF
+/
+R C,*.*
+          </pre>
+        </div>
+      <p>
+        <br />
+        Play the WAV file, and when it&#39;s done, type:<br />
+      </p>
+        <div class="box">
+          <pre>
+G1000
+          </pre>
+        </div>
+      <p>
+        <br />
+        Sample image:<br />
+      </p>
+      <img class="border" src="images/hx-20_imgview_img.png" alt="Sample image." />
+      <p>
+        <br />
+        Displayed on a real HX-20:<br />
+      </p>
+      <img class="border" src="images/hx-20_imgview_display.jpg" alt="Sample image displayed." />
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        18/09-2026, 
+        <a href="article-285.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
