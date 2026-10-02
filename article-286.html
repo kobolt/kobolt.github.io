@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="canonical" href="https://kobolt.github.io/article-286.html" />
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="text-and-data-mining" content="no" />
+    <meta name="description" content="Kjetil's Information Center (Mirror). No text and data mining, DSM-directive 2019/790 article 4(3)" />
+    <title>Linux and Motorola 68000 Emulator - Kjetil's Information Center (Mirror)</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Links:</b>
+      <p>
+        <a href="https://github.com/kobolt">GitHub</a><br />
+        <a href="https://gitlab.com/kobolt">GitLab</a><br />
+        <a href="https://codeberg.org/kobolt">Codeberg</a><br />
+        <a href="https://www.youtube.com/@xetil">YouTube</a><br />
+        <a href="https://kobolt.no">Blog Original</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+        <a href="https://notbyai.fyi">
+          <img class="noborder"
+            src="not-by-ai.png"
+            alt="Written By a Human Not By AI" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Linux and Motorola 68000 Emulator</h1>
+      <p>
+        I read an <a href="https://hackaday.com/2026/06/29/its-linux-on-a-sega-megadrive/">article</a> that someone had managed to get Linux running on a <a href="https://github.com/LinuxMD/linuxmd">Sega MegaDrive</a> which has a <a href="https://en.wikipedia.org/wiki/Motorola_68000">Motorola 68000</a> CPU and no MMU. This inspired me to attempt something similar with the <a href="article-264.html">CP/M-68K emulator</a> I made last year.<br />
+        <br />
+        It turns out that not many changes are needed to the emulator. Primarily just adding a timer that gives an interrupt that can be acted upon. This is crucial for any multi-tasking operating system like Linux. I went for the simplest possible solution by just counting CPU instructions to tick the timer, since the emulator doesn&#39;t count individual cycles, but it works well enough. I also discovered a kind of bug with the STOP instruction, which was not detected previously when just running CP/M-68K; that it does not advance the program counter! This had to be fixed to avoid getting stuck. The STOP instruction will also now call usleep() to relax the host CPU since Linux on the 68000 uses this by default when idle and just waiting for interrupts. The necessary changes are included in version 0.2 that can be downloaded <a href="supplies/cpm68emu-0.2.tar.gz">here</a> or from the public <a href="https://github.com/kobolt/cpm68emu">GitHub</a>, <a href="https://gitlab.com/kobolt/cpm68emu">GitLab</a> or <a href="https://codeberg.org/kobolt/cpm68emu">Codeberg</a> repositories.<br />
+        <br />
+        To make a compatible Linux kernel and root filesystem I used a newer version 2026.8 version of <a href="https://buildroot.org/">Buildroot</a>. This comes with Linux kernel version 7.1 by default which is also used. I had to make drivers for the timer, console and disks that are provided by the emulator by using the same TRAP mechanism as the custom CP/M-68K BIOS uses. The drivers were loosely based on the existing drivers to support Atari ST emulators that are already present in the kernel. Note that a patch is needed on the GCC compiler to avoid it creating unaligned memory accesses for the original Motorola 68000. The complete Buildroot configuration with patches can be downloaded <a href="supplies/cpm68emu-linux.tar.gz">here</a>.<br />
+        <br />
+        Building is done like this:<br />
+      </p>
+        <div class="box">
+          <pre>
+cd buildroot-2026.08
+tar -xvzf cpm68emu-linux.tar.gz
+make cpm68emu_defconfig
+make -j32
+          </pre>
+        </div>
+      <p>
+        <br />
+        For convenience, here is also a pre-built <a href="supplies/vmlinux.srec">kernel</a> and <a href="supplies/rootfs.cramfs">root filesystem</a>. To start the cpm68emu emulator with Linux, use the following arguments:<br />
+      </p>
+        <div class="box">
+          <pre>
+./cpm68emu -b vmlinux.srec -e 0x400 rootfs.cramfs
+          </pre>
+        </div>
+      <p>
+        <br />
+        The output should look like this, use &#34;root&#34;/&#34;toor&#34; to login:<br />
+      </p>
+        <div class="box">
+          <pre>
+Linux version 7.1.13 (kobolt@ryzen.lan) (m68k-buildroot-uclinux-uclibc-gcc.br_real (Buildroot 2026.08) 15.3.0, GNU ld (GNU Binutils) 2.45.1) #1 Sat Sep 26 11:49:48 CEST 2026
+printk: legacy console [cpm68con0] enabled
+uClinux with CPU MC68000
+Flat model support (C) 1998,1999 Kenneth Albanowski, D. Jeff Dionne
+Zone ranges:
+  DMA      [mem 0x0000000000000000-0x0000000000ffffff]
+  Normal   empty
+Movable zone start for each node
+Early memory node ranges
+  node   0: [mem 0x0000000000000000-0x0000000000ffffff]
+Initmem setup node 0 [mem 0x0000000000000000-0x0000000000ffffff]
+Kernel command line: root=/dev/cpm68disk0
+printk: log buffer data + meta data: 131072 + 409600 = 540672 bytes
+Dentry cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
+Inode-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+Built 1 zonelists, mobility grouping on.  Total pages: 4096
+mem auto-init: stack:off, heap alloc:off, heap free:off
+SLUB: HWalign=16, Order=0-1, MinObjects=0, CPUs=1, Nodes=1
+NR_IRQS: 32
+clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
+Calibrating delay loop... 9.72 BogoMIPS (lpj=48640)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+VFS: Finished mounting rootfs on nullfs
+Memory: 14324K/16384K available (868K kernel code, 450K rwdata, 96K rodata, 60K init, 184K bss, 1844K reserved, 0K cma-reserved)
+devtmpfs: initialized
+cpm68disk0: adding device as emulator disk A:
+cpm68disk1: adding device as emulator disk B:
+cpm68disk2: adding device as emulator disk C:
+cpm68disk3: adding device as emulator disk D:
+workingset: timestamp_bits=30 (anon: 26) max_order=12 bucket_order=0 (anon: 0)
+io scheduler mq-deadline registered
+io scheduler kyber registered
+VFS: Mounted root (cramfs filesystem) readonly on device 240:0.
+devtmpfs: mounted
+VFS: Pivoted into new rootfs
+Freeing unused kernel image (initmem) memory: 60K
+This architecture does not have kernel memory protection.
+Run /sbin/init as init process
+
+Welcome to Buildroot
+buildroot login: root
+Password:
+Jan  1 00:00:18 login[29]: root login on &#39;console&#39;
+~ # uname -a
+uClinux buildroot 7.1.13 #1 Sat Sep 26 11:49:48 CEST 2026 m68k GNU/Linux
+~ # 
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#open_source">Open Source</a>,
+        by
+        Kjetil
+        @ 
+        02/10-2026, 
+        <a href="article-286.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
