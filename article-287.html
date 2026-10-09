@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <link rel="canonical" href="https://kobolt.github.io/article-287.html" />
+    <link rel="stylesheet" media="screen and (min-device-width: 1024px)" href="infocenter.css" type="text/css" />
+    <link rel='stylesheet' media='screen and (max-device-width: 1023px)' href="infocenter-mobile.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="text-and-data-mining" content="no" />
+    <meta name="description" content="Kjetil's Information Center (Mirror). No text and data mining, DSM-directive 2019/790 article 4(3)" />
+    <title>Booting Linux from CP/M-68K - Kjetil's Information Center (Mirror)</title>
+  </head>
+  <body>
+    <div class="header">
+      <img class="noborder" src="infocenter_header.png" alt="Kjetil's Information Center: A Blog About My Projects"/>
+    </div>
+    <div class="menu">
+      <b>Index:</b>
+      <p>
+        <a href="index-topic.html">Index By Topic</a><br />
+        <a href="index.html">Index By Date</a><br />
+        <a href="rss.xml">RSS Feed</a><br />
+      </p>
+      <hr />
+      <b>Links:</b>
+      <p>
+        <a href="https://github.com/kobolt">GitHub</a><br />
+        <a href="https://gitlab.com/kobolt">GitLab</a><br />
+        <a href="https://codeberg.org/kobolt">Codeberg</a><br />
+        <a href="https://www.youtube.com/@xetil">YouTube</a><br />
+        <a href="https://kobolt.no">Blog Original</a><br />
+      </p>
+      <hr />
+      <b>Contact:</b>
+      <p>
+        kobolt.anarion (at) gmail.com<br />
+      </p>
+      <hr />
+      <b>Quality assurance:</b>
+      <p>
+        <a href="http://validator.w3.org/check?uri=referer">
+          <img class="noborder"
+            src="valid-xhtml10.png"
+            alt="Valid XHTML 1.0 Strict" />
+        </a>
+        <br />
+        <a href="http://jigsaw.w3.org/css-validator/">
+          <img class="noborder" 
+            src="valid-css.gif"
+            alt="Valid CSS" />
+        </a>
+        <br />
+        <a href="https://validator.w3.org/feed/">
+          <img class="noborder"
+            src="valid-rss-rogers.png"
+            alt="Valid RSS" />
+        </a>
+        <br />
+        <a href="https://notbyai.fyi">
+          <img class="noborder"
+            src="not-by-ai.png"
+            alt="Written By a Human Not By AI" />
+        </a>
+        <br />
+      </p>
+      <hr />
+      <p>
+        Except where otherwise noted, content on this site is licensed under
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+          CC BY-SA 4.0
+          <br />
+          <img class="noborder"
+            src="cc-by-sa.png"
+            alt="Creative Commons Attribution-ShareAlike 4.0 International" />
+        </a>
+        <br />
+      </p>
+    </div>
+    <div class="content">
+      <h1>Booting Linux from CP/M-68K</h1>
+      <p>
+        This is just a pointless proof-of-concept for fun, but I found a way to boot the Linux kernel directly from a running CP/M-68K instance. The method is similar to <a href="https://en.wikipedia.org/wiki/Loadlin">LOADLIN</a> which can boot Linux directly from DOS on an Intel x86 system. The proper way is just to boot Linux directly as seen in my <a href="article-286.html">previous article</a>.<br />
+        <br />
+        When CP/M-68K runs a program it will be run as &#34;user&#34; instead of the &#34;supervisor&#34; and that will prevent many privileged <a href="https://en.wikipedia.org/wiki/Motorola_68000">68000</a> instructions from executing, typically instructions needed by a kernel. The switch from supervisor to user happens through an RTE (Return from Exception) instruction, but by replacing this with an RTR (Return and Restore) instruction the supervisor bit is preserved. If there is no <a href="https://en.wikipedia.org/wiki/Memory_management_unit">MMU</a> to protect the kernel memory, the instruction can be overwritten from user space.<br />
+        <br />
+        The booting happens in two stages, first a program is run that overwrites that instruction is so that supervisor mode is active for the next program. Afterwards the Linux kernel is loaded into memory and started as if it was a regular CP/M-68K program. Here is a <a href="https://www.youtube.com/watch?v=7fprz9bCxRo">demo video</a> of the concept running on my <a href="article-264.html">CP/M-68K emulator</a>.<br />
+        <br />
+        For the first stage, here an assembly program that can be assembled with <a href="http://virtualjaguar.kicks-ass.net/builds/">RMAC</a>:<br />
+      </p>
+        <div class="box">
+          <pre>
+org $3e4 ; Compensate for header ($400 - $1c)
+
+; CP/M-68K Header
+header:
+
+dc.w $601A ; Magic
+dc.l (data - text) ; Text Size
+dc.l (end - data)  ; Data Size
+dc.l $0    ; BSS Size
+dc.l $0    ; Symbol Size
+dc.l $0    ; Reserved
+dc.l $400  ; Start Address
+dc.w $FFFF ; Relocation
+
+; Program
+text:
+move.w  #9, D0
+move.l  #msg1, D1
+trap    #2 ; Display message on console.
+
+move.w  #9, D0
+move.l  #msg2, D1
+trap    #2 ; Display message on console.
+
+move.l  #$ff4b80, A0
+move.w  #$4e77, (A0)
+rts
+
+; Data
+data:
+msg1:
+dc.b &#39;Replacing RTE with RTR instruction.&#39;,13,10,&#39;$&#39;
+msg2:
+dc.b &#39;Next program will run as supervisor!&#39;,13,10,&#39;$&#39;
+
+; End
+end:
+          </pre>
+        </div>
+      <p>
+        <br />
+        For the second stage, the Linux kernel must be prefixed by a CP/M-68K header to be loaded from disk into memory and then executed. Here is a C program to do that:<br />
+      </p>
+        <div class="box">
+          <pre>
+#include &lt;arpa/inet.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/stat.h&gt;
+
+#pragma pack(1)
+typedef struct cpm68k_header_s {
+  uint16_t magic;
+  uint32_t text_size;
+  uint32_t data_size;
+  uint32_t bss_size;
+  uint32_t sym_size;
+  uint32_t reserved;
+  uint32_t start_addr;
+  uint16_t relocation;
+} cpm68k_header_t;
+#pragma pack()
+
+int main(int argc, char *argv[])
+{
+  cpm68k_header_t header;
+  struct stat st;
+  FILE *fh_in;
+  FILE *fh_out;
+  int c;
+
+  if (argc != 3) {
+    fprintf(stderr, &#34;Usage: %s &lt;in-bin&gt; &lt;out-68k&gt;&#92;n&#34;, argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  if (stat(argv[1], &amp;st) != 0) {
+    fprintf(stderr, &#34;stat(%s) failed with errno: %d&#92;n&#34;, argv[1], errno);
+    return EXIT_FAILURE;
+  }
+
+  fh_in = fopen(argv[1], &#34;rb&#34;);
+  if (fh_in == NULL) {
+    fprintf(stderr, &#34;fopen(%s) failed&#92;n&#34;, argv[1]);
+    return EXIT_FAILURE;
+  }
+
+  fh_out = fopen(argv[2], &#34;wb&#34;);
+  if (fh_out == NULL) {
+    fprintf(stderr, &#34;fopen(%s) failed&#92;n&#34;, argv[2]);
+    fclose(fh_in);
+    return EXIT_FAILURE;
+  }
+
+  header.magic      = htons(0x601A);
+  header.text_size  = htonl(st.st_size);
+  header.data_size  = 0;
+  header.bss_size   = 0;
+  header.sym_size   = 0;
+  header.reserved   = 0; 
+  header.start_addr = htonl(0x400);
+  header.relocation = htons(0xFFFF);
+
+  fwrite(&amp;header, sizeof(cpm68k_header_t), 1, fh_out);
+
+  while ((c = fgetc(fh_in)) != EOF) {
+    fputc(c, fh_out);
+  }
+
+  fclose(fh_in);
+  fclose(fh_out);
+  return EXIT_SUCCESS;
+}
+          </pre>
+        </div>
+      <p>
+        <br />
+        And a Makefile to tie it together:<br />
+      </p>
+        <div class="box">
+          <pre>
+all: vmlinux.68k cpmhack.68k
+
+bin2cpm: bin2cpm.c
+	gcc -o bin2cpm bin2cpm.c -Wall -Wextra
+
+vmlinux.68k: bin2cpm
+	./bin2cpm vmlinux.bin vmlinux.68k
+
+cpmhack.68k: cpmhack.asm
+	rmac -fr cpmhack.asm -o cpmhack.68k
+
+.PHONY: clean
+clean:
+	rm -f bin2cpm vmlinux.68k cpmhack.68k
+          </pre>
+        </div>
+      <p>
+        <br />
+      </p>
+      <i>
+        Topic:
+        <a href="index-topic.html#scripts_and_code">Scripts and Code</a>,
+        by
+        Kjetil
+        @ 
+        09/10-2026, 
+        <a href="article-287.html">Article Link</a>
+      </i>
+      <br />
+    </div>
+  </body>
+</html>
