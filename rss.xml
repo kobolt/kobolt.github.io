@@ -6,9 +6,17 @@
   <description>A blog about my projects!</description>
   <language>en-us</language>
   <copyright>Copyright 2007-2026 Kjetil Erga</copyright>
-  <lastBuildDate>Fri, 09 Oct 2026 00:00:00 -0000</lastBuildDate>
+  <lastBuildDate>Fri, 23 Oct 2026 00:00:00 -0000</lastBuildDate>
   <ttl>1440</ttl>
   <atom:link href="https://kobolt.github.io/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>GeForce GTX 1060 Thermal Repaste</title>
+    <category>Repair</category>
+    <link>https://kobolt.github.io/article-288.html</link>
+    <guid>https://kobolt.github.io/article-288.html</guid>
+    <pubDate>Fri, 23 Oct 2026 00:00:00 -0000</pubDate>
+    <description>Go to: https://kobolt.github.io/article-288.html</description>
+  </item>
   <item>
     <title>Booting Linux from CP/M-68K</title>
     <category>Scripts and Code</category>
@@ -80,14 +88,6 @@
     <guid>https://kobolt.github.io/article-279.html</guid>
     <pubDate>Fri, 19 Jun 2026 00:00:00 -0000</pubDate>
     <description>Go to: https://kobolt.github.io/article-279.html</description>
-  </item>
-  <item>
-    <title>Sega SG-1000 II Composite Video Modification</title>
-    <category>Repair</category>
-    <link>https://kobolt.github.io/article-278.html</link>
-    <guid>https://kobolt.github.io/article-278.html</guid>
-    <pubDate>Thu, 11 Jun 2026 00:00:00 -0000</pubDate>
-    <description>Go to: https://kobolt.github.io/article-278.html</description>
   </item>
 </channel>
 </rss>
